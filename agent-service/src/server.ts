@@ -23,18 +23,36 @@ async function readBody(req: IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+function decodeBase64Payload(base64: string): Uint8Array {
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+}
+
 function decodeDocuments(
   body: Record<string, unknown>,
 ): ProcessRequirementsRequest {
-  const documents = (body.documents as Array<{
+  const filePayloads = body.files as Array<{
+    filename: string;
+    mimeType: string;
+    contentBase64: string;
+  }> | undefined;
+
+  const legacyDocuments = body.documents as Array<{
     filename: string;
     mimeType: string;
     content: string;
-  }> ?? []).map((doc) => ({
-    filename: doc.filename,
-    mimeType: doc.mimeType,
-    content: Uint8Array.from(atob(doc.content), (c) => c.charCodeAt(0)),
-  }));
+  }> | undefined;
+
+  const documents = (filePayloads ?? legacyDocuments ?? []).map((doc) => {
+    const base64 = "contentBase64" in doc
+      ? doc.contentBase64
+      : (doc as { content: string }).content;
+
+    return {
+      filename: doc.filename,
+      mimeType: doc.mimeType,
+      content: decodeBase64Payload(base64),
+    };
+  });
 
   return {
     ...(body as unknown as ProcessRequirementsRequest),
@@ -87,3 +105,4 @@ if (isMain) {
     console.log(`agent-service listening on port ${PORT}`);
   });
 }
+

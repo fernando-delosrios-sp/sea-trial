@@ -2,14 +2,17 @@ import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import type { ProcessRequirementsRequest, TesEventContext } from "@tes-event-process/shared";
 import {
   analyzeRequirements,
+  buildDocumentsProcessedSection,
   buildUpdatedCanvas,
   clarifyOrPropose,
   extractDeliverables,
+  formatOutput,
   loadContext,
   parseDocuments,
   runRequirementsAgent,
   validateLlmConfig,
 } from "../src/agents/requirements/graph.js";
+import { setSemanticAnalyzerForTests } from "../src/agents/requirements/semantic-analyzer.js";
 
 const baseContext: TesEventContext = {
   channelId: "C1",
@@ -57,9 +60,21 @@ describe("out-of-scope rejection", () => {
 });
 
 describe("clarification path", () => {
+  beforeEach(() => {
+    process.env.LLM_API_KEY = "test-key";
+    setSemanticAnalyzerForTests(async (input) =>
+      extractDeliverables(input.parsedTexts, input.derivedComponents)
+    );
+  });
+
+  afterEach(() => {
+    delete process.env.LLM_API_KEY;
+    setSemanticAnalyzerForTests(null);
+  });
+
   it("returns needsClarification when no documents parsed", async () => {
     const state = loadContext(makeRequest());
-    const afterAnalyze = analyzeRequirements(state);
+    const afterAnalyze = await analyzeRequirements(state);
     const result = clarifyOrPropose(afterAnalyze);
 
     expect(result.needsClarification).toBe(true);
@@ -70,8 +85,15 @@ describe("clarification path", () => {
 describe("second session extends canvas", () => {
   it("preserves prior session log entries", () => {
     const existing = "# Requirements\n\n## Session Log\n- **2026-01-01:** First session.\n";
+    const parsedDocuments = [{
+      filename: "new.txt",
+      mimeType: "text/plain",
+      text: "New doc content",
+      supported: true,
+    }];
     const updated = buildUpdatedCanvas(
       existing,
+      parsedDocuments,
       ["New doc content"],
       [{
         taskId: "TES-001",
@@ -85,16 +107,21 @@ describe("second session extends canvas", () => {
 
     expect(updated).toContain("First session");
     expect(updated).toContain("TES-001");
+    expect(updated).toContain("## Documents processed");
   });
 });
 
 describe("runRequirementsAgent", () => {
   beforeEach(() => {
     process.env.LLM_API_KEY = "test-key";
+    setSemanticAnalyzerForTests(async (input) =>
+      extractDeliverables(input.parsedTexts, input.derivedComponents)
+    );
   });
 
   afterEach(() => {
     delete process.env.LLM_API_KEY;
+    setSemanticAnalyzerForTests(null);
   });
 
   it("processes documents and returns proposals", async () => {
@@ -134,5 +161,74 @@ describe("parseDocuments", () => {
 
     const updated = await parseDocuments(state, documents);
     expect(updated.parsedTexts.length).toBe(1);
+    expect(updated.parsedDocuments.length).toBe(1);
   });
 });
+
+describe("documents processed section", () => {
+  it("lists parse status per file", () => {
+    const section = buildDocumentsProcessedSection([
+      {
+        filename: "ok.txt",
+        mimeType: "text/plain",
+        text: "content",
+        supported: true,
+      },
+      {
+        filename: "bad.png",
+        mimeType: "image/png",
+        text: "",
+        supported: false,
+        error: "Unsupported format: .png",
+      },
+    ]);
+
+    expect(section).toContain("ok.txt");
+    expect(section).toContain("parsed successfully");
+    expect(section).toContain("bad.png");
+    expect(section).toContain("Unsupported");
+  });
+});
+
+describe("formatOutput", () => {
+  it("updates canvas with documents processed section", () => {
+    const state = loadContext(makeRequest());
+    const withParsed = {
+      ...state,
+      parsedDocuments: [{
+        filename: "req.txt",
+        mimeType: "text/plain",
+        text: "Deliverable: Item",
+        supported: true,
+      }],
+      parsedTexts: ["Deliverable: Item"],
+      proposals: [{
+        taskId: "TES-001",
+        category: "Req",
+        requirements: "Item",
+        sourceDocRef: "doc",
+        suggestedStatus: "Not started",
+      }],
+      needsClarification: false,
+      agentMessage: "Done",
+    };
+
+    const result = formatOutput(withParsed);
+    expect(result.requirementsCanvasMarkdown).toContain("Documents processed");
+  });
+});
+
+describe("no external memory dependency", () => {
+  it("agent-service package has no vector store dependencies", async () => {
+    const pkg = await import("../package.json", { with: { type: "json" } });
+    const deps = {
+      ...pkg.default.dependencies,
+      ...pkg.default.devDependencies,
+    };
+    const depNames = Object.keys(deps).join(" ").toLowerCase();
+    expect(depNames).not.toContain("qdrant");
+    expect(depNames).not.toContain("supermemory");
+    expect(depNames).not.toContain("gbrain");
+  });
+});
+

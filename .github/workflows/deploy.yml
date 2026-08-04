@@ -1,0 +1,125 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  validate-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate required GitHub configuration
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          SLACK_SERVICE_TOKEN: ${{ secrets.SLACK_SERVICE_TOKEN }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          AGENT_SERVICE_URL: ${{ vars.AGENT_SERVICE_URL }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+        run: |
+          set -euo pipefail
+          missing=0
+
+          check_secret() {
+            if [ -z "${!1:-}" ]; then
+              echo "Missing secret: $1"
+              missing=1
+            fi
+          }
+
+          check_var() {
+            if [ -z "${!1:-}" ]; then
+              echo "Missing variable: $1"
+              missing=1
+            fi
+          }
+
+          check_secret LLM_API_KEY
+          check_secret SLACK_SERVICE_TOKEN
+          check_secret RENDER_API_KEY
+          check_secret RENDER_DEPLOY_HOOK_URL
+          check_var AGENT_SERVICE_URL
+          check_var LLM_BASE_URL
+          check_var LLM_MODEL
+          check_var RENDER_SERVICE_ID
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+  deploy-agent-service:
+    needs: validate-config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync Render environment variables
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+        run: |
+          set -euo pipefail
+          payload="$(jq -n \
+            --arg apiKey "$LLM_API_KEY" \
+            --arg baseUrl "$LLM_BASE_URL" \
+            --arg model "$LLM_MODEL" \
+            '[
+              {"key":"LLM_API_KEY","value":$apiKey},
+              {"key":"LLM_BASE_URL","value":$baseUrl},
+              {"key":"LLM_MODEL","value":$model}
+            ]')"
+          curl -fsS -X PUT \
+            "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/env-vars" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$payload"
+
+      - name: Trigger Render deploy
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
+
+      - name: Wait for agent-service health check
+        env:
+          AGENT_SERVICE_URL: ${{ vars.AGENT_SERVICE_URL }}
+        run: |
+          set -euo pipefail
+          health_url="${AGENT_SERVICE_URL%/}/health"
+          for _ in $(seq 1 30); do
+            if curl -fsS "$health_url"; then
+              echo "Health check passed: $health_url"
+              exit 0
+            fi
+            echo "Waiting for $health_url..."
+            sleep 10
+          done
+          echo "Health check failed: $health_url"
+          exit 1
+
+  deploy-slack-app:
+    needs: deploy-agent-service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install Slack CLI
+        run: curl -fsSL https://downloads.slack-edge.com/slack-cli/install.sh | bash
+
+      - name: Deploy slack-app
+        working-directory: slack-app
+        env:
+          SLACK_SERVICE_TOKEN: ${{ secrets.SLACK_SERVICE_TOKEN }}
+          AGENT_SERVICE_URL: ${{ vars.AGENT_SERVICE_URL }}
+        run: |
+          set -euo pipefail
+          echo "AGENT_SERVICE_URL=$AGENT_SERVICE_URL" >> .env
+          slack env set AGENT_SERVICE_URL "$AGENT_SERVICE_URL"
+          slack deploy -s --token "$SLACK_SERVICE_TOKEN"

@@ -1,0 +1,2 @@
+Deliverable: Configure SSO integration
+Deliverable: Build certification campaign

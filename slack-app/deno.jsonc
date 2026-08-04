@@ -7,7 +7,8 @@
   "imports": {
     "@slack/deno-slack-sdk/": "https://deno.land/x/deno_slack_sdk@2.3.0/",
     "@slack/deno-slack-api/": "https://deno.land/x/deno_slack_api@2.6.0/",
-    "@tes/shared/": "../packages/shared/src/"
+    "@tes/shared/": "../packages/shared/src/",
+    "std/": "https://deno.land/std@0.224.0/"
   },
   "compilerOptions": {
     "lib": ["deno.window"],
@@ -20,3 +21,4 @@
     "exclude": ["../node_modules"]
   }
 }
+

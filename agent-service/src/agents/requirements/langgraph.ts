@@ -1,6 +1,7 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import type {
   DeliverableProposal,
+  ParsedDocument,
   ProcessRequirementsRequest,
   ProcessRequirementsResponse,
   TesEventContext,
@@ -9,6 +10,7 @@ import { getLlmConfig } from "../../config/llm.js";
 import {
   analyzeRequirements,
   clarifyOrPropose,
+  formatOutput,
   loadContext,
   parseDocuments,
   type AgentState,
@@ -18,6 +20,7 @@ const AgentGraphState = Annotation.Root({
   context: Annotation<TesEventContext>,
   requirementsCanvasMarkdown: Annotation<string>,
   existingDeliverables: Annotation<DeliverableProposal[]>,
+  parsedDocuments: Annotation<ParsedDocument[]>,
   parsedTexts: Annotation<string[]>,
   proposals: Annotation<DeliverableProposal[]>,
   agentMessage: Annotation<string>,
@@ -35,6 +38,7 @@ function toAgentState(state: GraphState): AgentState {
     context: state.context,
     requirementsCanvasMarkdown: state.requirementsCanvasMarkdown,
     existingDeliverables: state.existingDeliverables,
+    parsedDocuments: state.parsedDocuments ?? [],
     parsedTexts: state.parsedTexts ?? [],
     proposals: state.proposals ?? [],
     agentMessage: state.agentMessage ?? "",
@@ -53,8 +57,8 @@ function fromAgentState(state: GraphState, agent: AgentState): GraphState {
 }
 
 /**
- * LangGraph.js Requirements Agent — wraps loadContext → parseDocuments →
- * analyzeRequirements → clarifyOrPropose as a StateGraph pipeline.
+ * LangGraph.js Requirements Agent — loadContext → parseDocuments →
+ * analyzeRequirements → clarifyOrPropose → formatOutput.
  */
 export function createRequirementsGraph() {
   const graph = new StateGraph(AgentGraphState)
@@ -71,19 +75,24 @@ export function createRequirementsGraph() {
       const agent = await parseDocuments(toAgentState(state), state.documents ?? []);
       return fromAgentState(state, agent);
     })
-    .addNode("analyzeRequirements", (state: GraphState) => {
-      const agent = analyzeRequirements(toAgentState(state));
+    .addNode("analyzeRequirements", async (state: GraphState) => {
+      const agent = await analyzeRequirements(toAgentState(state));
       return fromAgentState(state, agent);
     })
     .addNode("clarifyOrPropose", (state: GraphState) => {
       const agent = clarifyOrPropose(toAgentState(state));
       return fromAgentState(state, agent);
     })
+    .addNode("formatOutput", (state: GraphState) => {
+      const agent = formatOutput(toAgentState(state));
+      return fromAgentState(state, agent);
+    })
     .addEdge(START, "loadContext")
     .addEdge("loadContext", "parseDocuments")
     .addEdge("parseDocuments", "analyzeRequirements")
     .addEdge("analyzeRequirements", "clarifyOrPropose")
-    .addEdge("clarifyOrPropose", END);
+    .addEdge("clarifyOrPropose", "formatOutput")
+    .addEdge("formatOutput", END);
 
   return graph.compile();
 }
@@ -101,6 +110,7 @@ export async function runRequirementsGraph(
     requirementsCanvasMarkdown: request.requirementsCanvasMarkdown,
     existingDeliverables: request.existingDeliverables,
     documents: request.documents,
+    parsedDocuments: [],
     parsedTexts: [],
     proposals: [],
     agentMessage: "",

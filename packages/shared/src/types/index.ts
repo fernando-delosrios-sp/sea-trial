@@ -43,16 +43,26 @@ export interface DeliverableProposal {
   openQuestions?: string[];
 }
 
+/** Raw file bytes for HTTP transport (base64-encoded in JSON). */
+export interface FilePayload {
+  filename: string;
+  mimeType: string;
+  contentBase64: string;
+}
+
+/** Internal representation after decoding transport payload. */
 export interface DocumentInput {
   filename: string;
   mimeType: string;
   content: Uint8Array;
 }
 
+/** Result of format extraction in agent-service parsers. */
 export interface ParsedDocument {
   filename: string;
+  mimeType: string;
+  text: string;
   supported: boolean;
-  text?: string;
   error?: string;
 }
 
@@ -71,4 +81,3 @@ export interface ProcessRequirementsResponse {
   needsClarification: boolean;
   clarificationQuestions?: string[];
 }
-

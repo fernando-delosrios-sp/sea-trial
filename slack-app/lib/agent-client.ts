@@ -1,8 +1,78 @@
 import type {
   DeliverableProposal,
+  FilePayload,
   ProcessRequirementsRequest,
   ProcessRequirementsResponse,
+  TesEventContext,
 } from "@tes/shared/types/index.ts";
+import type { DocumentInput } from "@tes/shared/types/index.ts";
+
+export function encodeFilePayload(content: Uint8Array): string {
+  let binary = "";
+  for (const byte of content) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Builds the HTTP JSON body sent to agent-service (raw bytes as FilePayload[]).
+ */
+export function buildAgentHttpBody(request: ProcessRequirementsRequest): {
+  context: TesEventContext;
+  requirementsCanvasMarkdown: string;
+  existingDeliverables: DeliverableProposal[];
+  files: FilePayload[];
+  threadHistory?: string;
+} {
+  const files: FilePayload[] = request.documents.map((doc) => ({
+    filename: doc.filename,
+    mimeType: doc.mimeType,
+    contentBase64: encodeFilePayload(doc.content),
+  }));
+
+  return {
+    context: request.context,
+    requirementsCanvasMarkdown: request.requirementsCanvasMarkdown,
+    existingDeliverables: request.existingDeliverables,
+    files,
+    threadHistory: request.threadHistory,
+  };
+}
+
+/**
+ * Builds the agent process request from Slack invoke inputs.
+ */
+export function buildInvokeAgentRequest(
+  context: TesEventContext,
+  requirementsCanvasMarkdown: string,
+  documents: DocumentInput[],
+  threadHistory?: string,
+): ProcessRequirementsRequest {
+  return {
+    context,
+    requirementsCanvasMarkdown,
+    existingDeliverables: [],
+    documents,
+    threadHistory,
+  };
+}
+
+/**
+ * Resolves the agent-service base URL from deploy environment variables.
+ * @throws Error when AGENT_SERVICE_URL is missing or empty
+ */
+export function resolveAgentServiceUrl(
+  env: Record<string, string | undefined>,
+): string {
+  const url = env["AGENT_SERVICE_URL"]?.trim();
+  if (!url) {
+    throw new Error(
+      "AGENT_SERVICE_URL is required. Set it via GitHub Actions deploy or slack env set.",
+    );
+  }
+  return url;
+}
 
 /**
  * Calls the agent-service Requirements Agent endpoint.
@@ -15,14 +85,7 @@ export async function callRequirementsAgent(
 ): Promise<ProcessRequirementsResponse> {
   const url = `${agentServiceUrl.replace(/\/$/, "")}/agents/requirements/process`;
 
-  const body = {
-    ...request,
-    documents: request.documents.map((doc) => ({
-      filename: doc.filename,
-      mimeType: doc.mimeType,
-      content: btoa(String.fromCharCode(...doc.content)),
-    })),
-  };
+  const body = buildAgentHttpBody(request);
 
   const response = await fetch(url, {
     method: "POST",

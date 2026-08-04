@@ -1,5 +1,42 @@
 # Changelog
 
+## Document Parsing and Memory Architecture (2026-08-04)
+
+### Added
+
+- **`FilePayload` shared type** — `{ filename, mimeType, contentBase64 }` for raw byte transport from slack-app to agent-service
+- **`ParsedDocument` shared type** — `{ filename, mimeType, text, supported, error? }` for parser pipeline results
+- **Dedicated parser modules** — `text.ts`, `docx.ts` (mammoth), `xlsx.ts` (sheetjs), `pdf.ts` (pdf-parse v2) with unified `parseDocument()` entry point
+- **LangGraph `formatOutput` node** — Graph order: loadContext → parseDocuments → analyzeRequirements → clarifyOrPropose → formatOutput
+- **Requirements Canvas "Documents processed" section** — Per-file parse status (success or error message)
+- **Parser fixtures and tests** — TXT, DOCX, XLSX, text-based PDF, image-only PDF scenarios
+- **Slack-native memory verification** — Confirms full canvas markdown on re-invoke; no vector store dependencies
+
+### Changed
+
+- **slack-app agent client** — Sends `FilePayload[]` with base64 raw bytes (no parsing in Deno adapter)
+- **agent-service HTTP decode** — Accepts `files[].contentBase64` (legacy `documents[].content` still supported)
+- **PDF handling** — Image-only/scanned PDFs rejected gracefully with clear error message
+
+### Deferred (phase 2)
+
+- External memory (qdrant, supermemory, gbrain)
+- Python parser sidecar (markitdown, marker) for complex PDFs and OCR
+
+## GitHub Actions deploy config (2026-08-04)
+
+### Added
+
+- **GitHub Actions deploy workflow** — `.github/workflows/deploy.yml` deploys agent-service (Render env sync + deploy hook + health check) then slack-app (`slack env set` + `slack deploy`)
+- **Render blueprint** — `render.yaml` for agent-service web service
+- **Slack-app env wiring** — `invoke_agent` reads `AGENT_SERVICE_URL` from deploy environment; manifest derives `outgoingDomains` from the same URL
+- **Config tests** — `resolveAgentServiceUrl` and `buildOutgoingDomains` unit tests
+
+### Changed
+
+- **Configuration source of truth** — GitHub Secrets/Variables replace manual Render dashboard + Slack CLI setup for deployed environments
+- **Documentation** — README and infrastructure checklist updated with GitHub Secrets inventory and workflow trigger instructions
+
 ## TES Slack Process MVP (2026-08-04)
 
 ### Added
@@ -18,3 +55,4 @@
 ### Review gate
 
 Deliverables are never written to the Deliverables List without explicit user acceptance via Block Kit buttons.
+

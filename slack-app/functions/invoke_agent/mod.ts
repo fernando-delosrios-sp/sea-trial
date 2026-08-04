@@ -2,8 +2,10 @@ import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod
 import type { DocumentInput, TesEventContext } from "@tes/shared/types/index.ts";
 import {
   buildProposalBlocks,
+  buildInvokeAgentRequest,
   callRequirementsAgent,
   onboardingGateMessage,
+  resolveAgentServiceUrl,
 } from "../../lib/agent-client.ts";
 import { deserializeEventContext } from "../../lib/event-context.ts";
 import { shouldProceedWithAgent } from "../../lib/agent-gate.ts";
@@ -25,7 +27,6 @@ export const InvokeAgentFunction = DefineFunction({
         type: Schema.types.array,
         items: { type: Schema.types.string },
       },
-      agent_service_url: { type: Schema.types.string },
     },
     required: [
       "channel_id",
@@ -33,7 +34,6 @@ export const InvokeAgentFunction = DefineFunction({
       "message_ts",
       "dashboard_canvas_content",
       "requirements_canvas_content",
-      "agent_service_url",
     ],
   },
   output_parameters: {
@@ -46,7 +46,7 @@ export const InvokeAgentFunction = DefineFunction({
 
 export default SlackFunction(
   InvokeAgentFunction,
-  async ({ inputs, client }) => {
+  async ({ inputs, client, env }) => {
     const context = deserializeEventContext(inputs.dashboard_canvas_content);
 
     if (!shouldProceedWithAgent(context)) {
@@ -57,6 +57,17 @@ export default SlackFunction(
       });
       return {
         outputs: { thread_ts: inputs.thread_ts ?? inputs.message_ts },
+      };
+    }
+
+    let agentServiceUrl: string;
+    try {
+      agentServiceUrl = resolveAgentServiceUrl(env);
+    } catch (error) {
+      return {
+        error: error instanceof Error
+          ? error.message
+          : "AGENT_SERVICE_URL is required.",
       };
     }
 
@@ -83,13 +94,15 @@ export default SlackFunction(
       });
     }
 
-    const response = await callRequirementsAgent(inputs.agent_service_url, {
-      context: context as TesEventContext,
-      requirementsCanvasMarkdown: inputs.requirements_canvas_content,
-      existingDeliverables: [],
-      documents,
-      threadHistory: inputs.thread_ts,
-    });
+    const response = await callRequirementsAgent(
+      agentServiceUrl,
+      buildInvokeAgentRequest(
+        context as TesEventContext,
+        inputs.requirements_canvas_content,
+        documents,
+        inputs.thread_ts,
+      ),
+    );
 
     await replaceCanvasContent(
       client,
@@ -114,3 +127,4 @@ export default SlackFunction(
     };
   },
 );
+

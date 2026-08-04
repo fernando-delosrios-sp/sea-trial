@@ -1,16 +1,22 @@
 import type {
   DeliverableProposal,
+  ParsedDocument,
   ProcessRequirementsRequest,
   ProcessRequirementsResponse,
   TesEventContext,
 } from "@tes-event-process/shared";
 import { parseDocument } from "../../parsers/index.js";
 import { getLlmConfig } from "../../config/llm.js";
+import { runSemanticAnalysis } from "./semantic-analyzer.js";
+import { extractDeliverables } from "./extract-deliverables.js";
+
+export { extractDeliverables };
 
 export interface AgentState {
   context: TesEventContext;
   requirementsCanvasMarkdown: string;
   existingDeliverables: DeliverableProposal[];
+  parsedDocuments: ParsedDocument[];
   parsedTexts: string[];
   proposals: DeliverableProposal[];
   agentMessage: string;
@@ -29,6 +35,7 @@ export function loadContext(
     context: request.context,
     requirementsCanvasMarkdown: request.requirementsCanvasMarkdown,
     existingDeliverables: request.existingDeliverables,
+    parsedDocuments: [],
     parsedTexts: [],
     proposals: [],
     agentMessage: "",
@@ -39,12 +46,13 @@ export function loadContext(
 }
 
 /**
- * Parses all uploaded documents in the request.
+ * Parses all uploaded documents without invoking an LLM.
  */
 export async function parseDocuments(
   state: AgentState,
   documents: ProcessRequirementsRequest["documents"],
 ): Promise<AgentState> {
+  const parsedDocuments: ParsedDocument[] = [];
   const parsedTexts: string[] = [];
 
   for (const doc of documents) {
@@ -54,67 +62,31 @@ export async function parseDocuments(
       content: doc.content,
     });
 
+    parsedDocuments.push(result);
+
     if (result.supported && result.text) {
       parsedTexts.push(`[${result.filename}]\n${result.text}`);
     }
   }
 
-  return { ...state, parsedTexts };
+  return { ...state, parsedDocuments, parsedTexts };
 }
 
-const DELIVERABLE_PATTERN =
-  /(?:deliverable|requirement|task|scope)[:\s]+(.+)/gi;
 
 /**
- * Extracts explicit deliverables from parsed text without merging distinct items.
+ * Analyzes parsed text via LLM semantic extraction (no format parsing).
  */
-export function extractDeliverables(
-  texts: string[],
-  derivedComponents: string[],
-): { proposals: DeliverableProposal[]; outOfScope: string[] } {
-  const proposals: DeliverableProposal[] = [];
-  const outOfScope: string[] = [];
-  let taskCounter = 1;
-
-  for (const text of texts) {
-    const lines = text.split("\n").filter((l) => l.trim().length > 10);
-
-    for (const line of lines) {
-      const isOutOfScope = !derivedComponents.some((c) =>
-        line.toLowerCase().includes(c.toLowerCase())
-      ) && derivedComponents.length > 0 && line.includes("SAP");
-
-      if (isOutOfScope) {
-        outOfScope.push(line.trim());
-        continue;
-      }
-
-      if (
-        line.toLowerCase().includes("deliverable") ||
-        line.toLowerCase().includes("implement") ||
-        line.toLowerCase().includes("configure")
-      ) {
-        proposals.push({
-          taskId: `TES-${String(taskCounter++).padStart(3, "0")}`,
-          category: "Requirements",
-          requirements: line.trim(),
-          sourceDocRef: text.slice(0, 50),
-          suggestedStatus: "Not started",
-        });
-      }
-    }
-  }
-
-  return { proposals, outOfScope };
-}
-
-/**
- * Analyzes requirements and produces deliverable proposals.
- */
-export function analyzeRequirements(state: AgentState): AgentState {
-  const { proposals, outOfScope } = extractDeliverables(
-    state.parsedTexts,
-    state.context.derivedComponents,
+export async function analyzeRequirements(
+  state: AgentState,
+): Promise<AgentState> {
+  const config = getLlmConfig();
+  const { proposals, outOfScope } = await runSemanticAnalysis(
+    {
+      parsedTexts: state.parsedTexts,
+      requirementsCanvasMarkdown: state.requirementsCanvasMarkdown,
+      derivedComponents: state.context.derivedComponents,
+    },
+    config,
   );
 
   return {
@@ -128,6 +100,23 @@ export function analyzeRequirements(state: AgentState): AgentState {
  * Determines whether clarification is needed or produces final proposals.
  */
 export function clarifyOrPropose(state: AgentState): AgentState {
+  if (state.parsedTexts.length === 0 && state.parsedDocuments.length > 0) {
+    const errors = state.parsedDocuments
+      .filter((d) => !d.supported)
+      .map((d) => `${d.filename}: ${d.error ?? "unsupported"}`);
+
+    return {
+      ...state,
+      needsClarification: true,
+      clarificationQuestions: errors.length
+        ? [`Could not parse uploaded files: ${errors.join("; ")}`]
+        : [
+          "No readable content was found in the uploaded documents. Please upload PDF, DOCX, XLSX, or text files with explicit requirements.",
+        ],
+      agentMessage: "I need more information to extract requirements.",
+    };
+  }
+
   if (state.parsedTexts.length === 0) {
     return {
       ...state,
@@ -150,20 +139,12 @@ export function clarifyOrPropose(state: AgentState): AgentState {
     };
   }
 
-  const canvasMarkdown = buildUpdatedCanvas(
-    state.requirementsCanvasMarkdown,
-    state.parsedTexts,
-    state.proposals,
-    state.outOfScopeItems,
-  );
-
   const scopeNote = state.outOfScopeItems.length
     ? `\n\n⚠️ *Out of scope:* ${state.outOfScopeItems.join("; ")}`
     : "";
 
   return {
     ...state,
-    requirementsCanvasMarkdown: canvasMarkdown,
     agentMessage:
       `Extracted ${state.proposals.length} deliverable proposal(s). Review and Accept/Reject below.${scopeNote}`,
     needsClarification: false,
@@ -171,16 +152,57 @@ export function clarifyOrPropose(state: AgentState): AgentState {
 }
 
 /**
+ * Formats output including Requirements Canvas updates.
+ */
+export function formatOutput(state: AgentState): AgentState {
+  const canvasMarkdown = buildUpdatedCanvas(
+    state.requirementsCanvasMarkdown,
+    state.parsedDocuments,
+    state.parsedTexts,
+    state.proposals,
+    state.outOfScopeItems,
+  );
+
+  return {
+    ...state,
+    requirementsCanvasMarkdown: canvasMarkdown,
+  };
+}
+
+/**
+ * Builds the "Documents processed" section lines from parse results.
+ */
+export function buildDocumentsProcessedSection(
+  parsedDocuments: ParsedDocument[],
+): string {
+  if (parsedDocuments.length === 0) {
+    return "";
+  }
+
+  const lines = parsedDocuments.map((doc) => {
+    if (doc.supported) {
+      return `- **${doc.filename}** (${doc.mimeType}): parsed successfully`;
+    }
+    return `- **${doc.filename}** (${doc.mimeType}): ${doc.error ?? "unsupported"}`;
+  });
+
+  return lines.join("\n");
+}
+
+/**
  * Builds updated Requirements canvas markdown preserving prior content.
  */
 export function buildUpdatedCanvas(
   existingMarkdown: string,
+  parsedDocuments: ParsedDocument[],
   parsedTexts: string[],
   proposals: DeliverableProposal[],
   outOfScope: string[],
 ): string {
   const timestamp = new Date().toISOString();
-  const sessionEntry = `\n- **${timestamp}:** Processed ${parsedTexts.length} document(s), found ${proposals.length} candidate(s).`;
+  const sessionEntry = `\n- **${timestamp}:** Processed ${parsedDocuments.length || parsedTexts.length} document(s), found ${proposals.length} candidate(s).`;
+
+  const documentsSection = buildDocumentsProcessedSection(parsedDocuments);
 
   const candidatesSection = proposals
     .map(
@@ -202,6 +224,17 @@ export function buildUpdatedCanvas(
     );
   } else {
     updated += `\n\n## Session Log${sessionEntry}`;
+  }
+
+  if (documentsSection) {
+    if (updated.includes("## Documents processed")) {
+      updated = updated.replace(
+        "## Documents processed",
+        `## Documents processed\n${documentsSection}\n`,
+      );
+    } else {
+      updated += `\n\n## Documents processed\n${documentsSection}`;
+    }
   }
 
   if (candidatesSection) {
@@ -241,8 +274,9 @@ export async function runRequirementsAgent(
 ): Promise<ProcessRequirementsResponse> {
   let state = loadContext(request);
   state = await parseDocuments(state, request.documents);
-  state = analyzeRequirements(state);
+  state = await analyzeRequirements(state);
   state = clarifyOrPropose(state);
+  state = formatOutput(state);
 
   return {
     canvasMarkdown: state.requirementsCanvasMarkdown,

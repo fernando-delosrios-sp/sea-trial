@@ -1,11 +1,13 @@
 # Changelog
 
-## Unreleased
+## 2026-08-04
 
 ### 🐛 Fixes
 
 - **Empty document parsing** — DOCX, XLSX, and whitespace-only text files with no extractable content are now reported as parse failures with a clear per-file error, keeping the Requirements Canvas "Documents processed" section and agent clarification messages in sync
 - **Requirements Canvas Out of Scope duplication** — `buildUpdatedCanvas` now replaces an existing `## Out of Scope` section on subsequent agent runs instead of appending a duplicate header
+
+---
 
 ## Document Parsing and Memory Architecture (2026-08-04)
 
@@ -62,5 +64,6 @@
 ### Review gate
 
 Deliverables are never written to the Deliverables List without explicit user acceptance via Block Kit buttons.
+
 
 

@@ -124,6 +124,51 @@ describe("second session extends canvas", () => {
 
     expect((updated.match(/## Out of Scope/g) ?? []).length).toBe(1);
     expect(updated).toContain("Legacy mainframe connector");
+    expect(updated).not.toContain("SAP HR connector integration");
+  });
+
+  it("replaces Documents processed section content on subsequent runs", () => {
+    const existing =
+      "# Requirements\n\n## Documents processed\n- **old.pdf** (application/pdf): parsed successfully\n";
+    const parsedDocuments = [{
+      filename: "new.pdf",
+      mimeType: "application/pdf",
+      text: "content",
+      supported: true,
+    }];
+    const updated = buildUpdatedCanvas(
+      existing,
+      parsedDocuments,
+      ["content"],
+      [],
+      [],
+    );
+
+    expect(updated).toContain("new.pdf");
+    expect(updated).not.toContain("old.pdf");
+    expect((updated.match(/## Documents processed/g) ?? []).length).toBe(1);
+  });
+
+  it("replaces Deliverable Candidates section content on subsequent runs", () => {
+    const existing =
+      "# Requirements\n\n## Deliverable Candidates\n- **TES-001** [candidate]: Old item (Req)\n";
+    const updated = buildUpdatedCanvas(
+      existing,
+      [],
+      ["text"],
+      [{
+        taskId: "TES-002",
+        category: "Req",
+        requirements: "New item",
+        sourceDocRef: "doc",
+        suggestedStatus: "Not started",
+      }],
+      [],
+    );
+
+    expect(updated).toContain("TES-002");
+    expect(updated).not.toContain("TES-001");
+    expect((updated.match(/## Deliverable Candidates/g) ?? []).length).toBe(1);
   });
 
   it("appends Out of Scope section on first run", () => {
@@ -288,5 +333,3 @@ describe("no external memory dependency", () => {
     expect(depNames).not.toContain("gbrain");
   });
 });
-
-

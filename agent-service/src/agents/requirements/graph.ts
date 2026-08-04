@@ -190,6 +190,30 @@ export function buildDocumentsProcessedSection(
 }
 
 /**
+ * Replaces an entire canvas section (header through the next ## header or EOF),
+ * or appends the section when the header is not present.
+ */
+export function replaceOrAppendCanvasSection(
+  markdown: string,
+  header: string,
+  body: string,
+): string {
+  const headerLine = header.startsWith("## ") ? header : `## ${header}`;
+  const escapedHeader = headerLine.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const sectionRegex = new RegExp(
+    `^${escapedHeader}\\n[\\s\\S]*?(?=\\n## |$)`,
+    "m",
+  );
+  const section = body ? `${headerLine}\n${body}\n` : `${headerLine}\n`;
+
+  if (sectionRegex.test(markdown)) {
+    return markdown.replace(sectionRegex, section);
+  }
+
+  return `${markdown.trimEnd()}\n\n${section}`;
+}
+
+/**
  * Builds updated Requirements canvas markdown preserving prior content.
  */
 export function buildUpdatedCanvas(
@@ -227,48 +251,36 @@ export function buildUpdatedCanvas(
   }
 
   if (documentsSection) {
-    if (updated.includes("## Documents processed")) {
-      updated = updated.replace(
-        "## Documents processed",
-        `## Documents processed\n${documentsSection}\n`,
-      );
-    } else {
-      updated += `\n\n## Documents processed\n${documentsSection}`;
-    }
+    updated = replaceOrAppendCanvasSection(
+      updated,
+      "## Documents processed",
+      documentsSection,
+    );
   }
 
   if (candidatesSection) {
-    if (updated.includes("## Deliverable Candidates")) {
-      updated = updated.replace(
-        "## Deliverable Candidates",
-        `## Deliverable Candidates\n${candidatesSection}\n`,
-      );
-    } else {
-      updated += `\n\n## Deliverable Candidates\n${candidatesSection}`;
-    }
+    updated = replaceOrAppendCanvasSection(
+      updated,
+      "## Deliverable Candidates",
+      candidatesSection,
+    );
   }
 
   if (extractedSection) {
-    if (updated.includes("## Extracted Requirements")) {
-      updated = updated.replace(
-        "## Extracted Requirements",
-        `## Extracted Requirements\n${extractedSection}\n`,
-      );
-    } else {
-      updated += `\n\n## Extracted Requirements\n${extractedSection}`;
-    }
+    updated = replaceOrAppendCanvasSection(
+      updated,
+      "## Extracted Requirements",
+      extractedSection,
+    );
   }
 
   if (outOfScope.length) {
     const outOfScopeSection = outOfScope.map((o) => `- ${o}`).join("\n");
-    if (updated.includes("## Out of Scope")) {
-      updated = updated.replace(
-        "## Out of Scope",
-        `## Out of Scope\n${outOfScopeSection}\n`,
-      );
-    } else {
-      updated += `\n\n## Out of Scope\n${outOfScopeSection}`;
-    }
+    updated = replaceOrAppendCanvasSection(
+      updated,
+      "## Out of Scope",
+      outOfScopeSection,
+    );
   }
 
   return updated;

@@ -260,7 +260,15 @@ export function buildUpdatedCanvas(
   }
 
   if (outOfScope.length) {
-    updated += `\n\n## Out of Scope\n${outOfScope.map((o) => `- ${o}`).join("\n")}`;
+    const outOfScopeSection = outOfScope.map((o) => `- ${o}`).join("\n");
+    if (updated.includes("## Out of Scope")) {
+      updated = updated.replace(
+        "## Out of Scope",
+        `## Out of Scope\n${outOfScopeSection}\n`,
+      );
+    } else {
+      updated += `\n\n## Out of Scope\n${outOfScopeSection}`;
+    }
   }
 
   return updated;
@@ -293,3 +301,4 @@ export async function runRequirementsAgent(
 export function validateLlmConfig(): void {
   getLlmConfig();
 }
+

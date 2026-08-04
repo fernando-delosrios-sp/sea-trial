@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import type { ProcessRequirementsRequest, TesEventContext } from "@tes-event-process/shared";
+import { NO_EXTRACTABLE_TEXT_ERROR } from "../src/parsers/index.js";
 import {
   analyzeRequirements,
   buildDocumentsProcessedSection,
@@ -109,6 +110,36 @@ describe("second session extends canvas", () => {
     expect(updated).toContain("TES-001");
     expect(updated).toContain("## Documents processed");
   });
+
+  it("replaces Out of Scope section instead of duplicating header", () => {
+    const existing =
+      "# Requirements\n\n## Out of Scope\n- SAP HR connector integration\n";
+    const updated = buildUpdatedCanvas(
+      existing,
+      [],
+      [],
+      [],
+      ["Legacy mainframe connector"],
+    );
+
+    expect((updated.match(/## Out of Scope/g) ?? []).length).toBe(1);
+    expect(updated).toContain("Legacy mainframe connector");
+  });
+
+  it("appends Out of Scope section on first run", () => {
+    const existing = "# Requirements\n\n## Session Log\n";
+    const updated = buildUpdatedCanvas(
+      existing,
+      [],
+      [],
+      [],
+      ["SAP HR connector integration"],
+    );
+
+    expect(updated).toContain("## Out of Scope");
+    expect(updated).toContain("SAP HR connector integration");
+    expect((updated.match(/## Out of Scope/g) ?? []).length).toBe(1);
+  });
 });
 
 describe("runRequirementsAgent", () => {
@@ -162,6 +193,32 @@ describe("parseDocuments", () => {
     const updated = await parseDocuments(state, documents);
     expect(updated.parsedTexts.length).toBe(1);
     expect(updated.parsedDocuments.length).toBe(1);
+  });
+
+  it("reports empty documents as parse failures in clarifyOrPropose", () => {
+    const parsedDocuments = [{
+      filename: "empty.docx",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      text: "",
+      supported: false,
+      error: NO_EXTRACTABLE_TEXT_ERROR,
+    }];
+    const state = {
+      ...loadContext(makeRequest()),
+      parsedDocuments,
+      parsedTexts: [],
+    };
+
+    const clarified = clarifyOrPropose(state);
+    expect(clarified.needsClarification).toBe(true);
+    expect(clarified.clarificationQuestions?.[0]).toContain("empty.docx");
+    expect(clarified.clarificationQuestions?.[0]).toContain(NO_EXTRACTABLE_TEXT_ERROR);
+
+    const section = buildDocumentsProcessedSection(parsedDocuments);
+    expect(section).toContain("empty.docx");
+    expect(section).not.toContain("parsed successfully");
+    expect(section).toContain(NO_EXTRACTABLE_TEXT_ERROR);
   });
 });
 
@@ -231,4 +288,5 @@ describe("no external memory dependency", () => {
     expect(depNames).not.toContain("gbrain");
   });
 });
+
 

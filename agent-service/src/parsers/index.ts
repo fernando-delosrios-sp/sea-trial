@@ -6,6 +6,9 @@ import { parseXlsx } from "./xlsx.js";
 
 const SUPPORTED_EXTENSIONS = new Set([".pdf", ".docx", ".xlsx", ".txt", ".md"]);
 
+export const NO_EXTRACTABLE_TEXT_ERROR =
+  "Document contains no extractable text";
+
 function getExtension(filename: string): string {
   const dot = filename.lastIndexOf(".");
   return dot === -1 ? "" : filename.slice(dot).toLowerCase();
@@ -72,9 +75,19 @@ export async function parseDocument(
         };
     }
 
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return {
+        ...base,
+        text: "",
+        supported: false,
+        error: NO_EXTRACTABLE_TEXT_ERROR,
+      };
+    }
+
     return {
       ...base,
-      text: text.trim(),
+      text: trimmed,
       supported: true,
     };
   } catch (error) {
@@ -88,3 +101,4 @@ export async function parseDocument(
 }
 
 export { parseText } from "./text.js";
+

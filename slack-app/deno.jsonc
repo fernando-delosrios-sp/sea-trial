@@ -1,0 +1,22 @@
+{
+  "tasks": {
+    "test": "deno test --allow-read --allow-env",
+    "lint": "deno lint",
+    "fmt": "deno fmt"
+  },
+  "imports": {
+    "@slack/deno-slack-sdk/": "https://deno.land/x/deno_slack_sdk@2.3.0/",
+    "@slack/deno-slack-api/": "https://deno.land/x/deno_slack_api@2.6.0/",
+    "@tes/shared/": "../packages/shared/src/"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "fmt": {
+    "exclude": ["../node_modules"]
+  },
+  "lint": {
+    "exclude": ["../node_modules"]
+  }
+}

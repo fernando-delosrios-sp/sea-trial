@@ -1,0 +1,15 @@
+# Local secrets and env
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
+.deno/
+
+# Worktrees
+.worktrees/
+
+# OS
+.DS_Store

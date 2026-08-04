@@ -1,0 +1,71 @@
+schema: superpowers-bridge
+
+context: |
+  Project: TES Event Process — Slack-native TES event delivery platform (MVP).
+
+  Goal: Streamline TES event delivery in Slack with channel provisioning, onboarding,
+  and a Requirements Agent that processes documents into a Requirements Canvas and
+  review-gated Deliverables List items.
+
+  Architecture:
+  - slack-app/ — Deno Slack SDK app on Slack-managed infrastructure (Slack adapter only:
+    channels, modals, canvases, lists, gates, file download, HTTP to agent-service)
+  - agent-service/ — Node.js + TypeScript + LangGraph.js (reasoning engine:
+    document parsing, multi-step agent, TES rules); HTTP endpoint; no Slack API access
+  - packages/shared/ — Canonical TypeScript types for both runtimes (HTTP contract)
+
+  Tech stack: TypeScript throughout, Deno Slack SDK, LangGraph.js, Slack
+  Canvas/List APIs, Node.js 20+ (agent-service only).
+
+  Infrastructure (confirmed 2026-08-04):
+  - Slack Pro workspace for MVP (Canvas, Lists, Slack-managed app deploy)
+  - Enterprise Grid production target
+  - agent-service on Render free tier (MVP); AWS/Azure migration later
+  - LLM: OpenAI-compatible via LLM_API_KEY, LLM_BASE_URL, LLM_MODEL env vars
+  - Reference: docs/tech-stack-requirements.md, openspec/specs/infrastructure/spec.md
+
+  Architecture decisions (confirmed):
+  - Full D3: external agent-service required (all-in-Slack agent rejected — constrains agents)
+  - TypeScript across entire project (Python agent-service rejected)
+  - Document parser implementation deferred (behavior specified in requirements-agent spec)
+
+  Global constraints:
+  - Slack-native state only (canvases, lists, dashboard metadata) — no external DB
+  - Channel naming: #proj-{custom-name}-tes
+  - Agent gate: onboarding must be complete before requirements processing
+  - Agent write gate: never update Deliverables List without explicit user acceptance
+  - Deliverable integrity: preserve explicit deliverables 1:1; never merge
+  - MVP trigger: TES manual shortcut (no Salesforce integration)
+
+  Deliverable statuses (exact): Not started, Not needed, Not doable, In progress,
+  Blocked, Validation required, Accepted, Needs clarification
+
+  Reference plan: .cursor/plans/tes_slack_process_mvp_8be550c5.plan.md
+
+rules:
+  global:
+    - "Always use the changelog-generator skill to maintain and enforce a changelog for all changes."
+    - "New domain terms MUST be added to openspec/specs/ubiquitous-language/spec.md before archive."
+    - "Shared types live in packages/shared; both slack-app and agent-service MUST align with them."
+  brainstorm:
+    - "Capture actors (TES, AE, SE), Slack object model, agent rules, and MVP boundaries."
+    - "Do not write to docs/superpowers/specs/ — output goes to openspec/changes/<name>/brainstorm.md."
+  proposal:
+    - "Map capabilities to domain specs: event-channel, onboarding, requirements-agent, deliverables."
+    - "List explicit out-of-MVP scope items from the plan."
+  design:
+    - "Document Deno Slack SDK vs Node agent-service boundary and Slack-native state model."
+    - "Include risks: API limitations on dev tenant, doc processing timeouts, shared types across runtimes."
+  specs:
+    - "Use Gherkin GIVEN/WHEN/THEN scenarios with SHALL/MUST normative language."
+    - "Cover agent gates (onboarding complete, review-before-write, no-merge rule)."
+  tasks:
+    - "Follow monorepo layout: slack-app/, agent-service/, packages/shared/."
+    - "Include Documentation and Changelog closing sections."
+  plan:
+    - "Micro-steps with TDD; record canonical test commands for deno task test and npm test."
+    - "Do not write to docs/superpowers/plans/ — output goes to openspec/changes/<name>/plan.md."
+  verify:
+    - "Map every scenario to an automated test."
+  retrospective:
+    - "Capture skill compliance and promote candidates for workflow improvements."

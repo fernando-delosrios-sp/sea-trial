@@ -1,0 +1,89 @@
+import { createServer } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { fileURLToPath } from "node:url";
+import type { ProcessRequirementsRequest } from "@tes-event-process/shared";
+import {
+  runRequirementsAgent,
+  validateLlmConfig,
+} from "./agents/requirements/graph.js";
+import { runRequirementsGraph } from "./agents/requirements/langgraph.js";
+
+const PORT = Number(process.env.PORT ?? 3000);
+
+function sendJson(res: ServerResponse, status: number, body: unknown): void {
+  res.writeHead(status, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(body));
+}
+
+async function readBody(req: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+function decodeDocuments(
+  body: Record<string, unknown>,
+): ProcessRequirementsRequest {
+  const documents = (body.documents as Array<{
+    filename: string;
+    mimeType: string;
+    content: string;
+  }> ?? []).map((doc) => ({
+    filename: doc.filename,
+    mimeType: doc.mimeType,
+    content: Uint8Array.from(atob(doc.content), (c) => c.charCodeAt(0)),
+  }));
+
+  return {
+    ...(body as unknown as ProcessRequirementsRequest),
+    documents,
+  };
+}
+
+function route(req: IncomingMessage, res: ServerResponse): void {
+  void handleRoute(req, res);
+}
+
+async function handleRoute(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  const url = req.url ?? "/";
+  const method = req.method ?? "GET";
+
+  if (method === "GET" && url === "/health") {
+    sendJson(res, 200, { status: "ok" });
+    return;
+  }
+
+  if (method === "POST" && url === "/agents/requirements/process") {
+    try {
+      validateLlmConfig();
+      const raw = await readBody(req);
+      const body = JSON.parse(raw) as Record<string, unknown>;
+      const request = decodeDocuments(body);
+      const response = await runRequirementsGraph(request);
+      sendJson(res, 200, response);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      sendJson(res, 500, { error: message });
+    }
+    return;
+  }
+
+  sendJson(res, 404, { error: "Not found" });
+}
+
+export function createAppServer() {
+  return createServer(route);
+}
+
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  createAppServer().listen(PORT, () => {
+    console.log(`agent-service listening on port ${PORT}`);
+  });
+}

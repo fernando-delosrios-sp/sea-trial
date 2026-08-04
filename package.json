@@ -1,0 +1,20 @@
+{
+  "name": "tes-event-process",
+  "private": true,
+  "workspaces": [
+    "agent-service",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev:agent": "npm run dev -w @tes-event-process/agent-service"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true
+  }
+}

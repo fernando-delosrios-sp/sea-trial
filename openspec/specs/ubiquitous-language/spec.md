@@ -1,0 +1,133 @@
+# Ubiquitous Language
+
+## Purpose
+
+Shared domain vocabulary for TES Event Process. All specs, design docs, code identifiers,
+and user-facing copy MUST align with the terms defined here.
+
+## Requirements
+
+### Requirement: Glossary maintenance
+
+The project SHALL maintain an authoritative glossary of domain terms with unambiguous
+definitions, preferred spellings, and known aliases.
+
+#### Scenario: New term introduced in a change
+
+- **GIVEN** a change proposal introduces a new domain concept or renames an existing one
+- **WHEN** the change is approved for implementation
+- **THEN** the term MUST be added or updated in this spec before the change archives
+
+#### Scenario: Term used in a spec
+
+- **GIVEN** a capability spec references a domain noun or verb
+- **WHEN** the term is not yet defined in this glossary
+- **THEN** the author MUST add the definition here or reuse an existing term instead
+
+### Requirement: Consistent naming
+
+Implementation artifacts (types, functions, API fields, Slack labels)
+SHALL use glossary terms verbatim unless a documented alias applies.
+
+#### Scenario: Code review against glossary
+
+- **GIVEN** an implementation uses a domain label visible to other systems or users
+- **WHEN** the label differs from the glossary preferred spelling without an alias entry
+- **THEN** the implementation MUST be corrected or the glossary MUST be updated first
+
+### Requirement: Bounded context boundaries
+
+When the same word means different things in different areas, each meaning MUST be
+listed as a separate entry with its bounded context noted.
+
+#### Scenario: Homonym disambiguation
+
+- **GIVEN** two subsystems use the same word with different meanings
+- **WHEN** both meanings appear in specs or code
+- **THEN** each meaning MUST have its own glossary entry naming the bounded context
+
+## Term entries
+
+### Term: TES Event Channel
+**Context**: event-channel
+**Definition**: A Slack channel provisioned for a TES engagement, named `#proj-{custom-name}-tes`, containing seeded canvases, lists, and pinned index.
+**Aliases**: TES channel, event channel
+**Notes**: Created via the "Create TES Event" global shortcut.
+
+### Term: Dashboard Canvas
+**Context**: event-channel
+**Definition**: The event hub canvas holding onboarding data, stakeholders, dates, status, and the `TesEventContext` metadata block.
+**Aliases**: dashboard
+**Notes**: Stores object IDs in a JSON metadata block at the bottom.
+
+### Term: Requirements Canvas
+**Context**: requirements-agent
+**Definition**: Living requirement memory maintained by the Requirements Agent between sessions; sections include Scope, Documents processed, Extracted requirements, Deliverable candidates, Analysis notes, Open questions, Session log.
+**Aliases**: requirements canvas
+**Notes**: Agent updates this; must not overwrite prior work across sessions.
+
+### Term: Deliverables List
+**Context**: deliverables
+**Definition**: Slack List tracking accepted delivery items with core fields: Task ID, Assignee, Status, Situation, Category, Requirements, Due date, Deliverable (canvas link).
+**Aliases**: deliverables list
+**Notes**: Rows are written only after explicit user acceptance via the review gate.
+
+### Term: Deliverable Status
+**Context**: deliverables
+**Definition**: One of eight exact statuses: Not started, Not needed, Not doable, In progress, Blocked, Validation required, Accepted, Needs clarification.
+**Aliases**: status
+**Notes**: Must match exactly in code and Slack UI.
+
+### Term: TesEventContext
+**Context**: global
+**Definition**: Canonical shared type holding channel ID, project name, onboarding state, derived components, and IDs for all seeded Slack objects.
+**Aliases**: event context
+**Notes**: Defined in `packages/shared`; persisted in Dashboard canvas metadata.
+
+### Term: Onboarding
+**Context**: onboarding
+**Definition**: AE/SE modal flow collecting customer context, SailPoint suite selection, and stakeholders; completion sets `onboardingComplete: true` and opens the agent gate.
+**Aliases**: onboarding form
+**Notes**: Triggered via pinned index button or `/tes-onboard`.
+
+### Term: Agent Gate
+**Context**: onboarding
+**Definition**: Guard that blocks Requirements Agent invocation until onboarding is complete (SailPoint suite selected).
+**Aliases**: onboarding gate
+**Notes**: Enforced in slack-app before calling agent-service.
+
+### Term: Review Gate
+**Context**: deliverables
+**Definition**: User-facing Accept/Edit/Reject flow on agent proposals; Deliverables List writes occur only on Accept.
+**Aliases**: acceptance gate, write gate
+**Notes**: Agent MUST NOT write to Deliverables List without explicit acceptance.
+
+### Term: Requirements Agent
+**Context**: requirements-agent
+**Definition**: LangGraph.js agent in agent-service that parses documents, extracts requirements, proposes deliverables, and updates the Requirements Canvas.
+**Aliases**: agent
+**Notes**: Invoked via HTTP POST `/agents/requirements/process`.
+
+### Term: Deliverable Proposal
+**Context**: requirements-agent
+**Definition**: Structured agent output proposing a deliverable candidate with task ID, category, requirements, source doc ref, similarity notes, suggested status, and open questions.
+**Aliases**: proposal
+**Notes**: Displayed in Block Kit thread; promoted to list only via review gate.
+
+### Term: Delivery Template Canvas
+**Context**: deliverables
+**Definition**: On-demand canvas created when a deliverable is accepted, pre-filled from Requirements canvas and proposal; linked in the Deliverables List Deliverable field.
+**Aliases**: delivery canvas
+**Notes**: Not pre-created for empty rows.
+
+### Term: No-merge Rule
+**Context**: requirements-agent
+**Definition**: Agent integrity rule: explicit deliverables in input documents MUST be preserved 1:1; the agent adds similarity analysis notes but MUST NOT merge distinct deliverables.
+**Aliases**: deliverable integrity
+**Notes**: Covered by automated agent tests.
+
+### Term: SailPoint Suite
+**Context**: onboarding
+**Definition**: Product suite selected during onboarding (e.g., Identity Security Cloud) used to derive technical components via static mapping.
+**Aliases**: suite
+**Notes**: Mapped in `slack-app/lib/suite-components.ts`.

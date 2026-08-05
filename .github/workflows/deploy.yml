@@ -151,12 +151,20 @@ jobs:
           OTEL_SERVICE_NAME: tes-slack-app
         run: |
           set -euo pipefail
-          echo "AGENT_SERVICE_URL=$AGENT_SERVICE_URL" >> .env
-          echo "OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}" >> .env
+          cat > .env <<EOF
+          AGENT_SERVICE_URL=$AGENT_SERVICE_URL
+          OTEL_LOGS_ENABLED=${OTEL_LOGS_ENABLED:-false}
+          OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+          OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS:-}
+          OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-tes-slack-app}
+          SLACK_BOT_TOKEN=
+          SLACK_APP_TOKEN=
+          EOF
           slack env set AGENT_SERVICE_URL "$AGENT_SERVICE_URL"
           slack env set OTEL_EXPORTER_OTLP_ENDPOINT "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
           slack env set OTEL_EXPORTER_OTLP_HEADERS "${OTEL_EXPORTER_OTLP_HEADERS:-}"
           slack env set OTEL_LOGS_ENABLED "${OTEL_LOGS_ENABLED:-false}"
           slack env set OTEL_SERVICE_NAME "${OTEL_SERVICE_NAME:-tes-slack-app}"
           slack deploy -s --token "$SLACK_SERVICE_TOKEN"
+
 

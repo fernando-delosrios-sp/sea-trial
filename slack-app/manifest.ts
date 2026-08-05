@@ -1,5 +1,5 @@
 import { Manifest } from "@slack/deno-slack-sdk/mod.ts";
-import "std/dotenv/load.ts";
+import { loadSync } from "std/dotenv/mod.ts";
 import ProvisionChannelFunction from "./functions/provision_channel/mod.ts";
 import SeedChannelObjectsFunction from "./functions/seed_channel_objects/mod.ts";
 import OpenOnboardingFunction from "./functions/open_onboarding/mod.ts";
@@ -9,6 +9,8 @@ import AcceptProposalsFunction from "./functions/accept_proposals/mod.ts";
 import HandleThreadReplyFunction from "./functions/handle_thread_reply/mod.ts";
 import CreateTesEventWorkflow from "./workflows/create_tes_event.ts";
 import { buildOutgoingDomains } from "./lib/outgoing-domains.ts";
+
+loadSync({ export: true, allowEmptyValues: true });
 
 export default Manifest({
   name: "tes-event-process",
@@ -40,5 +42,6 @@ export default Manifest({
     "lists:write",
   ],
 });
+
 
 

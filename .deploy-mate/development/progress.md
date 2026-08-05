@@ -1,6 +1,6 @@
 # deploy-mate progress — development
 
-Started: 2025-08-05 (re-run)
+Started: 2026-08-05 (re-run)
 Status: complete
 
 ## Phase checklist
@@ -19,7 +19,7 @@ Status: complete
 |-------|------|-----------|-----------|---------|-------------|
 | 1 | 2026-08-05 | 15/15 | 13/15 | 0 | placeholders accepted for local-dev-only tokens |
 
-## Re-run delta (2025-08-05)
+## Re-run delta (2026-08-05)
 | Section | Status |
 |---------|--------|
 | architecture.md | new |
@@ -35,3 +35,4 @@ Status: complete
 | `configuration.md` | 15 vars documented + collected | 2026-08-05 |
 | `deployment.md` | Deploy strategy + rollback | 2026-08-05 |
 | `.env` | Collected env values (chmod 600) | 2026-08-05 |
+

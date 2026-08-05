@@ -224,7 +224,7 @@ export function buildUpdatedCanvas(
   outOfScope: string[],
 ): string {
   const timestamp = new Date().toISOString();
-  const sessionEntry = `\n- **${timestamp}:** Processed ${parsedDocuments.length || parsedTexts.length} document(s), found ${proposals.length} candidate(s).`;
+  const sessionEntry = `\n- **${timestamp}:** Processed ${parsedDocuments.length} document(s), found ${proposals.length} candidate(s).`;
 
   const documentsSection = buildDocumentsProcessedSection(parsedDocuments);
 
@@ -313,4 +313,5 @@ export async function runRequirementsAgent(
 export function validateLlmConfig(): void {
   getLlmConfig();
 }
+
 

@@ -84,6 +84,37 @@ describe("clarification path", () => {
 });
 
 describe("second session extends canvas", () => {
+  it("session log counts provided documents, not extracted text snippets", () => {
+    const existing = "# Requirements\n";
+    const parsedDocuments = [
+      {
+        filename: "empty.docx",
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        text: "",
+        supported: false,
+        error: NO_EXTRACTABLE_TEXT_ERROR,
+      },
+      {
+        filename: "bad.png",
+        mimeType: "image/png",
+        text: "",
+        supported: false,
+        error: "Unsupported format: .png",
+      },
+    ];
+    const updated = buildUpdatedCanvas(existing, parsedDocuments, [], [], []);
+
+    expect(updated).toMatch(/Processed 2 document\(s\)/);
+  });
+
+  it("does not infer document count from parsedTexts when no documents provided", () => {
+    const existing = "# Requirements\n";
+    const updated = buildUpdatedCanvas(existing, [], ["orphan text snippet"], [], []);
+
+    expect(updated).toMatch(/Processed 0 document\(s\)/);
+  });
+
   it("preserves prior session log entries", () => {
     const existing = "# Requirements\n\n## Session Log\n- **2026-01-01:** First session.\n";
     const parsedDocuments = [{
@@ -333,3 +364,4 @@ describe("no external memory dependency", () => {
     expect(depNames).not.toContain("gbrain");
   });
 });
+

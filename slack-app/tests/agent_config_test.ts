@@ -27,12 +27,16 @@ Deno.test("resolveAgentServiceUrl returns trimmed URL", () => {
   );
 });
 
-Deno.test("buildOutgoingDomains always includes localhost", () => {
+Deno.test("buildOutgoingDomains includes localhost only for local dev", () => {
   assertEquals(buildOutgoingDomains(undefined), ["localhost"]);
+  assertEquals(buildOutgoingDomains("http://localhost:3000"), [
+    "localhost",
+  ]);
 });
 
-Deno.test("buildOutgoingDomains includes agent-service host", () => {
+Deno.test("buildOutgoingDomains includes agent-service host without localhost for remote URLs", () => {
   const domains = buildOutgoingDomains("https://tes-agent.onrender.com");
-  assertEquals(domains.includes("localhost"), true);
+  assertEquals(domains.includes("localhost"), false);
   assertEquals(domains.includes("tes-agent.onrender.com"), true);
 });
+

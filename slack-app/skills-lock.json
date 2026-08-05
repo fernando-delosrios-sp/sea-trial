@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "deploy-mate": {
+      "source": "fernando-delosrios-sp/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/deploy-mate/SKILL.md",
+      "computedHash": "c10da966579649f1eb44e89157e1f099a3ca7d71d642456d971444ec034d0fae"
+    }
+  }
+}

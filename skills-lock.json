@@ -37,6 +37,12 @@
       "skillPath": "skills/engineering/codebase-design/SKILL.md",
       "computedHash": "6d9d51d8caa01633fd00cf87089c5618c982321f942ac69f62565dc001c6b22f"
     },
+    "deploy-mate": {
+      "source": "fernando-delosrios-sp/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/deploy-mate/SKILL.md",
+      "computedHash": "20a7f2e4a5b644373340e564136c4e777afe4772bc46e45c8c78aff5e1d96c6f"
+    },
     "diagnosing-bugs": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",

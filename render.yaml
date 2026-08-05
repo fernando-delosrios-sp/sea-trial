@@ -3,7 +3,7 @@ services:
     name: tes-agent-service
     runtime: node
     rootDir: .
-    buildCommand: npm install && npm run build -w @tes-event-process/agent-service
+    buildCommand: npm install && npm run build
     startCommand: npm run start -w @tes-event-process/agent-service
     healthCheckPath: /health
     envVars:
@@ -21,4 +21,5 @@ services:
         sync: false
       - key: OTEL_SERVICE_NAME
         sync: false
+
 

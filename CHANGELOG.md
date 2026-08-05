@@ -1,5 +1,22 @@
 # Changelog
 
+## Grafana OTLP Logging (2026-08-05)
+
+### Added
+
+- **`packages/observability`** — Shared log event types, correlation ID helpers, redaction utilities, and OTLP JSON payload builder
+- **Grafana Cloud OTLP log push** — Both `agent-service` and `slack-app` export structured logs when `OTEL_LOGS_ENABLED=true`
+- **Cross-service correlation** — slack-app sends `X-Correlation-Id`; agent-service attaches the same ID to all request log records
+- **Deploy wiring** — GitHub Actions syncs OTLP env vars to Render and slack-app; manifest allowlists OTLP gateway hostname
+
+### Changed
+
+- **agent-service** — Lifecycle log events at request, parse, completion, and failure boundaries
+- **slack-app** — `invoke_agent` instrumented with `invoke.started` / `invoke.completed` / `invoke.failed`; flush before function return
+- **GitHub deploy workflow** — Optional validation for OTLP secrets when logging enabled
+
+---
+
 ## 2026-08-04
 
 ### 🐛 Fixes
@@ -64,6 +81,7 @@
 ### Review gate
 
 Deliverables are never written to the Deliverables List without explicit user acceptance via Block Kit buttons.
+
 
 
 

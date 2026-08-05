@@ -13,3 +13,12 @@ services:
         sync: false
       - key: LLM_MODEL
         sync: false
+      - key: OTEL_EXPORTER_OTLP_ENDPOINT
+        sync: false
+      - key: OTEL_EXPORTER_OTLP_HEADERS
+        sync: false
+      - key: OTEL_LOGS_ENABLED
+        sync: false
+      - key: OTEL_SERVICE_NAME
+        sync: false
+

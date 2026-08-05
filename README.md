@@ -7,6 +7,7 @@ TypeScript monorepo for the TES Slack event delivery platform.
 | `slack-app/` | Deno Slack SDK | Slack-managed app (channel provisioning, canvases, lists) |
 | `agent-service/` | Node.js 20+ | Requirements Agent HTTP service |
 | `packages/shared/` | — | Shared TypeScript types for both runtimes |
+| `packages/observability/` | — | Shared log schema, redaction, and OTLP payload helpers |
 
 ## Prerequisites
 
@@ -56,6 +57,7 @@ Configuration is stored in GitHub Secrets and Variables. A manual workflow deplo
 | `SLACK_SERVICE_TOKEN` | Slack CLI service token for `slack deploy` |
 | `RENDER_API_KEY` | Render API key to sync agent-service env vars |
 | `RENDER_DEPLOY_HOOK_URL` | Render deploy hook URL for agent-service |
+| `OTEL_EXPORTER_OTLP_HEADERS` | Grafana Cloud OTLP authorization header (required when logging enabled) |
 
 ### GitHub Variables
 
@@ -65,6 +67,8 @@ Configuration is stored in GitHub Secrets and Variables. A manual workflow deplo
 | `LLM_BASE_URL` | OpenAI-compatible API base URL |
 | `LLM_MODEL` | Model name (e.g. `gpt-4o`) |
 | `RENDER_SERVICE_ID` | Render web service ID for agent-service |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Grafana Cloud OTLP base URL (e.g. `https://otlp-gateway-prod-eu-west-6.grafana.net/otlp`) |
+| `OTEL_LOGS_ENABLED` | Set to `true` to push structured logs from both services (`false` by default) |
 
 ### Trigger a deploy
 
@@ -78,11 +82,25 @@ Re-run the workflow after restoring previous secret/variable values in GitHub. C
 
 Local development still uses gitignored `.env` files — see [agent-service/.env.example](agent-service/.env.example) and [slack-app/.env.example](slack-app/.env.example).
 
+### Observability (Grafana Cloud OTLP)
+
+When `OTEL_LOGS_ENABLED=true`, both services push structured logs to Grafana Cloud via OTLP HTTP. slack-app generates a `correlationId` per invocation and sends it to agent-service as `X-Correlation-Id` so logs can be joined in Explore.
+
+Example Grafana Explore queries:
+
+```
+{service_name="tes-slack-app"} | correlationId="<id-from-log>"
+{service_name="tes-agent-service"} | correlationId="<id-from-log>"
+```
+
+Logs include metadata only (file counts, parse outcomes, durations) — never document content, canvas markdown, or LLM prompts. Rotate Grafana credentials via GitHub Secrets; never commit tokens.
+
 ## Architecture
 
 - **slack-app** — Slack adapter only (triggers, modals, canvas/list CRUD, file download, HTTP to agent-service)
 - **agent-service** — Document parsing, Requirements Agent, TES rules (no Slack API access)
 - **packages/shared** — `TesEventContext`, `DeliverableProposal`, `FilePayload`, `ParsedDocument`, HTTP contract types
+- **packages/observability** — Log event schema, redaction helpers, OTLP JSON payload builder
 
 ### Document parsing (MVP)
 
@@ -120,4 +138,5 @@ All application state lives in Slack canvases and lists.
 - [Infrastructure setup checklist](docs/infrastructure-setup-checklist.md)
 - [Tech stack requirements](docs/tech-stack-requirements.md)
 - [Smoke test checklist](docs/smoke-test-checklist.md)
+
 

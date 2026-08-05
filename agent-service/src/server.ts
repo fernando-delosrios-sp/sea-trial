@@ -1,12 +1,18 @@
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
+import {
+  createCorrelationId,
+  readCorrelationId,
+} from "@tes-event-process/observability";
 import type { ProcessRequirementsRequest } from "@tes-event-process/shared";
 import {
   runRequirementsAgent,
   validateLlmConfig,
 } from "./agents/requirements/graph.js";
 import { runRequirementsGraph } from "./agents/requirements/langgraph.js";
+import { createRequestLogger } from "./observability/logger.js";
+import { requestContext } from "./observability/request-context.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
 
@@ -77,17 +83,42 @@ async function handleRoute(
   }
 
   if (method === "POST" && url === "/agents/requirements/process") {
-    try {
-      validateLlmConfig();
-      const raw = await readBody(req);
-      const body = JSON.parse(raw) as Record<string, unknown>;
-      const request = decodeDocuments(body);
-      const response = await runRequirementsGraph(request);
-      sendJson(res, 200, response);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      sendJson(res, 500, { error: message });
-    }
+    const correlationId = readCorrelationId(req.headers["x-correlation-id"]) ??
+      createCorrelationId();
+    const logger = createRequestLogger(correlationId);
+
+    await requestContext.run({ correlationId, logger }, async () => {
+      try {
+        validateLlmConfig();
+        const raw = await readBody(req);
+        const body = JSON.parse(raw) as Record<string, unknown>;
+        const request = decodeDocuments(body);
+
+        logger.emit("request.received", {
+          fileCount: request.documents.length,
+          channelId: request.context.channelId,
+          eventId: request.context.channelId,
+        });
+
+        const response = await runRequirementsGraph(request);
+
+        logger.emit("agent.completed", {
+          proposalCount: response.proposals.length,
+          needsClarification: response.needsClarification,
+        });
+
+        sendJson(res, 200, response);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        logger.emit("request.failed", {
+          errorClass: error instanceof Error ? error.name : "Error",
+          message,
+        }, "ERROR");
+        sendJson(res, 500, { error: message });
+      } finally {
+        await logger.flush();
+      }
+    });
     return;
   }
 
@@ -105,4 +136,3 @@ if (isMain) {
     console.log(`agent-service listening on port ${PORT}`);
   });
 }
-

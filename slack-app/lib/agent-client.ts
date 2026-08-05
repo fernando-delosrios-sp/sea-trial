@@ -6,6 +6,7 @@ import type {
   TesEventContext,
 } from "@tes/shared/types/index.ts";
 import type { DocumentInput } from "@tes/shared/types/index.ts";
+import { CORRELATION_ID_HEADER } from "@tes/observability/index.js";
 
 export function encodeFilePayload(content: Uint8Array): string {
   let binary = "";
@@ -82,14 +83,22 @@ export function resolveAgentServiceUrl(
 export async function callRequirementsAgent(
   agentServiceUrl: string,
   request: ProcessRequirementsRequest,
+  correlationId?: string,
 ): Promise<ProcessRequirementsResponse> {
   const url = `${agentServiceUrl.replace(/\/$/, "")}/agents/requirements/process`;
 
   const body = buildAgentHttpBody(request);
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (correlationId) {
+    headers[CORRELATION_ID_HEADER] = correlationId;
+  }
+
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   });
 
@@ -177,3 +186,4 @@ export function onboardingGateMessage(): string {
     "Onboarding is not complete. Please click *Complete onboarding* in the pinned index message or run `/tes-onboard` before using the Requirements Agent."
   );
 }
+

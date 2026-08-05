@@ -72,6 +72,18 @@ No external database — Slack canvases and lists are source of truth
 | `LLM_MODEL` | Yes | Model identifier (e.g. `gpt-4o`) |
 | `PORT` | No | HTTP port (Render sets automatically) |
 
+### Observability (Grafana Cloud OTLP)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OTEL_LOGS_ENABLED` | No | Set to `true` to push logs (`false` default locally) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | When logging enabled | Grafana Cloud OTLP base URL |
+| `OTEL_EXPORTER_OTLP_HEADERS` | When logging enabled | Authorization header (`Authorization=Basic%20...`) |
+| `OTEL_SERVICE_NAME` | No | `tes-agent-service` or `tes-slack-app` |
+| `OTEL_RESOURCE_ATTRIBUTES` | No | Optional resource tags (e.g. `deployment.environment=prod`) |
+
+**Redaction policy:** Logs MUST NOT contain file bytes, canvas markdown, LLM prompts/responses, or API tokens. Only metadata (correlation ID, channel ID, file counts, parse status, durations) is exported.
+
 ### slack-app
 
 | Variable | Required | Description |
@@ -122,3 +134,4 @@ Upgrade Render to Starter ($7/mo) when always-on demos are needed.
 - `openspec/changes/tes-slack-process-mvp/design.md` — decisions D9–D12
 - `openspec/changes/tes-slack-process-mvp/proposal.md` — capability impact
 - `docs/infrastructure-setup-checklist.md` — step-by-step setup checklist
+

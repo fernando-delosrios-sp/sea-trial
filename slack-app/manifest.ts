@@ -23,7 +23,10 @@ export default Manifest({
     HandleThreadReplyFunction,
   ],
   workflows: [CreateTesEventWorkflow],
-  outgoingDomains: buildOutgoingDomains(Deno.env.get("AGENT_SERVICE_URL")),
+  outgoingDomains: buildOutgoingDomains(
+    Deno.env.get("AGENT_SERVICE_URL"),
+    Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"),
+  ),
   botScopes: [
     "commands",
     "chat:write",
@@ -37,4 +40,5 @@ export default Manifest({
     "lists:write",
   ],
 });
+
 

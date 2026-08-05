@@ -92,6 +92,19 @@ Unsupported formats and image-only PDFs return `supported: false` with a human-r
 | `LLM_MODEL` | No | Default: `gpt-4o` |
 | `PORT` | No | Default: `3000` |
 
+## Observability (Grafana Cloud OTLP)
+
+When `OTEL_LOGS_ENABLED=true`, the service pushes structured logs to Grafana Cloud via OTLP HTTP (`/v1/logs`).
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OTEL_LOGS_ENABLED` | No | Kill switch (`false` by default) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | When enabled | Grafana Cloud OTLP base URL |
+| `OTEL_EXPORTER_OTLP_HEADERS` | When enabled | Authorization header |
+| `OTEL_SERVICE_NAME` | No | Default: `tes-agent-service` |
+
+Log events: `request.received`, `documents.parsed`, `agent.completed`, `request.failed`. Reads `X-Correlation-Id` from slack-app requests.
+
 ## Tests
 
 ```bash
@@ -108,3 +121,4 @@ node scripts/generate-fixtures.mjs
 
 - **markitdown / marker** — Python sidecar for complex PDF layouts and OCR
 - **qdrant / supermemory** — External memory when Requirements Canvas recall is insufficient
+

@@ -13,10 +13,13 @@ jobs:
           SLACK_SERVICE_TOKEN: ${{ secrets.SLACK_SERVICE_TOKEN }}
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
           AGENT_SERVICE_URL: ${{ vars.AGENT_SERVICE_URL }}
           LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
           RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          OTEL_EXPORTER_OTLP_ENDPOINT: ${{ vars.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          OTEL_LOGS_ENABLED: ${{ vars.OTEL_LOGS_ENABLED }}
         run: |
           set -euo pipefail
           missing=0
@@ -44,6 +47,11 @@ jobs:
           check_var LLM_MODEL
           check_var RENDER_SERVICE_ID
 
+          if [ "${OTEL_LOGS_ENABLED:-false}" = "true" ]; then
+            check_secret OTEL_EXPORTER_OTLP_HEADERS
+            check_var OTEL_EXPORTER_OTLP_ENDPOINT
+          fi
+
           if [ "$missing" -ne 0 ]; then
             exit 1
           fi
@@ -61,16 +69,28 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
+          OTEL_EXPORTER_OTLP_ENDPOINT: ${{ vars.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
+          OTEL_LOGS_ENABLED: ${{ vars.OTEL_LOGS_ENABLED }}
+          OTEL_SERVICE_NAME: tes-agent-service
         run: |
           set -euo pipefail
           payload="$(jq -n \
             --arg apiKey "$LLM_API_KEY" \
             --arg baseUrl "$LLM_BASE_URL" \
             --arg model "$LLM_MODEL" \
+            --arg otlpEndpoint "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" \
+            --arg otlpHeaders "${OTEL_EXPORTER_OTLP_HEADERS:-}" \
+            --arg otlpEnabled "${OTEL_LOGS_ENABLED:-false}" \
+            --arg otlpServiceName "${OTEL_SERVICE_NAME:-tes-agent-service}" \
             '[
               {"key":"LLM_API_KEY","value":$apiKey},
               {"key":"LLM_BASE_URL","value":$baseUrl},
-              {"key":"LLM_MODEL","value":$model}
+              {"key":"LLM_MODEL","value":$model},
+              {"key":"OTEL_EXPORTER_OTLP_ENDPOINT","value":$otlpEndpoint},
+              {"key":"OTEL_EXPORTER_OTLP_HEADERS","value":$otlpHeaders},
+              {"key":"OTEL_LOGS_ENABLED","value":$otlpEnabled},
+              {"key":"OTEL_SERVICE_NAME","value":$otlpServiceName}
             ]')"
           curl -fsS -X PUT \
             "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/env-vars" \
@@ -118,8 +138,17 @@ jobs:
         env:
           SLACK_SERVICE_TOKEN: ${{ secrets.SLACK_SERVICE_TOKEN }}
           AGENT_SERVICE_URL: ${{ vars.AGENT_SERVICE_URL }}
+          OTEL_EXPORTER_OTLP_ENDPOINT: ${{ vars.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
+          OTEL_LOGS_ENABLED: ${{ vars.OTEL_LOGS_ENABLED }}
+          OTEL_SERVICE_NAME: tes-slack-app
         run: |
           set -euo pipefail
           echo "AGENT_SERVICE_URL=$AGENT_SERVICE_URL" >> .env
+          echo "OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}" >> .env
           slack env set AGENT_SERVICE_URL "$AGENT_SERVICE_URL"
+          slack env set OTEL_EXPORTER_OTLP_ENDPOINT "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
+          slack env set OTEL_EXPORTER_OTLP_HEADERS "${OTEL_EXPORTER_OTLP_HEADERS:-}"
+          slack env set OTEL_LOGS_ENABLED "${OTEL_LOGS_ENABLED:-false}"
+          slack env set OTEL_SERVICE_NAME "${OTEL_SERVICE_NAME:-tes-slack-app}"
           slack deploy -s --token "$SLACK_SERVICE_TOKEN"

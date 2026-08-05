@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @tes-event-process/shared && npm run build -w @tes-event-process/agent-service",
+    "build": "npm run build -w @tes-event-process/shared && npm run build -w @tes-event-process/observability && npm run build -w @tes-event-process/agent-service",
     "test": "npm run test --workspaces --if-present",
     "dev:agent": "npm run dev -w @tes-event-process/agent-service"
   },
@@ -18,4 +18,5 @@
     "fsevents@2.3.3": true
   }
 }
+
 

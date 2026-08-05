@@ -1,7 +1,10 @@
 /**
- * Builds Slack outgoingDomains from AGENT_SERVICE_URL plus localhost for dev.
+ * Builds Slack outgoingDomains from AGENT_SERVICE_URL, OTLP endpoint, and localhost for dev.
  */
-export function buildOutgoingDomains(agentServiceUrl?: string): string[] {
+export function buildOutgoingDomains(
+  agentServiceUrl?: string,
+  otlpEndpoint?: string,
+): string[] {
   const domains = new Set<string>(["localhost"]);
 
   if (agentServiceUrl) {
@@ -9,6 +12,14 @@ export function buildOutgoingDomains(agentServiceUrl?: string): string[] {
       domains.add(new URL(agentServiceUrl).hostname);
     } catch {
       // Ignore malformed URLs at manifest build time.
+    }
+  }
+
+  if (otlpEndpoint) {
+    try {
+      domains.add(new URL(otlpEndpoint).hostname);
+    } catch {
+      // Ignore malformed OTLP URLs at manifest build time.
     }
   }
 

@@ -1,5 +1,6 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
 import { isThreadContinuation } from "../../lib/agent-gate.ts";
+import { withLogger } from "../../lib/logger.ts";
 
 export const HandleThreadReplyFunction = DefineFunction({
   callback_id: "handle_thread_reply",
@@ -25,17 +26,25 @@ export const HandleThreadReplyFunction = DefineFunction({
 
 export default SlackFunction(
   HandleThreadReplyFunction,
-  async ({ inputs }) => {
-    const shouldReinvoke = isThreadContinuation(
-      inputs.message_ts,
-      inputs.thread_ts,
-    );
+  async ({ inputs, env }) => {
+    return await withLogger(env, async (logger) => {
+      const shouldReinvoke = isThreadContinuation(
+        inputs.message_ts,
+        inputs.thread_ts,
+      );
 
-    return {
-      outputs: {
-        should_reinvoke: shouldReinvoke,
-        thread_ts: inputs.thread_ts ?? inputs.message_ts,
-      },
-    };
+      logger.emit("thread_reply.evaluated", {
+        channelId: inputs.channel_id,
+        shouldReinvoke,
+      });
+
+      return {
+        outputs: {
+          should_reinvoke: shouldReinvoke,
+          thread_ts: inputs.thread_ts ?? inputs.message_ts,
+        },
+      };
+    });
   },
 );
+

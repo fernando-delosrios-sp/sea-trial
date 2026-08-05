@@ -7,6 +7,7 @@ import type {
   TesEventContext,
 } from "@tes-event-process/shared";
 import { getLlmConfig } from "../../config/llm.js";
+import { getRequestContext } from "../../observability/request-context.js";
 import {
   analyzeRequirements,
   clarifyOrPropose,
@@ -120,6 +121,16 @@ export async function runRequirementsGraph(
     outOfScopeItems: [],
   });
 
+  const ctx = getRequestContext();
+  ctx?.logger.emit("documents.parsed", {
+    files: (result.parsedDocuments ?? []).map((doc) => ({
+      filename: doc.filename,
+      mimeType: doc.mimeType,
+      supported: doc.supported,
+      error: doc.error,
+    })),
+  });
+
   return {
     canvasMarkdown: result.requirementsCanvasMarkdown,
     proposals: result.proposals ?? [],
@@ -128,3 +139,4 @@ export async function runRequirementsGraph(
     clarificationQuestions: result.clarificationQuestions,
   };
 }
+

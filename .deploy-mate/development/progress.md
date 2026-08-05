@@ -1,18 +1,34 @@
 # deploy-mate progress — development
 
 Started: 2026-08-05 (re-run)
-Status: complete
+Status: forge complete — inject pending
 
 ## Phase checklist
 - [x] Recon — environment selected (development, re-run)
 - [x] Survey — sign-off: approved 2026-08-05
 - [x] Catalog — var name inventory (15 vars)
 - [x] Arm — tooling map (deploy + collection)
-- [x] Arm-ready — manual path accepted (Slack CLI not needed for CI/CD)
+- [x] Arm-ready — 7/7 tooling rows terminal; audit ack 2026-08-05
 - [x] Scaffold — pre-existing resources confirmed (Render service, Slack app)
 - [x] Document — obtain playbooks (hard gate)
 - [x] Harvest — .env collection — finished 2026-08-05
 - [x] Forge — deployment artifacts
+- [ ] Inject CI — GitHub Secrets/Variables
+- [ ] Deploy — GitHub Actions workflow
+- [ ] Verify — post-deploy smoke/health checks
+
+## Arm-ready audit (2026-08-05)
+| Source / target | Tool | Status |
+|-----------------|------|--------|
+| Render (deploy) | Render MCP | opt-out |
+| Slack (deploy) | slack CLI | ready |
+| GitHub Actions (deploy) | gh CLI | ready |
+| Render (collection) | REST API / manual | manual-only |
+| Slack (collection) | slack CLI | ready |
+| OpenAI-compatible LLM | — | manual-only |
+| Grafana Cloud | — | manual-only |
+
+User ack: yes — 2026-08-05
 
 ## Harvest rounds
 | Round | Date | Collected | Validated | Blocked | User action |

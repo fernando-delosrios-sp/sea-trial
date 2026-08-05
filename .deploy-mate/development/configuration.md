@@ -4,20 +4,20 @@
 
 ### Deploy tooling
 
-| Deploy target | MCP / skill | Notes |
-|---------------|-------------|-------|
-| Render | Render MCP (available) | API key auth, env var sync, deploy trigger |
-| Slack | — | `slack` CLI (Deno-based) with service token |
-| GitHub Actions | — | Workflow already exists; secrets/variables managed via GitHub UI or `gh` CLI |
+| Deploy target | MCP / skill | Local CLI | Status | Notes |
+|---------------|-------------|-----------|--------|-------|
+| Render | Render MCP | — | opt-out | MCP not configured in session; deploy via GitHub Actions + Render REST API |
+| Slack | — | `slack` CLI | ready | Deno Slack SDK deploy with service token |
+| GitHub Actions | — | `gh` CLI | ready | Secrets/variables for deploy workflow |
 
 ### Collection tooling
 
 | Source service | Vars | MCP / skill | Local CLI | Primary method | Status |
 |----------------|------|-------------|-----------|----------------|--------|
-| Render | `RENDER_API_KEY`, `RENDER_SERVICE_ID`, `RENDER_DEPLOY_HOOK_URL` | Render MCP | `render` CLI (via API) | cli → mcp → manual | pending |
-| Slack | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `SLACK_SERVICE_TOKEN` | — | `slack` CLI | cli → manual | pending |
-| OpenAI-compatible LLM | `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` | — | — | manual | pending |
-| Grafana Cloud | `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` | — | — | manual | pending |
+| Render | `RENDER_API_KEY`, `RENDER_SERVICE_ID`, `RENDER_DEPLOY_HOOK_URL` | Render MCP | `render` CLI (via API) | cli → mcp → manual | manual-only |
+| Slack | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `SLACK_SERVICE_TOKEN` | — | `slack` CLI | cli → manual | ready |
+| OpenAI-compatible LLM | `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` | — | — | manual | manual-only |
+| Grafana Cloud | `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` | — | — | manual | manual-only |
 
 ## Scaffold registry
 
@@ -30,16 +30,23 @@ No scaffolded resources needed — all platform resources already exist for deve
 
 ## CLI setup notes
 
-### Render MCP
-- Server: `render` (MCP server available in session)
-- Auth: `RENDER_API_KEY` (already set in .env)
-- Status: to be verified in Arm-ready
+### Render (REST API — manual-only)
+- MCP: not configured in Cursor session (`GetMcpTools` → no render server)
+- CLI: `render` not installed (`which render` → not found)
+- Auth: `RENDER_API_KEY` in `.env`
+- Verified: `curl -H "Authorization: Bearer $RENDER_API_KEY" https://api.render.com/v1/services?limit=5` → HTTP 200, 1 service (`tes-agent-service`)
+- Collection fallback: manual / Render dashboard / REST API curl
 
 ### slack CLI
-- Not yet checked — pending Arm-ready
+- Installed: `/Users/fernando.delosrios/.local/bin/slack` (v4.6.0)
+- Auth: `slack auth list` → workspace `fdelosrios` (Team ID TEX1209CG), 2026-08-05
+- Verified: `slack auth list` succeeded
+- Note: CI deploy uses `SLACK_SERVICE_TOKEN` (GitHub Secret), not interactive CLI auth
 
 ### gh CLI
-- Not yet checked — pending Arm-ready
+- Installed: `gh` v2.96.0 (aliased via `_lc gh`)
+- Auth: `gh auth status` → logged in as `fernando-delosrios-sp`, scopes include `repo`, `workflow`
+- Verified: `gh secret list` + `gh variable list` on repo → 4 secrets, 4 variables present
 
 ## Environment variables
 
@@ -840,3 +847,4 @@ curl -fsS -H "Authorization: Bearer $RENDER_API_KEY" "https://api.render.com/v1/
 - Via: manual
 - Blocker: none
 - Round: 1
+

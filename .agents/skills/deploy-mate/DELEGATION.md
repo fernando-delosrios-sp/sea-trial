@@ -1,6 +1,6 @@
 # deploy-mate — delegation map
 
-Fallbacks when mapped MCPs/skills cannot cover a source service. **Default path is Arm-ready install + use per [TOOLING.md](TOOLING.md)** — not manual-first.
+Command entry points: [COMMANDS.md](COMMANDS.md). Fallbacks when mapped MCPs/skills cannot cover a source service. **Default path is Arm-ready install + use per [TOOLING.md](TOOLING.md)** — not manual-first.
 
 ## By phase
 
@@ -8,12 +8,16 @@ Fallbacks when mapped MCPs/skills cannot cover a source service. **Default path 
 |-------|------|--------|---------------|
 | 1 | Survey | Agent file analysis; Mermaid deploy topology; `c4-diagram` when 3+ containers | `find-docs`, `find-skills` (niche stack), `design-doc-mermaid` |
 | 3 | Arm | Collection + deploy tooling map; `find-skills` for unmapped services | MCP catalog search |
-| 3b | Arm-ready | Install, configure, verify MCPs, skills, **and local CLIs** — collaborate on auth | User opt-out → next method |
+| 3b | Arm-ready | Install, verify **each tooling row**; update Status in configuration.md; tooling audit | User opt-out → row Status `opt-out` |
 | 3c | Scaffold | Create placeholder resources via ready CLIs | User creates manually; record in registry |
 | 4a | Document | Per-var obtain playbooks; `find-docs` for vendor steps | — |
 | 4b | Harvest | Tool-first loop for **deploy-critical** vars only: MCP → skill → **CLI** → manual | `find-docs` for manual fallback steps |
 | 5 | Forge proposal | `deployment-pipeline-design` — strategy dialog before files | `cicd-pipeline-generator`, stack-specific deployment skills (options only) |
 | 5 | Forge artifacts | After strategy sign-off — generate repo files | `cicd-pipeline-generator`, stack-specific deployment skills |
+| 5a | Inject CI | `gh secret set`, GitHub API, GitLab CLI per Deploy mapping | `env-secrets-manager`, `find-docs` for vendor syntax |
+| 5b | Inject runtime | `fly secrets set`, `vercel env add`, `aws ssm put-parameter`, … | `find-docs`, platform MCPs when mapped |
+| 6 | Deploy | Deploy tooling CLI/MCP/workflow dispatch | Stack-specific deployment skills |
+| 7 | Verify | Commands from `deployment.md` → Steps | `find-docs` for platform health checks |
 
 ## Excluded
 
@@ -46,11 +50,11 @@ Before collecting, check each var's **Deploy scope** in `configuration.md`. Only
 
 ## MCP setup (Arm-ready)
 
-Execute MCP/skill install/configure/verify — see [TOOLING.md](TOOLING.md) § A.
+Execute per-row protocol for each mapped MCP/skill — see [TOOLING.md](TOOLING.md) § A. Update tooling table Status after verify. Do not mark Arm-ready complete while rows remain `pending`.
 
 ## CLI setup (Arm-ready)
 
-Detect, install, authenticate, and verify local CLIs — see [TOOLING.md](TOOLING.md) § B. Guide user through install when agent cannot run it (sudo, GUI installer). Interactive logins (`fly auth login`) require user action in terminal — wait for confirmation, then verify. Present status table and get user ack before Scaffold/Harvest.
+Detect, install, authenticate, and verify each mapped CLI — see [TOOLING.md](TOOLING.md) § B. **Run verify commands**; record output in setup notes before Status → `ready`. Present tooling audit table; get user ack before Scaffold/Harvest.
 
 ## Scaffold delegation
 
@@ -61,5 +65,24 @@ Prefer CLI scaffold commands when Arm-ready status is `ready`. When CLI cannot c
 **Proposal first** — invoke `deployment-pipeline-design` to draft strategy; present trade-offs and ask for feedback. Do **not** generate `.github/workflows/*`, `Dockerfile`, `fly.toml`, or other repo deploy files until strategy sign-off is recorded.
 
 After sign-off, invoke `cicd-pipeline-generator` and stack-specific deployment skills to produce artifacts aligned with the approved strategy.
+
+## Inject delegation
+
+**CI orchestrator** — prefer ready CLIs from Deploy tooling:
+
+- GitHub: `gh secret set`, `gh api repos/…/environments/…/secrets`
+- GitLab: `glab variable set` or API per Deploy mapping
+
+**Runtime platform** — prefer ready CLIs:
+
+- Fly: `fly secrets set`
+- Vercel: `vercel env add`
+- AWS: `aws ssm put-parameter` / Secrets Manager
+
+When user prefers vault over direct push: `env-secrets-manager`. When CLI syntax unclear: `find-docs`. **Never** echo values; **never** skip CHECKPOINT approval.
+
+## Verify delegation
+
+Run health/smoke commands from `deployment.md` → Steps. Use Deploy tooling CLIs (`fly status`, workflow watch via `gh run watch`, curl health URLs). On failure, point user to Rollback section — do not auto-rollback.
 
 

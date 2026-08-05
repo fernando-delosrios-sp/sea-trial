@@ -1,6 +1,6 @@
 import { DefineWorkflow, Schema } from "@slack/deno-slack-sdk/mod.ts";
-import ProvisionChannelFunction from "../functions/provision_channel/mod.ts";
-import SeedChannelObjectsFunction from "../functions/seed_channel_objects/mod.ts";
+import { ProvisionChannelFunction } from "../functions/provision_channel/mod.ts";
+import { SeedChannelObjectsFunction } from "../functions/seed_channel_objects/mod.ts";
 
 const CreateTesEventWorkflow = DefineWorkflow({
   callback_id: "create_tes_event",
@@ -18,7 +18,7 @@ const CreateTesEventWorkflow = DefineWorkflow({
   },
 });
 
-CreateTesEventWorkflow.addStep(ProvisionChannelFunction, {
+const provisionStep = CreateTesEventWorkflow.addStep(ProvisionChannelFunction, {
   project_name: CreateTesEventWorkflow.inputs.project_name,
   ae_user_id: CreateTesEventWorkflow.inputs.ae_user_id,
   se_user_id: CreateTesEventWorkflow.inputs.se_user_id,
@@ -27,8 +27,9 @@ CreateTesEventWorkflow.addStep(ProvisionChannelFunction, {
 });
 
 CreateTesEventWorkflow.addStep(SeedChannelObjectsFunction, {
-  channel_id: ProvisionChannelFunction.outputs.channel_id,
+  channel_id: provisionStep.outputs.channel_id,
   project_name: CreateTesEventWorkflow.inputs.project_name,
 });
 
 export default CreateTesEventWorkflow;
+

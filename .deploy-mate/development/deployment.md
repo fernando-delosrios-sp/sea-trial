@@ -1,131 +1,89 @@
 # Deployment — development
 
 ## Prerequisites
-- [x] 4a configuration docs complete
-- [ ] `.env` complete (deploy blocked until done)
+- [x] Document complete (obtain playbooks)
+- [x] Harvest finished — `.env` complete (deploy blocked until done)
 
 ## Overview
 
-The deployment pipeline uses **GitHub Actions** (manual `workflow_dispatch`) to deploy both services:
+Development deploys via GitHub Actions manual workflow trigger. Two sequential jobs:
+1. **agent-service** — Render env sync → deploy → health check
+2. **slack-app** — Deno Slack SDK deploy via `slack deploy`
 
-| Service | Platform | Method |
-|---------|----------|--------|
-| **agent-service** | Render (free web service, Node 20) | Deploy hook + env var sync via Render API |
-| **slack-app** | Slack-managed infra (Deno Slack SDK) | `slack deploy` via Slack CLI with service token |
-
-No Dockerfile needed — Render uses the Node runtime natively. No docker-compose — services deploy independently.
+All configuration stored in GitHub Secrets (tokens, keys) and Variables (URLs, IDs). Render syncs env vars via API before deploy trigger.
 
 ## Steps
 
-### 1. Configure GitHub Secrets and Variables
+### Pre-deploy
+1. Confirm `.deploy-mate/development/.env` has all required values (15 vars)
+2. Verify Render service is healthy: `curl -fsS https://tes-agent-service.onrender.com/health`
+3. Verify Slack app is installed to dev workspace
 
-Set these in the repository **Settings → Secrets and Variables → Actions**:
+### Deploy via GitHub Actions
+1. Open repository → **Actions → Deploy → Run workflow**
+2. Confirm workflow logs show:
+   - Render env sync successful (7 env vars pushed)
+   - Render deploy triggered
+   - Health check passed (up to 30 retries, 10s interval)
+   - slack-app deploy successful
+3. Check Render dashboard for deploy completion
 
-**Secrets:**
-```
-LLM_API_KEY              — OpenAI-compatible API key
-SLACK_SERVICE_TOKEN      — Slack CLI service token
-RENDER_API_KEY           — Render API key
-RENDER_DEPLOY_HOOK_URL   — Render deploy hook URL
-OTEL_EXPORTER_OTLP_HEADERS — Grafana Cloud auth (if logging enabled)
-```
-
-**Variables:**
-```
-AGENT_SERVICE_URL        — e.g. https://tes-agent.onrender.com
-LLM_BASE_URL             — e.g. https://opencode.ai/zen/go/v1
-LLM_MODEL                — e.g. deepseek-v4-pro
-RENDER_SERVICE_ID        — Render web service ID
-OTEL_EXPORTER_OTLP_ENDPOINT — Grafana Cloud OTLP endpoint (if logging enabled)
-OTEL_LOGS_ENABLED        — "true" or "false"
-```
-
-### 2. Trigger deployment
-
-1. Open **GitHub → Actions → Deploy → Run workflow**
-2. The workflow validates config, syncs Render env vars, deploys agent-service, waits for health check, then deploys slack-app
-
-### 3. Verify
-
-- `GET <agent-service-url>/health` → `{ "status": "ok" }`
-- Slack app responds to `@mention` with agent invocation
-- Both services push OTLP logs when `OTEL_LOGS_ENABLED=true`
-
-### Local development (non-deploy)
-
-```bash
-# agent-service
-cp agent-service/.env.example agent-service/.env
-# Set LLM_API_KEY, LLM_BASE_URL, LLM_MODEL
-npm run dev:agent
-
-# slack-app (in another terminal)
-cd slack-app
-cp .env.example .env
-# AGENT_SERVICE_URL defaults to http://localhost:3000
-slack run
-```
+### Post-deploy validation
+1. Run [smoke test checklist](docs/smoke-test-checklist.md)
+2. Verify agent-service health: `GET https://tes-agent-service.onrender.com/health`
+3. Test Slack app interaction in dev workspace
+4. If OTEL enabled, verify logs in Grafana Explore
 
 ## Generated files
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/deploy.yml` | GitHub Actions manual deploy workflow |
-| `render.yaml` | Render web service config (Node runtime, env vars, health check) |
-| `agent-service/.env.example` | agent-service env var template |
-| `slack-app/.env.example` | slack-app env var template |
-| `.deploy-mate/development/.env` | Development env values (gitignored) |
+| `.github/workflows/deploy.yml` | CI/CD workflow — validates config, deploys agent-service, then slack-app |
+| `render.yaml` | Render service definition — build/start commands, env var declarations |
+| `.deploy-mate/development/.env` | Collected environment values (gitignored, chmod 600) |
 
 ## Env var references
 
 Names only — values in `.deploy-mate/development/.env`:
 
-**agent-service:**
-- `LLM_API_KEY` — used by LangChain LLM client
-- `LLM_BASE_URL` — used by LangChain LLM client
-- `LLM_MODEL` — used by LangChain LLM client
-- `PORT` — used by Node HTTP server
-- `OTEL_LOGS_ENABLED` — used by logger pipeline
-- `OTEL_EXPORTER_OTLP_ENDPOINT` — used by OTLP exporter
-- `OTEL_EXPORTER_OTLP_HEADERS` — used by OTLP exporter
-- `OTEL_SERVICE_NAME` — used by OTLP log metadata
-- `OTEL_RESOURCE_ATTRIBUTES` — used by OTLP log metadata
+### agent-service (Render)
+- `LLM_API_KEY` — OpenAI-compatible API key
+- `LLM_BASE_URL` — LLM provider endpoint
+- `LLM_MODEL` — Model identifier
+- `OTEL_EXPORTER_OTLP_ENDPOINT` — Grafana OTLP URL (when logging enabled)
+- `OTEL_EXPORTER_OTLP_HEADERS` — Grafana auth header (when logging enabled)
+- `OTEL_LOGS_ENABLED` — Toggle for log export
+- `OTEL_SERVICE_NAME` — `tes-agent-service`
+- `PORT` — Local dev only (Render sets automatically)
+- `OTEL_RESOURCE_ATTRIBUTES` — Resource tags (local dev)
 
-**slack-app:**
-- `AGENT_SERVICE_URL` — used by agent-client.ts
-- `OTEL_LOGS_ENABLED` — used by logger pipeline
-- `OTEL_EXPORTER_OTLP_ENDPOINT` — used by OTLP exporter
-- `OTEL_EXPORTER_OTLP_HEADERS` — used by OTLP exporter
-- `OTEL_SERVICE_NAME` — used by OTLP log metadata
-- `SLACK_BOT_TOKEN` — used by Slack SDK
-- `SLACK_APP_TOKEN` — used by Slack SDK
+### slack-app (Slack-managed)
+- `AGENT_SERVICE_URL` — Public HTTPS URL of agent-service
+- `SLACK_BOT_TOKEN` — Bot user OAuth token (placeholder; local-dev only)
+- `SLACK_APP_TOKEN` — App-level token (placeholder; local-dev only)
+- `SLACK_SERVICE_TOKEN` — CLI service token (CI/CD only)
 
-**CI/CD (GitHub):**
-- `LLM_API_KEY` (secret) — synced to Render
-- `SLACK_SERVICE_TOKEN` (secret) — authenticates `slack deploy`
-- `RENDER_API_KEY` (secret) — authenticates Render API
-- `RENDER_DEPLOY_HOOK_URL` (secret) — triggers Render deploy
-- `AGENT_SERVICE_URL` (variable) — set on slack-app via `slack env set`
-- `LLM_BASE_URL` (variable) — synced to Render
-- `LLM_MODEL` (variable) — synced to Render
-- `RENDER_SERVICE_ID` (variable) — target for Render env var API
-- `OTEL_EXPORTER_OTLP_ENDPOINT` (variable) — synced to both services
-- `OTEL_EXPORTER_OTLP_HEADERS` (secret) — synced to both services
-- `OTEL_LOGS_ENABLED` (variable) — synced to both services
+### CI/CD infrastructure
+- `RENDER_API_KEY` — Render API authentication
+- `RENDER_DEPLOY_HOOK_URL` — Deploy trigger URL
+- `RENDER_SERVICE_ID` — Render service identifier
 
 ## Rollback
 
-1. Re-run the **Deploy** GitHub Actions workflow — previous code deploys from the current main branch.
-2. If env vars caused the issue, restore previous values in GitHub Secrets/Variables first, then re-deploy.
-3. CI logs record who triggered each deploy and commit SHA.
-4. For Render: use the Render dashboard to activate a previous deploy if the GitHub workflow is insufficient.
+1. Restore previous secret/variable values in GitHub repository settings
+2. Re-run Deploy workflow
+3. CI logs record who triggered each deploy
+4. No database migration rollback needed (state lives in Slack)
 
-## Observability
+## Optional
 
-OTLP logging is optional (controlled by `OTEL_LOGS_ENABLED`). When enabled, both services push structured logs to Grafana Cloud. slack-app generates a `correlationId` per invocation and sends it as `X-Correlation-Id` to agent-service so logs can be joined in Explore.
+### Observability
+- When `OTEL_LOGS_ENABLED=true`, both services push to Grafana Cloud
+- Correlation via `X-Correlation-Id` header from slack-app to agent-service
+- Grafana Explore queries: `{service_name="tes-slack-app"}` and `{service_name="tes-agent-service"}`
 
-Logs contain metadata only (file counts, parse outcomes, durations) — never document content, canvas markdown, or LLM prompts.
+### DNS
+- Render provides `*.onrender.com` subdomain — no custom DNS for development
 
-## Migrations
-
-No database migrations — all state lives in Slack canvases and lists.
+### Migrations
+- None required — Slack canvases/lists are source of truth, no external database

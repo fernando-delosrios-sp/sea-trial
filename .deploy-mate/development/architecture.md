@@ -2,7 +2,7 @@
 
 ## Summary
 
-TES Event Process is a TypeScript monorepo with two runtime services: a **slack-app** (Deno Slack SDK, Slack-managed infra) that handles Slack interactions, and an **agent-service** (Node.js 20+, Render) that runs a LangGraph-based Requirements Agent. Both services share types from `packages/shared` and observability helpers from `packages/observability`. State lives in Slack canvases and lists — no external database.
+TES Event Process is a TypeScript monorepo deploying two runtime components: `agent-service` (Node.js 20+ LangGraph API on Render free tier) and `slack-app` (Deno Slack SDK on Slack-managed infrastructure). The agent-service exposes a POST endpoint for document parsing and requirements analysis. slack-app acts as the Slack adapter, forwarding file payloads to agent-service and managing canvases/lists as the source of truth. No external database — all state lives in Slack.
 
 ## Diagram
 
@@ -10,57 +10,54 @@ TES Event Process is a TypeScript monorepo with two runtime services: a **slack-
 
 ```mermaid
 flowchart TB
-  subgraph slack["Slack-managed infra"]
-    slack-app["slack-app<br/>Deno Slack SDK"]
+  subgraph slack["Slack Pro workspace"]
+    slackapp["slack-app (Deno Slack SDK)"]
   end
-  subgraph render["Render (free web service)"]
-    agent-service["agent-service<br/>Node.js 20+, LangGraph.js"]
+  subgraph render["Render free web service"]
+    agent["agent-service (Node.js 20+, LangGraph.js)"]
   end
-  subgraph external["External"]
-    llm["OpenAI-compatible LLM API"]
-    grafana["Grafana Cloud OTLP"]
-  end
-
-  slack-app -->|"HTTPS POST /agents/requirements/process"| agent-service
-  agent-service -->|"LLM_BASE_URL + LLM_API_KEY"| llm
-  slack-app -.->|"OTEL HTTP"| grafana
-  agent-service -.->|"OTEL HTTP"| grafana
-
-  linkStyle 0,1 stroke:#333,stroke-width:2px
-  linkStyle 2,3 stroke:#333,stroke-width:1px,stroke-dasharray:5 5
+  llm["OpenAI-compatible LLM API"]
+  grafana["Grafana Cloud OTLP (optional)"]
+  
+  slackapp -->|"HTTPS POST /agents/requirements/process"| agent
+  agent -->|"LLM_BASE_URL + LLM_API_KEY"| llm
+  agent -.->|"OTLP HTTP (optional)"| grafana
+  slackapp -.->|"OTLP HTTP (optional)"| grafana
 ```
 
 ### Container view
 
-Two containers only — C4 not required (fewer than 3 containers).
+Two containers only — C4 diagram not required.
 
 ## Components
 
 | Component | Role | Confidence | Evidence |
 |-----------|------|------------|----------|
-| `slack-app` | Slack adapter — triggers, modals, canvas/list CRUD, file download, HTTP to agent-service | confirmed | `slack-app/manifest.ts`, `README.md:100` |
-| `agent-service` | Document parsing, Requirements Agent (LangGraph), HTTP API | confirmed | `agent-service/src/server.ts`, `README.md:1` |
-| `packages/shared` | Shared TypeScript types for both runtimes (e.g. `TesEventContext`, `FilePayload`, `ParsedDocument`) | confirmed | `packages/shared/src/types/index.ts` |
-| `packages/observability` | Log event schema, redaction helpers, OTLP JSON payload builder | confirmed | `packages/observability/src/index.ts` |
-| LangGraph flow | `loadContext → parseDocuments → analyzeRequirements → clarifyOrPropose → formatOutput` | confirmed | `agent-service/src/agents/requirements/langgraph.ts` |
-| Document parsers | TXT/MD (pass-through), DOCX (mammoth), XLSX (sheetjs), PDF (pdf-parse v2) | confirmed | `agent-service/src/parsers/index.ts` |
+| `agent-service` | Node.js 20+ API, LangGraph.js document parsing & requirements analysis | confirmed | `agent-service/package.json`, `render.yaml`, `.github/workflows/deploy.yml` |
+| `slack-app` | Deno Slack SDK — Slack adapter, canvas/list CRUD, file download, HTTP to agent-service | confirmed | `slack-app/.env.example`, `README.md`, `render.yaml` |
+| `packages/shared` | Shared TypeScript types (HTTP contract, both runtimes) | confirmed | `packages/shared/package.json`, `README.md` |
+| `packages/observability` | Log event schema, redaction helpers, OTEL payload builder | confirmed | `packages/observability/package.json`, `README.md` |
+| Render | agent-service hosting (free tier) | confirmed | `render.yaml`, `README.md`, deploy workflow |
+| Slack Pro workspace | slack-app runtime, Canvas + Lists as state | confirmed | `docs/tech-stack-requirements.md`, `README.md` |
+| OpenAI-compatible LLM | Requirements Agent inference | confirmed | `agent-service/.env.example`, `render.yaml` |
+| Grafana Cloud OTLP | Optional structured logging | confirmed | `.env.example` files, `render.yaml`, deploy workflow |
 
 ## Deploy targets
 
 | Target | Platform | Notes |
 |--------|----------|-------|
-| slack-app | Slack-managed infra (Deno Slack SDK) | Deployed via `slack deploy` CLI; CI uses `SLACK_SERVICE_TOKEN` |
-| agent-service | Render (free web service) | Node runtime; build: `npm install && npm run build`; health check path `/health` |
-| CI/CD | GitHub Actions | Manual `workflow_dispatch` — validates secrets, syncs Render env vars, deploys both services |
+| agent-service | Render (free web service) | `render.yaml` defines build/start commands, env vars |
+| slack-app | Slack-managed (Deno) | Deployed via `slack deploy` CLI with service token |
+| CI/CD | GitHub Actions | Manual workflow deploys both services in sequence |
 
 ## Data & external services
 
 | Service | Purpose | Env vars (names only) |
 |---------|---------|----------------------|
-| OpenAI-compatible LLM API | Requirements Agent analysis | `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` |
-| Grafana Cloud OTLP | Structured log export (optional) | `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_LOGS_ENABLED`, `OTEL_SERVICE_NAME` |
-| Slack API | Bot operations (canvases, lists, files, channels) | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `AGENT_SERVICE_URL` |
-| Render API | Env var sync from CI | `RENDER_API_KEY`, `RENDER_SERVICE_ID`, `RENDER_DEPLOY_HOOK_URL` |
+| OpenAI-compatible LLM | Agent inference | `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` |
+| Render | agent-service hosting | `RENDER_API_KEY`, `RENDER_SERVICE_ID`, `RENDER_DEPLOY_HOOK_URL` |
+| Slack | App runtime & deploy | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `SLACK_SERVICE_TOKEN` |
+| Grafana Cloud | OTLP logging (optional) | `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_LOGS_ENABLED`, `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` |
 
 ## Sign-off
 - [ ] User approved — pending

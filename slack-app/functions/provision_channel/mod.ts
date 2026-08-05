@@ -1,5 +1,5 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
-import { validateChannelName } from "../lib/channel.ts";
+import { validateChannelName } from "../../lib/channel.ts";
 
 export const ProvisionChannelFunction = DefineFunction({
   callback_id: "provision_channel",

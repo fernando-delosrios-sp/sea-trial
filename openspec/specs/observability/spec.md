@@ -1,7 +1,8 @@
 # observability Specification
 
 ## Purpose
-TBD - created by archiving change grafana-otlp-logging. Update Purpose after archive.
+
+Structured OTLP log export to Grafana Cloud for slack-app and agent-service, with cross-service correlation IDs, metadata-only redaction, and deploy-time configuration via GitHub Actions.
 ## Requirements
 ### Requirement: OTLP log export to Grafana Cloud
 
@@ -103,4 +104,5 @@ slack-app SHALL flush pending OTLP log batches before Slack functions return.
 - **WHEN** the function handler is about to return (success or error)
 - **THEN** slack-app SHALL flush pending log exports before returning control to Slack
 - **AND** user-visible function behavior SHALL NOT fail solely because log export failed
+
 

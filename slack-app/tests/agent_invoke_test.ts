@@ -110,10 +110,12 @@ Deno.test("Task memory — buildInvokeAgentRequest passes full Requirements Canv
   assertEquals(request.threadHistory, "9999.0001");
 });
 
-Deno.test("Slack adapter — invoke_agent uses buildInvokeAgentRequest", async () => {
+Deno.test("Slack adapter — invoke flow uses buildInvokeAgentRequest", async () => {
   const source = await Deno.readTextFile(
-    new URL("../functions/invoke_agent/mod.ts", import.meta.url),
+    new URL("../lib/invoke-agent-handler.ts", import.meta.url),
   );
   assertEquals(source.includes("buildInvokeAgentRequest"), true);
-  assertEquals(source.includes("requirements_canvas_content"), true);
+  assertEquals(source.includes("invoke.started"), true);
+  assertEquals(source.includes("invoke.completed"), true);
 });
+

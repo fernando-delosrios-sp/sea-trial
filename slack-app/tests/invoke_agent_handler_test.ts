@@ -53,7 +53,13 @@ Deno.test("invoke handler emits started and completed on success", async () => {
     {
       callAgent: async () => ({
         canvasMarkdown: "# Updated",
-        proposals: [{ taskId: "TES-001" }],
+        proposals: [{
+          taskId: "TES-001",
+          category: "SSO",
+          requirements: "Configure SSO",
+          sourceDocRef: "doc",
+          suggestedStatus: "Not started",
+        }],
         agentMessage: "Done",
         needsClarification: false,
       }),
@@ -111,9 +117,10 @@ Deno.test("invoke handler emits failed when agent URL missing", async () => {
     logger,
   );
 
-  assertEquals(result.error?.includes("AGENT_SERVICE_URL"), true);
+  assertEquals("error" in result && result.error.includes("AGENT_SERVICE_URL"), true);
   assertEquals(sink.some((record) => record.eventName === "invoke.failed"), true);
   assertEquals(sink.some((record) => record.eventName === "invoke.started"), false);
 
   resetLoggerTestHooks();
 });
+

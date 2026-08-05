@@ -1,4 +1,9 @@
-import type { DocumentInput, ProcessRequirementsResponse, TesEventContext } from "@tes/shared/types/index.ts";
+import type {
+  DocumentInput,
+  ProcessRequirementsRequest,
+  ProcessRequirementsResponse,
+  TesEventContext,
+} from "@tes/shared/types/index.ts";
 import {
   buildInvokeAgentRequest,
   buildProposalBlocks,
@@ -8,6 +13,7 @@ import {
 } from "./agent-client.ts";
 import { deserializeEventContext } from "./event-context.ts";
 import { shouldProceedWithAgent } from "./agent-gate.ts";
+import { replaceCanvasContent, type SlackCanvasClient } from "./canvas.ts";
 import type { AppLogger } from "./logger.ts";
 
 export interface InvokeAgentInputs {
@@ -38,8 +44,15 @@ export interface InvokeAgentClient {
 }
 
 export interface InvokeAgentDeps {
-  fetchFile?: typeof fetch;
-  callAgent?: typeof callRequirementsAgent;
+  fetchFile?: (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => Promise<Response>;
+  callAgent?: (
+    agentServiceUrl: string,
+    request: ProcessRequirementsRequest,
+    correlationId?: string,
+  ) => Promise<ProcessRequirementsResponse>;
   replaceCanvas?: (
     client: InvokeAgentClient,
     canvasId: string,
@@ -61,11 +74,13 @@ export async function runInvokeAgentHandler(
   const startedAt = Date.now();
   const fetchFile = deps.fetchFile ?? fetch;
   const callAgent = deps.callAgent ?? callRequirementsAgent;
-  const replaceCanvas = deps.replaceCanvas ??
-    async (slackClient, canvasId, content) => {
-      const { replaceCanvasContent } = await import("./canvas.ts");
-      await replaceCanvasContent(slackClient, canvasId, content);
-    };
+  const replaceCanvas = deps.replaceCanvas ?? (async (slackClient, canvasId, content) => {
+    await replaceCanvasContent(
+      slackClient as unknown as SlackCanvasClient,
+      canvasId,
+      content,
+    );
+  });
 
   const context = deserializeEventContext(inputs.dashboard_canvas_content);
   if (!context) {
@@ -177,4 +192,3 @@ export async function runInvokeAgentHandler(
   }
 }
 
-export type { ProcessRequirementsResponse };

@@ -1,23 +1,4 @@
----
-name: find-docs
-description: >-
-  Retrieves up-to-date documentation, API references, and code examples for any
-  developer technology. Use this skill whenever the user asks about a specific
-  library, framework, SDK, CLI tool, or cloud service — even for well-known ones
-  like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. Your
-  training data may not reflect recent API changes or version updates.
-
-  Always use for: API syntax questions, configuration options, version migration
-  issues, "how do I" questions mentioning a library name, debugging that involves
-  library-specific behavior, setup instructions, and CLI tool usage.
-
-  Use even when you think you know the answer — do not rely on training data
-  for API details, signatures, or configuration options as they are frequently
-  outdated. Always verify against current docs. Prefer this over web search for
-  library documentation and API details.
----
-
-# Documentation Lookup
+# Lookup
 
 Retrieve current documentation and code examples for any library using the Context7 CLI.
 
@@ -48,7 +29,7 @@ npx ctx7@latest docs <libraryId> "<query>"
 
 You MUST call `library` first to obtain a valid library ID UNLESS the user explicitly provides a library ID in the format `/org/project` or `/org/project/version`.
 
-IMPORTANT: Do not run these commands more than 3 times per question. If you cannot find what you need after 3 attempts, use the best result you have.
+Do not run these commands more than 3 times per question. If you cannot find what you need after 3 attempts, use the best result you have.
 
 ## Step 1: Resolve a Library
 
@@ -129,6 +110,8 @@ Describe what to look up in the library's documentation, rather than the task to
 
 The output contains two types of content: **code snippets** (titled, with language-tagged blocks) and **info snippets** (prose explanations with breadcrumb context).
 
+Answer inline from the results — do not write a repo file unless the user escalates to investigate.
+
 ## Authentication
 
 Works without authentication. For higher rate limits:
@@ -148,7 +131,7 @@ If a command fails with a quota error ("Monthly quota reached" or "quota exceede
 2. Suggest they authenticate for higher limits: `npx ctx7@latest login`
 3. If they cannot or choose not to authenticate, answer from training knowledge and clearly note it may be outdated
 
-Do not silently fall back to training data — always tell the user why Context7 was not used.
+Always tell the user why Context7 was not used when falling back.
 
 ## Common Mistakes
 

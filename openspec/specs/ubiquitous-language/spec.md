@@ -4,9 +4,7 @@
 
 Shared domain vocabulary for TES Event Process. All specs, design docs, code identifiers,
 and user-facing copy MUST align with the terms defined here.
-
 ## Requirements
-
 ### Requirement: Glossary maintenance
 
 The project SHALL maintain an authoritative glossary of domain terms with unambiguous
@@ -26,14 +24,15 @@ definitions, preferred spellings, and known aliases.
 
 ### Requirement: Consistent naming
 
-Implementation artifacts (types, functions, API fields, Slack labels)
-SHALL use glossary terms verbatim unless a documented alias applies.
+Implementation artifacts (types, functions, API fields, Slack labels) SHALL use glossary terms verbatim unless a documented alias applies.
 
 #### Scenario: Code review against glossary
 
 - **GIVEN** an implementation uses a domain label visible to other systems or users
 - **WHEN** the label differs from the glossary preferred spelling without an alias entry
 - **THEN** the implementation MUST be corrected or the glossary MUST be updated first
+
+---
 
 ### Requirement: Bounded context boundaries
 
@@ -45,6 +44,24 @@ listed as a separate entry with its bounded context noted.
 - **GIVEN** two subsystems use the same word with different meanings
 - **WHEN** both meanings appear in specs or code
 - **THEN** each meaning MUST have its own glossary entry naming the bounded context
+
+### Requirement: Account term
+
+The project SHALL use **Account** as the preferred user-facing and glossary term for the customer or prospect identity associated with a TES Event Channel.
+
+#### Scenario: Account label in creation modal
+
+- **GIVEN** a user opens the Create TES Event creation modal
+- **WHEN** the modal is displayed
+- **THEN** the identity field SHALL be labeled Account (not Customer or Prospect)
+
+#### Scenario: Account in glossary
+
+- **GIVEN** this change archives
+- **WHEN** the ubiquitous-language spec is updated
+- **THEN** an Account term entry SHALL exist with definition and bounded context
+
+---
 
 ## Term entries
 

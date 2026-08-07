@@ -104,7 +104,7 @@ formatting. The graph nodes SHALL be: `loadContext`, `parseDocuments`,
 
 ### Requirement: Slack app agent invocation
 
-The slack-app SHALL wire @mention handling to the agent-service with gate checks and canvas sync.
+The slack-app SHALL wire @mention handling to the agent-service with gate checks and canvas sync. The agent SHALL only run when explicitly summoned by a user @mention (or thread continuation); it SHALL NOT auto-run on channel provisioning or onboarding completion.
 
 #### Scenario: Successful agent run
 
@@ -119,6 +119,12 @@ The slack-app SHALL wire @mention handling to the agent-service with gate checks
 - **GIVEN** an existing agent proposal thread
 - **WHEN** a user replies in the thread
 - **THEN** the agent SHALL be re-invoked with updated context and canvas state
+
+#### Scenario: Summon-only invocation
+
+- **GIVEN** a TES Event Channel is created or onboarding completes
+- **WHEN** no user @mentions the bot
+- **THEN** the invoke flow SHALL NOT run
 
 ### Requirement: Raw byte file transport
 

@@ -1,0 +1,87 @@
+{
+  "callback_id": "submit_onboarding",
+  "title": { "type": "plain_text", "text": "TES Onboarding" },
+  "submit": { "type": "plain_text", "text": "Submit" },
+  "blocks": [
+    {
+      "type": "input",
+      "block_id": "account_name",
+      "label": { "type": "plain_text", "text": "Account" },
+      "element": { "type": "plain_text_input", "action_id": "value" }
+    },
+    {
+      "type": "input",
+      "block_id": "main_prospect_goal",
+      "label": { "type": "plain_text", "text": "Main Prospect Goal" },
+      "element": { "type": "plain_text_input", "action_id": "value" }
+    },
+    {
+      "type": "input",
+      "block_id": "deal_history",
+      "label": { "type": "plain_text", "text": "Deal History" },
+      "element": { "type": "plain_text_input", "action_id": "value" }
+    },
+    {
+      "type": "input",
+      "block_id": "project_type",
+      "label": { "type": "plain_text", "text": "Project Type" },
+      "element": { "type": "plain_text_input", "action_id": "value" }
+    },
+    {
+      "type": "input",
+      "block_id": "stakeholders",
+      "label": { "type": "plain_text", "text": "Stakeholders" },
+      "element": { "type": "plain_text_input", "action_id": "value" }
+    },
+    {
+      "type": "input",
+      "block_id": "competitors",
+      "label": { "type": "plain_text", "text": "Competitors" },
+      "element": { "type": "plain_text_input", "action_id": "value" }
+    },
+    {
+      "type": "input",
+      "block_id": "sailpoint_suite",
+      "label": { "type": "plain_text", "text": "SailPoint Suite" },
+      "element": {
+        "type": "static_select",
+        "action_id": "value",
+        "options": []
+      }
+    },
+    {
+      "type": "input",
+      "block_id": "deadline",
+      "label": { "type": "plain_text", "text": "Deadline" },
+      "element": { "type": "plain_text_input", "action_id": "value" }
+    },
+    {
+      "type": "input",
+      "block_id": "notes",
+      "label": { "type": "plain_text", "text": "Notes" },
+      "optional": true,
+      "element": {
+        "type": "plain_text_input",
+        "action_id": "value",
+        "multiline": true
+      }
+    }
+  ],
+  "contract": {
+    "block_ids": [
+      "account_name",
+      "main_prospect_goal",
+      "deal_history",
+      "project_type",
+      "stakeholders",
+      "competitors",
+      "sailpoint_suite",
+      "deadline",
+      "notes"
+    ]
+  },
+  "dynamic": {
+    "account_name": { "prefill": "accountName" },
+    "sailpoint_suite": { "options_ref": "@domain/sailpoint-suites" }
+  }
+}

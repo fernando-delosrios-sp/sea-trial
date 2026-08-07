@@ -7,12 +7,14 @@ import {
 } from "../../lib/lists.ts";
 import { serializeEventContext } from "../../lib/event-context.ts";
 import {
-  dashboardTemplate,
-  infrastructureTemplate,
-  pinnedIndexBlocks,
-  pinnedIndexMessage,
-  requirementsTemplate,
-} from "../../templates/index.ts";
+  renderDashboardCanvas,
+  renderInfrastructureCanvas,
+  renderRequirementsCanvas,
+} from "../../lib/content/canvas-renderer.ts";
+import {
+  renderPinnedIndexBlocks,
+  renderPinnedIndexMessage,
+} from "../../lib/content/message-renderer.ts";
 
 export const SeedChannelObjectsFunction = DefineFunction({
   callback_id: "seed_channel_objects",
@@ -46,13 +48,13 @@ export default SlackFunction(
     const requirementsId = await createCanvas(client, {
       channelId: inputs.channel_id,
       title: "Requirements",
-      content: requirementsTemplate(),
+      content: renderRequirementsCanvas(),
     });
 
     const infrastructureId = await createCanvas(client, {
       channelId: inputs.channel_id,
       title: "Infrastructure",
-      content: infrastructureTemplate(),
+      content: renderInfrastructureCanvas(),
     });
 
     const deliverablesListId = await createDeliverablesList(
@@ -83,7 +85,7 @@ export default SlackFunction(
     const dashboardId = await createCanvas(client, {
       channelId: inputs.channel_id,
       title: "Dashboard",
-      content: dashboardTemplate(context),
+      content: renderDashboardCanvas(context),
     });
 
     context.dashboardCanvasId = dashboardId;
@@ -91,13 +93,13 @@ export default SlackFunction(
     await replaceCanvasContent(
       client,
       dashboardId,
-      dashboardTemplate(context),
+      renderDashboardCanvas(context),
     );
 
     const indexMessage = await client.chat.postMessage({
       channel: inputs.channel_id,
-      text: pinnedIndexMessage(context),
-      blocks: pinnedIndexBlocks(context),
+      text: renderPinnedIndexMessage(context),
+      blocks: renderPinnedIndexBlocks(context),
     });
 
     if (indexMessage.ts) {
@@ -114,4 +116,3 @@ export default SlackFunction(
     };
   },
 );
-

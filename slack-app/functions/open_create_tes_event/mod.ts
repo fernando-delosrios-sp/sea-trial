@@ -3,6 +3,7 @@ import {
   Schema,
   SlackFunction,
 } from "@slack/deno-slack-sdk/mod.ts";
+import { buildCreateTesEventModalView } from "../../lib/content/modal-compiler.ts";
 import { parseCreateTesEventSubmission } from "../../lib/create-tes-event-submit.ts";
 import type { ViewStateValues } from "../../lib/create-tes-event-submit.ts";
 
@@ -43,49 +44,7 @@ export default SlackFunction(
   async ({ inputs, client }) => {
     await client.views.open({
       interactivity_pointer: inputs.interactivity.interactivity_pointer,
-      view: {
-        type: "modal",
-        callback_id: "submit_create_tes_event",
-        title: { type: "plain_text", text: "Create TES Event" },
-        submit: { type: "plain_text", text: "Create" },
-        blocks: [
-          {
-            type: "input",
-            block_id: "project_name",
-            label: { type: "plain_text", text: "Project Name" },
-            element: { type: "plain_text_input", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "account",
-            label: { type: "plain_text", text: "Account" },
-            element: { type: "plain_text_input", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "salesforce_url",
-            label: { type: "plain_text", text: "Salesforce Opportunity URL" },
-            element: { type: "plain_text_input", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "members",
-            label: { type: "plain_text", text: "Members" },
-            element: { type: "multi_users_select", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "context_notes",
-            label: { type: "plain_text", text: "Context Notes" },
-            optional: true,
-            element: {
-              type: "plain_text_input",
-              action_id: "value",
-              multiline: true,
-            },
-          },
-        ],
-      },
+      view: buildCreateTesEventModalView(),
     });
 
     return { completed: false };
@@ -116,3 +75,4 @@ export default SlackFunction(
     return {};
   },
 );
+

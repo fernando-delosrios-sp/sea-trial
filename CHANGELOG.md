@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-08-07 — Declarative Slack Content
+
+### Added
+
+- **Declarative UI content files** — Modals (`content/modals/`), lists (`content/lists/`), canvases (`content/canvases/*.hbs.md`), and pinned index message (`content/messages/pinned-index.hbs.json`)
+- **Content loaders** — `modal-compiler.ts`, `canvas-renderer.ts`, `list-compiler.ts`, `message-renderer.ts`, unified `loader.ts`
+- **JSON Schema** — Content shape definitions under `slack-app/schemas/content/`
+- **Content tests** — `slack_content_test.ts` for block_id contracts, domain ref resolution, and template rendering
+- **Handlebars dependency** — `npm:handlebars@4.7.8` in `slack-app/deno.jsonc`
+
+### Changed
+
+- **Creation and onboarding modals** — Loaded from JSON instead of inline Block Kit in function/lib files
+- **List creation** — Column schemas from `deliverables.json` / `incidents.json` with `@domain/deliverable-statuses` for Status options
+- **Channel seeding** — Dashboard, Requirements, Infrastructure canvases and pinned index from content loaders
+
+### Removed
+
+- **`slack-app/templates/index.ts`** — Replaced by content loaders
+
+---
+
 ## 2026-08-07 — Domain Content JSON
 
 ### Added
@@ -144,6 +166,7 @@
 ### Review gate
 
 Deliverables are never written to the Deliverables List without explicit user acceptance via Block Kit buttons.
+
 
 
 

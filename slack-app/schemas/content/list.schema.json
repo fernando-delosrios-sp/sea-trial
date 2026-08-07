@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["name", "columns", "seed", "behavior"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "columns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["key", "name", "type"],
+        "properties": {
+          "key": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "type": { "type": "string", "minLength": 1 },
+          "options_ref": { "type": "string" },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["value", "label"],
+              "properties": {
+                "value": { "type": "string" },
+                "label": { "type": "string" }
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "seed": {
+      "type": "object",
+      "required": ["items"],
+      "properties": {
+        "items": { "type": "array" }
+      }
+    },
+    "behavior": {
+      "type": "object",
+      "required": ["field_change"],
+      "properties": {
+        "field_change": { "type": "array" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

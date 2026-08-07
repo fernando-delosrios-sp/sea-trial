@@ -1,20 +1,7 @@
-export const DELIVERABLES_COLUMNS = [
-  { name: "Task ID", type: "text" },
-  { name: "Assignee", type: "user" },
-  { name: "Status", type: "select" },
-  { name: "Situation", type: "text" },
-  { name: "Category", type: "text" },
-  { name: "Requirements", type: "text" },
-  { name: "Due date", type: "date" },
-  { name: "Deliverable", type: "link" },
-] as const;
-
-export const INCIDENTS_COLUMNS = [
-  { name: "Title", type: "text" },
-  { name: "Status", type: "select" },
-  { name: "Reporter", type: "user" },
-  { name: "Description", type: "text" },
-] as const;
+import {
+  getListName,
+  getSlackListSchema,
+} from "./content/list-compiler.ts";
 
 export interface SlackListCreateResponse {
   ok?: boolean;
@@ -40,7 +27,7 @@ export interface SlackListClient {
 }
 
 /**
- * Creates the Deliverables list with core schema columns.
+ * Creates the Deliverables list with core schema columns from declarative JSON.
  */
 export async function createDeliverablesList(
   client: SlackListClient,
@@ -48,11 +35,8 @@ export async function createDeliverablesList(
 ): Promise<string> {
   const response = await client.slackLists.create({
     channel_id: channelId,
-    name: "Deliverables",
-    schema: DELIVERABLES_COLUMNS.map((c) => ({
-      name: c.name,
-      type: c.type,
-    })),
+    name: getListName("deliverables"),
+    schema: getSlackListSchema("deliverables"),
   });
 
   const listId = response.list_id ?? response.list?.id;
@@ -64,7 +48,7 @@ export async function createDeliverablesList(
 }
 
 /**
- * Creates the Incidents list with core schema columns.
+ * Creates the Incidents list with core schema columns from declarative JSON.
  */
 export async function createIncidentsList(
   client: SlackListClient,
@@ -72,11 +56,8 @@ export async function createIncidentsList(
 ): Promise<string> {
   const response = await client.slackLists.create({
     channel_id: channelId,
-    name: "Incidents",
-    schema: INCIDENTS_COLUMNS.map((c) => ({
-      name: c.name,
-      type: c.type,
-    })),
+    name: getListName("incidents"),
+    schema: getSlackListSchema("incidents"),
   });
 
   const listId = response.list_id ?? response.list?.id;
@@ -86,4 +67,3 @@ export async function createIncidentsList(
   }
   return listId;
 }
-

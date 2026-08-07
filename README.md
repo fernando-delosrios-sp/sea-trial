@@ -49,6 +49,19 @@ Set `AGENT_SERVICE_URL` in slack-app environment to point at agent-service.
 
 SailPoint suite mappings and deliverable status vocabulary live in versioned JSON under `slack-app/content/domain/`. The loader at `slack-app/lib/content/domain.ts` validates files at load time; tests enforce parity with `packages/shared` types.
 
+#### Declarative Slack UI content
+
+Modals, list schemas, canvas markdown, and pinned index Block Kit live under `slack-app/content/` (JSON, Handlebars MD, and Handlebars JSON). Loaders in `slack-app/lib/content/` compile content at runtime:
+
+| Kind | Path | Loader |
+|------|------|--------|
+| Modals | `content/modals/*.json` | `modal-compiler.ts` — `contract.block_ids` + dynamic domain overlay |
+| Lists | `content/lists/*.json` | `list-compiler.ts` — column keys, `@domain/*` option refs |
+| Canvases | `content/canvases/*.hbs.md` | `canvas-renderer.ts` — metadata injected by code |
+| Messages | `content/messages/*.hbs.json` | `message-renderer.ts` |
+
+Import from `slack-app/lib/content/loader.ts` for the full public surface. JSON Schema files under `slack-app/schemas/content/` describe content shapes; tests in `slack_content_test.ts` enforce contracts.
+
 #### Triggers (automatic on deploy)
 
 The GitHub Actions deploy workflow provisions Slack triggers after `slack deploy` using `slack-app/triggers.config.yaml`. No manual `slack trigger create` is required for standard deploys.
@@ -167,6 +180,7 @@ All application state lives in Slack canvases and lists.
 - [Infrastructure setup checklist](docs/infrastructure-setup-checklist.md)
 - [Tech stack requirements](docs/tech-stack-requirements.md)
 - [Smoke test checklist](docs/smoke-test-checklist.md)
+
 
 
 

@@ -1,0 +1,22 @@
+[
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": {{{json messageText}}}
+    }
+  }{{#unless onboardingComplete}},
+  {
+    "type": "actions",
+    "block_id": "pinned_index_actions",
+    "elements": [
+      {
+        "type": "button",
+        "text": { "type": "plain_text", "text": "Complete onboarding" },
+        "style": "primary",
+        "action_id": "complete_onboarding",
+        "value": {{{json buttonValueJson}}}
+      }
+    ]
+  }{{/unless}}
+]

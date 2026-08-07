@@ -1,7 +1,7 @@
 import type { OnboardingForm, TesEventContext } from "@tes/shared/types/index.ts";
 import { applyOnboarding } from "./event-context.ts";
 import { deriveComponents } from "./suite-components.ts";
-import { dashboardTemplate } from "../templates/index.ts";
+import { dashboardTemplate } from "./content/canvas-renderer.ts";
 
 export interface OnboardingSubmitResult {
   context: TesEventContext;
@@ -24,4 +24,3 @@ export function processOnboardingSubmit(
 }
 
 export { ONBOARDING_MODAL_BLOCKS } from "./onboarding-modal.ts";
-

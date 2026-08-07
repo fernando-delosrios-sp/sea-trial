@@ -1,0 +1,22 @@
+{
+  "name": "Incidents",
+  "columns": [
+    { "key": "title", "name": "Title", "type": "text" },
+    {
+      "key": "status",
+      "name": "Status",
+      "type": "select",
+      "options": [
+        { "value": "Open", "label": "Open" },
+        { "value": "In progress", "label": "In progress" },
+        { "value": "Resolved", "label": "Resolved" }
+      ]
+    },
+    { "key": "reporter", "name": "Reporter", "type": "user" },
+    { "key": "description", "name": "Description", "type": "text" }
+  ],
+  "seed": { "items": [] },
+  "behavior": {
+    "field_change": []
+  }
+}

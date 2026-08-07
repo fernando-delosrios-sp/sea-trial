@@ -9,7 +9,8 @@
     "@slack/deno-slack-api/": "https://deno.land/x/deno_slack_api@2.6.0/",
     "@tes/shared/": "../packages/shared/src/",
     "@tes/observability/": "../packages/observability/dist/",
-    "std/": "https://deno.land/std@0.224.0/"
+    "std/": "https://deno.land/std@0.224.0/",
+    "handlebars": "npm:handlebars@4.7.8"
   },
   "compilerOptions": {
     "lib": ["deno.window"],
@@ -22,6 +23,7 @@
     "exclude": ["../node_modules"]
   }
 }
+
 
 
 

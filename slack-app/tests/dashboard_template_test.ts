@@ -4,8 +4,8 @@ import {
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   dashboardTemplate,
-  pinnedIndexBlocks,
-} from "../templates/index.ts";
+} from "../lib/content/canvas-renderer.ts";
+import { pinnedIndexBlocks } from "../lib/content/message-renderer.ts";
 import type { TesEventContext } from "@tes/shared/types/index.ts";
 
 const baseContext: TesEventContext = {

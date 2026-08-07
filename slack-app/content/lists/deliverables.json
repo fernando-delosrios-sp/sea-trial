@@ -1,0 +1,22 @@
+{
+  "name": "Deliverables",
+  "columns": [
+    { "key": "task_id", "name": "Task ID", "type": "text" },
+    { "key": "assignee", "name": "Assignee", "type": "user" },
+    {
+      "key": "status",
+      "name": "Status",
+      "type": "select",
+      "options_ref": "@domain/deliverable-statuses"
+    },
+    { "key": "situation", "name": "Situation", "type": "text" },
+    { "key": "category", "name": "Category", "type": "text" },
+    { "key": "requirements", "name": "Requirements", "type": "text" },
+    { "key": "due_date", "name": "Due date", "type": "date" },
+    { "key": "deliverable", "name": "Deliverable", "type": "link" }
+  ],
+  "seed": { "items": [] },
+  "behavior": {
+    "field_change": []
+  }
+}

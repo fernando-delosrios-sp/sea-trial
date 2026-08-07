@@ -14,13 +14,11 @@ export const ProvisionChannelFunction = DefineFunction({
       },
       submitting_user_id: { type: Schema.slack.types.user_id },
       context_notes: { type: Schema.types.string },
-      interactivity: { type: Schema.slack.types.interactivity },
     },
     required: [
       "project_name",
       "member_user_ids",
       "submitting_user_id",
-      "interactivity",
     ],
   },
   output_parameters: {
@@ -71,4 +69,5 @@ export default SlackFunction(
     };
   },
 );
+
 

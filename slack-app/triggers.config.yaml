@@ -1,0 +1,30 @@
+# Slack trigger provisioning config (see scripts/provision-triggers.sh)
+#
+# Fields per entry:
+#   id           — stable key for logs and idempotent matching
+#   trigger_def  — path to trigger definition (.ts) under slack-app/
+#   scope        — global | channel
+#   channels     — Slack channel IDs when scope is channel (inline list)
+#   enabled      — skip when false
+#
+# When scope is channel and channels is empty, deploy reads SLACK_TRIGGER_CHANNEL_IDS
+# (comma-separated) from GitHub Variables / CI env.
+
+triggers:
+  - id: create-tes-event
+    trigger_def: triggers/create_tes_event.ts
+    scope: global
+    channels: []
+    enabled: true
+
+  - id: complete-onboarding
+    trigger_def: triggers/complete_onboarding.ts
+    scope: global
+    channels: []
+    enabled: false  # block action on pinned index is primary; trigger def needs function→workflow fix
+
+  - id: tes-onboard
+    trigger_def: triggers/tes_onboard.ts
+    scope: channel
+    channels: []
+    enabled: false

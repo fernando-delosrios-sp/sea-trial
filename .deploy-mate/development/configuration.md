@@ -26,7 +26,7 @@ No scaffolded resources needed — all platform resources already exist for deve
 | Resource | Platform | ID / name | Created | Unblocks vars |
 |----------|----------|-----------|---------|---------------|
 | agent-service | Render | srv-d9peld2jnfac73eho7h0 | pre-existing | all agent-service env vars |
-| slack-app | Slack | dev app (pre-installed) | pre-existing | all slack-app tokens |
+| slack-app | Slack | Sea Trial (`A0BNHB84NCT`) | 2026-08-07 | all slack-app tokens + runtime env |
 
 ## CLI setup notes
 
@@ -40,8 +40,9 @@ No scaffolded resources needed — all platform resources already exist for deve
 ### slack CLI
 - Installed: `/Users/fernando.delosrios/.local/bin/slack` (v4.6.0)
 - Auth: `slack auth list` → workspace `fdelosrios` (Team ID TEX1209CG), 2026-08-05
-- Verified: `slack auth list` succeeded
+- Verified: `slack auth list` succeeded; `slack env list --app A0BNHB84NCT` → 4 runtime vars (2026-08-07)
 - Note: CI deploy uses `SLACK_SERVICE_TOKEN` (GitHub Secret), not interactive CLI auth
+- App migration: `tes-event-process` (`A0BNBFYA42G`) deleted 2026-08-07; active app is **Sea Trial** (`A0BNHB84NCT`)
 
 ### gh CLI
 - Installed: `gh` v2.96.0 (aliased via `_lc gh`)
@@ -847,4 +848,5 @@ curl -fsS -H "Authorization: Bearer $RENDER_API_KEY" "https://api.render.com/v1/
 - Via: manual
 - Blocker: none
 - Round: 1
+
 

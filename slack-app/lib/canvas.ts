@@ -12,13 +12,20 @@ export interface UpdateCanvasSectionParams {
 
 import { METADATA_MARKER } from "./event-context.ts";
 
+export interface SlackCanvasCreateResponse {
+  ok?: boolean;
+  error?: string;
+  canvas_id?: string;
+  canvas?: { id?: string };
+}
+
 export interface SlackCanvasClient {
   canvases: {
     create: (params: {
       channel_id: string;
       title: string;
       document_content: { type: string; markdown: string };
-    }) => Promise<{ canvas?: { id: string } }>;
+    }) => Promise<SlackCanvasCreateResponse>;
     edit: (params: {
       canvas_id: string;
       changes: Array<{
@@ -82,9 +89,10 @@ export async function createCanvas(
     document_content: { type: "markdown", markdown: params.content },
   });
 
-  const canvasId = response.canvas?.id;
+  const canvasId = response.canvas_id ?? response.canvas?.id;
   if (!canvasId) {
-    throw new Error(`Failed to create canvas "${params.title}"`);
+    const detail = response.error ? `: ${response.error}` : "";
+    throw new Error(`Failed to create canvas "${params.title}"${detail}`);
   }
   return canvasId;
 }
@@ -181,5 +189,6 @@ export async function readCanvasMarkdown(
 
   return content;
 }
+
 
 

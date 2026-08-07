@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-08-07 — CI Slack Trigger Provisioning
+
+### Added
+
+- **Automated trigger provisioning** — GitHub Actions deploy workflow runs `provision-triggers.sh` after `slack deploy` to create or update Slack shortcuts idempotently
+- **`triggers.config.yaml`** — Declarative config per trigger: definition path, `scope` (`global` | `channel`), channel list, and `enabled` flag
+- **Channel scope support** — Channel-scoped triggers provision one instance per channel ID; optional GitHub Variable `SLACK_TRIGGER_CHANNEL_IDS` supplies IDs at deploy time
+
+### Changed
+
+- **README trigger setup** — Manual `slack trigger create` steps replaced with automatic CI provisioning documentation
+- **Trigger definition imports** — Fixed `@slack/deno-slack-api/mod.ts` imports for Slack CLI compatibility
+- **Complete onboarding trigger** — Disabled in default config (`invalid_workflow_reference` for function-only trigger); pinned index block action remains primary entry
+
+---
+
 ## 2026-08-07 — Complete Provisioning Trigger
 
 ### Added
@@ -114,6 +130,7 @@
 ### Review gate
 
 Deliverables are never written to the Deliverables List without explicit user acceptance via Block Kit buttons.
+
 
 
 

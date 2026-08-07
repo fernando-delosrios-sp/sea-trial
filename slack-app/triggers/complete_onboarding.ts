@@ -1,5 +1,5 @@
-import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/types.ts";
-import OpenOnboardingFunction from "../functions/open_onboarding/mod.ts";
+import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/mod.ts";
+import { OpenOnboardingFunction } from "../functions/open_onboarding/mod.ts";
 
 /**
  * Link trigger for the pinned index "Complete onboarding" button.
@@ -24,3 +24,4 @@ const completeOnboardingTrigger = {
 };
 
 export default completeOnboardingTrigger;
+

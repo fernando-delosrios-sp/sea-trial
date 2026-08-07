@@ -1,7 +1,7 @@
 import {
   TriggerContextData,
   TriggerTypes,
-} from "@slack/deno-slack-api/types.ts";
+} from "@slack/deno-slack-api/mod.ts";
 import CreateTesEventWorkflow from "../workflows/create_tes_event.ts";
 
 const createTesEventTrigger = {
@@ -11,9 +11,10 @@ const createTesEventTrigger = {
   workflow: `#/workflows/${CreateTesEventWorkflow.definition.callback_id}`,
   inputs: {
     interactivity: {
-      value: TriggerContextData.shortcut.interactivity,
+      value: TriggerContextData.Shortcut.interactivity,
     },
   },
 };
 
 export default createTesEventTrigger;
+

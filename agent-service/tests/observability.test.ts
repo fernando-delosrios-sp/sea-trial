@@ -108,3 +108,20 @@ describe("deploy workflow OTLP config", () => {
     expect(workflow).toContain('if [ "${OTEL_LOGS_ENABLED:-false}" = "true" ]');
   });
 });
+
+describe("deploy workflow trigger provisioning", () => {
+  it("provisions Slack triggers after slack deploy", () => {
+    const workflow = readFileSync(
+      join(repoRoot, ".github/workflows/deploy.yml"),
+      "utf8",
+    );
+
+    const deployIndex = workflow.indexOf("slack deploy");
+    const provisionIndex = workflow.indexOf("Provision Slack triggers");
+    expect(deployIndex).toBeGreaterThan(-1);
+    expect(provisionIndex).toBeGreaterThan(deployIndex);
+    expect(workflow).toContain("./scripts/provision-triggers.sh");
+    expect(workflow).toContain("SLACK_TRIGGER_CHANNEL_IDS");
+  });
+});
+

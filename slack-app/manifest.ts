@@ -13,8 +13,12 @@ import { buildOutgoingDomains } from "./lib/outgoing-domains.ts";
 loadSync({ export: true, allowEmptyValues: true });
 
 export default Manifest({
-  name: "tes-event-process",
-  description: "TES Slack event delivery platform",
+  name: "Sea Trial",
+  displayName: "Sea Trial",
+  description: "TES before you sail.",
+  longDescription:
+    "Sea Trial provisions TES event channels, guides AE and SE onboarding, and shake-tests requirements with the Requirements Agent before the customer-facing voyage. Keeps canvases, deliverables, and review gates on course.",
+  icon: "assets/icon.png",
   functions: [
     ProvisionChannelFunction,
     SeedChannelObjectsFunction,

@@ -1,5 +1,5 @@
-import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/types.ts";
-import OpenOnboardingFunction from "../functions/open_onboarding/mod.ts";
+import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/mod.ts";
+import { OpenOnboardingFunction } from "../functions/open_onboarding/mod.ts";
 
 const tesOnboardTrigger = {
   type: TriggerTypes.Shortcut,
@@ -9,10 +9,10 @@ const tesOnboardTrigger = {
   workflow: `#/functions/${OpenOnboardingFunction.definition.callback_id}`,
   inputs: {
     channel_id: {
-      value: TriggerContextData.shortcut.channel_id,
+      value: TriggerContextData.Shortcut.channel_id,
     },
     interactivity: {
-      value: TriggerContextData.shortcut.interactivity,
+      value: TriggerContextData.Shortcut.interactivity,
     },
     dashboard_canvas_content: {
       value: "",
@@ -21,4 +21,5 @@ const tesOnboardTrigger = {
 };
 
 export default tesOnboardTrigger;
+
 

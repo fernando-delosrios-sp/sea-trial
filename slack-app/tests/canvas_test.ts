@@ -8,7 +8,7 @@ import {
 function mockClient(sections: Array<{ id: string; markdown?: string }>): SlackCanvasClient {
   return {
     canvases: {
-      create: async () => ({ canvas: { id: "canvas-new" } }),
+      create: async () => ({ ok: true, canvas_id: "canvas-new" }),
       edit: async () => ({}),
       sections: {
         lookup: async () => ({ sections }),
@@ -17,7 +17,7 @@ function mockClient(sections: Array<{ id: string; markdown?: string }>): SlackCa
   };
 }
 
-Deno.test("Create canvas returns canvas ID", async () => {
+Deno.test("Create canvas returns canvas ID from canvas_id field", async () => {
   const client = mockClient([]);
   const id = await createCanvas(client, {
     channelId: "C1",
@@ -25,6 +25,27 @@ Deno.test("Create canvas returns canvas ID", async () => {
     content: "# Hello",
   });
   assertEquals(id, "canvas-new");
+});
+
+Deno.test("Create canvas falls back to nested canvas.id", async () => {
+  const client = mockClient([]);
+  client.canvases.create = async () => ({ ok: true, canvas: { id: "nested-id" } });
+  const id = await createCanvas(client, {
+    channelId: "C1",
+    title: "Test",
+    content: "# Hello",
+  });
+  assertEquals(id, "nested-id");
+});
+
+Deno.test("Create canvas includes API error in message", async () => {
+  const client = mockClient([]);
+  client.canvases.create = async () => ({ ok: false, error: "missing_scope" });
+  await assertRejects(
+    () => createCanvas(client, { channelId: "C1", title: "Req", content: "# Hi" }),
+    Error,
+    'Failed to create canvas "Req": missing_scope',
+  );
 });
 
 Deno.test("Update canvas section replaces targeted section", async () => {
@@ -51,3 +72,4 @@ Deno.test("Update canvas section throws when marker not found", async () => {
     "not found",
   );
 });
+

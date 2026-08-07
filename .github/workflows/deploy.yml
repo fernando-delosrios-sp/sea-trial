@@ -151,6 +151,7 @@ jobs:
           OTEL_SERVICE_NAME: tes-slack-app
         run: |
           set -euo pipefail
+          # .env supplies manifest build-time values (outgoingDomains)
           cat > .env <<EOF
           AGENT_SERVICE_URL=$AGENT_SERVICE_URL
           OTEL_LOGS_ENABLED=${OTEL_LOGS_ENABLED:-false}
@@ -160,6 +161,18 @@ jobs:
           SLACK_BOT_TOKEN=
           SLACK_APP_TOKEN=
           EOF
+          slack env set AGENT_SERVICE_URL "$AGENT_SERVICE_URL" --token "$SLACK_SERVICE_TOKEN"
+          slack env set OTEL_LOGS_ENABLED "${OTEL_LOGS_ENABLED:-false}" --token "$SLACK_SERVICE_TOKEN"
+          slack env set OTEL_EXPORTER_OTLP_ENDPOINT "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" --token "$SLACK_SERVICE_TOKEN"
+          slack env set OTEL_EXPORTER_OTLP_HEADERS "${OTEL_EXPORTER_OTLP_HEADERS:-}" --token "$SLACK_SERVICE_TOKEN"
+          slack env set OTEL_SERVICE_NAME "${OTEL_SERVICE_NAME:-tes-slack-app}" --token "$SLACK_SERVICE_TOKEN"
           slack deploy -s --token "$SLACK_SERVICE_TOKEN"
+
+      - name: Provision Slack triggers
+        working-directory: slack-app
+        env:
+          SLACK_SERVICE_TOKEN: ${{ secrets.SLACK_SERVICE_TOKEN }}
+          SLACK_TRIGGER_CHANNEL_IDS: ${{ vars.SLACK_TRIGGER_CHANNEL_IDS }}
+        run: ./scripts/provision-triggers.sh
 
 

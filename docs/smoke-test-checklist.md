@@ -8,7 +8,7 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 
 | Date | Tester | Workspace | Result | Notes |
 |------|--------|-----------|--------|-------|
-| 2026-08-07 | _pending deploy_ | dev tenant | ⏳ | Automated tests pass (68/68). Manual smoke after `slack deploy` + trigger create. |
+| 2026-08-07 | _pending deploy_ | dev tenant | ⏳ | Automated tests pass. Manual smoke after CI deploy (triggers provisioned automatically). |
 
 ## Channel provisioning
 
@@ -55,5 +55,6 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 - [ ] Accept → Requirements canvas candidates marked promoted
 - [ ] Reject → no list write
 - [ ] No button click → list unchanged
+
 
 

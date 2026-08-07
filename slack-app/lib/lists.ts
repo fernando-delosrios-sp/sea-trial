@@ -16,13 +16,20 @@ export const INCIDENTS_COLUMNS = [
   { name: "Description", type: "text" },
 ] as const;
 
+export interface SlackListCreateResponse {
+  ok?: boolean;
+  error?: string;
+  list_id?: string;
+  list?: { id?: string };
+}
+
 export interface SlackListClient {
   slackLists: {
     create: (params: {
       channel_id: string;
       name: string;
       schema: Array<{ name: string; type: string }>;
-    }) => Promise<{ list?: { id: string } }>;
+    }) => Promise<SlackListCreateResponse>;
     items: {
       create: (params: {
         list_id: string;
@@ -48,8 +55,11 @@ export async function createDeliverablesList(
     })),
   });
 
-  const listId = response.list?.id;
-  if (!listId) throw new Error("Failed to create Deliverables list");
+  const listId = response.list_id ?? response.list?.id;
+  if (!listId) {
+    const detail = response.error ? `: ${response.error}` : "";
+    throw new Error(`Failed to create Deliverables list${detail}`);
+  }
   return listId;
 }
 
@@ -69,7 +79,11 @@ export async function createIncidentsList(
     })),
   });
 
-  const listId = response.list?.id;
-  if (!listId) throw new Error("Failed to create Incidents list");
+  const listId = response.list_id ?? response.list?.id;
+  if (!listId) {
+    const detail = response.error ? `: ${response.error}` : "";
+    throw new Error(`Failed to create Incidents list${detail}`);
+  }
   return listId;
 }
+

@@ -45,21 +45,29 @@ deno task test
 
 Set `AGENT_SERVICE_URL` in slack-app environment to point at agent-service.
 
-#### Triggers (after deploy)
+#### Triggers (automatic on deploy)
 
-Create or update workspace triggers from the definitions in `slack-app/triggers/`:
+The GitHub Actions deploy workflow provisions Slack triggers after `slack deploy` using `slack-app/triggers.config.yaml`. No manual `slack trigger create` is required for standard deploys.
+
+| Trigger | Default scope | Purpose |
+|---------|---------------|---------|
+| **Create TES Event** | global (enabled) | Creation modal → provision workflow |
+| **Complete Onboarding** | global (disabled) | Optional link trigger — pinned index block action is primary |
+| **TES Onboard** | channel (disabled) | Optional legacy channel shortcut |
+
+Configure scope and channel lists in `slack-app/triggers.config.yaml`:
+
+- `scope: global` — workspace-wide shortcut
+- `scope: channel` — one trigger per channel ID in `channels`, or set GitHub Variable `SLACK_TRIGGER_CHANNEL_IDS` (comma-separated) at deploy time
+
+Re-deploy is idempotent: existing triggers are updated, missing ones are created.
+
+Local manual provision (optional):
 
 ```bash
 cd slack-app
-slack trigger create --trigger-def triggers/create_tes_event.ts
-slack trigger create --trigger-def triggers/complete_onboarding.ts
-# Optional legacy shortcut:
-slack trigger create --trigger-def triggers/tes_onboard.ts
+SLACK_SERVICE_TOKEN=... ./scripts/provision-triggers.sh
 ```
-
-- **Create TES Event** — global shortcut → creation modal → provision workflow
-- **Complete Onboarding** — link trigger for the pinned index button (also routed via `complete_onboarding` block action handler)
-- **TES Onboard** — optional channel shortcut fallback
 
 ## Deploy via GitHub Actions
 
@@ -85,12 +93,13 @@ Configuration is stored in GitHub Secrets and Variables. A manual workflow deplo
 | `RENDER_SERVICE_ID` | Render web service ID for agent-service |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Grafana Cloud OTLP base URL (e.g. `https://otlp-gateway-prod-eu-west-6.grafana.net/otlp`) |
 | `OTEL_LOGS_ENABLED` | Set to `true` to push structured logs from both services (`false` by default) |
+| `SLACK_TRIGGER_CHANNEL_IDS` | Optional comma-separated Slack channel IDs for channel-scoped triggers (see `slack-app/triggers.config.yaml`) |
 
 ### Trigger a deploy
 
 1. Configure the secrets and variables above in the GitHub repository settings.
 2. Open **Actions → Deploy → Run workflow**.
-3. Confirm the workflow logs show Render env sync, agent-service health check, and slack-app deploy.
+3. Confirm the workflow logs show Render env sync, agent-service health check, slack-app deploy, and Slack trigger provisioning.
 
 ### Rollback
 
@@ -154,6 +163,7 @@ All application state lives in Slack canvases and lists.
 - [Infrastructure setup checklist](docs/infrastructure-setup-checklist.md)
 - [Tech stack requirements](docs/tech-stack-requirements.md)
 - [Smoke test checklist](docs/smoke-test-checklist.md)
+
 
 
 

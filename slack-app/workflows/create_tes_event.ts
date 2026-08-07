@@ -25,7 +25,6 @@ const provisionStep = CreateTesEventWorkflow.addStep(ProvisionChannelFunction, {
   member_user_ids: openStep.outputs.member_user_ids,
   submitting_user_id: openStep.outputs.submitting_user_id,
   context_notes: openStep.outputs.context_notes,
-  interactivity: CreateTesEventWorkflow.inputs.interactivity,
 });
 
 CreateTesEventWorkflow.addStep(SeedChannelObjectsFunction, {
@@ -38,5 +37,6 @@ CreateTesEventWorkflow.addStep(SeedChannelObjectsFunction, {
 });
 
 export default CreateTesEventWorkflow;
+
 
 

@@ -8,8 +8,9 @@ The project SHALL document a canonical inventory of GitHub Secrets and Variables
 
 - **GIVEN** an operator configuring the GitHub repository
 - **WHEN** they read the deployment documentation
-- **THEN** they SHALL find a list of required GitHub Secrets: `LLM_API_KEY`, `SLACK_SERVICE_TOKEN`, and Render API credentials or deploy hook URL
-- **AND** they SHALL find required GitHub Variables: `AGENT_SERVICE_URL`, `LLM_BASE_URL`, `LLM_MODEL`
+- **THEN** they SHALL find a list of required GitHub Secrets: `LLM_API_KEY`, `SLACK_SERVICE_TOKEN`, `RENDER_API_KEY`, and `RENDER_DEPLOY_HOOK_URL`
+- **AND** they SHALL find required GitHub Variables: `AGENT_SERVICE_URL`, `LLM_BASE_URL`, `LLM_MODEL`, and `RENDER_SERVICE_ID`
+- **AND** when OTLP logging is enabled (`OTEL_LOGS_ENABLED=true`), they SHALL find optional GitHub Secret `OTEL_EXPORTER_OTLP_HEADERS` and Variables `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_LOGS_ENABLED`
 
 #### Scenario: Secrets not committed to repository
 
@@ -29,6 +30,7 @@ The project SHALL provide a GitHub Actions workflow that deploys both `agent-ser
 - **GIVEN** all required GitHub Secrets and Variables are configured
 - **WHEN** an operator triggers the deploy workflow via `workflow_dispatch`
 - **THEN** the workflow SHALL deploy `agent-service` to Render with `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL` from GitHub
+- **AND** when OTLP logging is enabled, SHALL sync `OTEL_*` environment variables to Render and slack-app
 - **AND** SHALL deploy `slack-app` to Slack ROSI with `AGENT_SERVICE_URL` set via `slack env set`
 - **AND** the workflow run log SHALL record the trigger actor and timestamp
 
@@ -94,3 +96,4 @@ The agent-service SHALL support any OpenAI-compatible LLM API via environment co
 - **WHEN** agent-service is deployed to Render
 - **THEN** `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL` on Render SHALL match the values in GitHub Secrets and Variables
 - **AND** changing those GitHub values and re-running the workflow SHALL update the deployed configuration without manual Render dashboard edits
+

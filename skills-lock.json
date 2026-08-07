@@ -17,13 +17,7 @@
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/changelog-generator/SKILL.md",
-      "computedHash": "81a401df2faaadca3dd72dbb0461520c8f4956cb7206edbda2138531fa81d713"
-    },
-    "code-review": {
-      "source": "fernando-delosrios-sp/skills",
-      "sourceType": "github",
-      "skillPath": "skills/engineering/code-review/SKILL.md",
-      "computedHash": "31d149a480eaa68c11e32f5ee77f0fd0b98a906834d531d881d502352edd0b8e"
+      "computedHash": "e3cf9fecf18c726ad534ae23f4b5659052e6a20dd0147e6d70f8e580de9aba41"
     },
     "code-simplification": {
       "source": "fernando-delosrios-sp/skills",
@@ -67,12 +61,6 @@
       "skillPath": "skills/executing-plans/SKILL.md",
       "computedHash": "78a07800ee99a5861ae10be59d79fad085fdca10444e8aaeb2691597e357cff8"
     },
-    "find-docs": {
-      "source": "fernando-delosrios-sp/skills",
-      "sourceType": "github",
-      "skillPath": "skills/engineering/find-docs/SKILL.md",
-      "computedHash": "93ec2d2786d7e83973252383875c4f345a2ee7cbbd08a1ab38e5201b214640ee"
-    },
     "finishing-a-development-branch": {
       "source": "obra/superpowers",
       "sourceType": "github",
@@ -89,7 +77,7 @@
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/git-commit/SKILL.md",
-      "computedHash": "85ed61b6d6a835360c4953f2719f5c32eff9092331e5a5f0fc3d64f2ac8624c0"
+      "computedHash": "329e0021ebebec843aab1e0af878d88a6b2e0ba61bde241c08990aae046aae40"
     },
     "grill-me": {
       "source": "fernando-delosrios-sp/skills",
@@ -199,23 +187,11 @@
       "skillPath": "skills/verification-before-completion/SKILL.md",
       "computedHash": "b529822bdac4b197b180fe12225cff86b930b65910435103c10622df7f041651"
     },
-    "wayfinder": {
-      "source": "fernando-delosrios-sp/skills",
-      "sourceType": "github",
-      "skillPath": "skills/productivity/wayfinder/SKILL.md",
-      "computedHash": "c9e18cefd77b6b5b0ee35f59ce2fd96359aa2d2f02e3479e12c873c5402d9d43"
-    },
     "writing-for-agents": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/writing-for-agents/SKILL.md",
       "computedHash": "ccfa1e94d8f6ab5c6a1edd55293ca477faf93c39207771331efdb1e798ed21d6"
-    },
-    "writing-great-skills": {
-      "source": "fernando-delosrios-sp/skills",
-      "sourceType": "github",
-      "skillPath": "skills/productivity/writing-great-skills/SKILL.md",
-      "computedHash": "4deb21855fb4deeeb1b8217b041faff003fd0c915d24a22f636851c520bc9c5c"
     },
     "writing-plans": {
       "source": "obra/superpowers",

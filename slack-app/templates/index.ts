@@ -50,7 +50,7 @@ export function requirementsTemplate(): string {
     "# Requirements Canvas",
     "",
     "## Extracted Requirements",
-    "_No requirements extracted yet. @mention the bot with documents to begin._",
+    "_No requirements extracted yet. @mention the bot with documents to summon the Requirements Agent._",
     "",
     "## Deliverable Candidates",
     "_Candidates will appear here after agent processing._",
@@ -83,8 +83,8 @@ export function pinnedIndexMessage(context: TesEventContext): string {
     `- <list:${context.incidentsListId}|Incidents>`,
     "",
     context.onboardingComplete
-      ? "✅ Onboarding complete — @mention the bot with documents to run the Requirements Agent."
-      : "⏳ *Complete onboarding* to unlock the Requirements Agent.",
+      ? "✅ Onboarding complete — @mention the bot with documents to summon the Requirements Agent."
+      : "⏳ Click *Complete onboarding* below to unlock the Requirements Agent.",
   ].join("\n");
 }
 
@@ -114,6 +114,9 @@ export function pinnedIndexBlocks(
           text: { type: "plain_text", text: "Complete onboarding" },
           style: "primary",
           action_id: "complete_onboarding",
+          value: JSON.stringify({
+            dashboard_canvas_id: context.dashboardCanvasId,
+          }),
         },
       ],
     });
@@ -121,5 +124,6 @@ export function pinnedIndexBlocks(
 
   return blocks;
 }
+
 
 

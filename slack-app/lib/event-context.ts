@@ -41,8 +41,10 @@ export function applyOnboarding(
 ): TesEventContext {
   return {
     ...context,
+    accountName: form.accountName,
     onboardingComplete: true,
     onboarding: form,
     derivedComponents,
   };
 }
+

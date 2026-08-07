@@ -1,5 +1,13 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
-import { getSupportedSuites } from "../../lib/suite-components.ts";
+import {
+  buildOnboardingModalView,
+  resolveAccountPrefill,
+} from "../../lib/onboarding-modal.ts";
+import {
+  executeOnboardingSubmit,
+  loadDashboardContentForButton,
+  parseOnboardingForm,
+} from "../../lib/onboarding-view-submit.ts";
 
 export const OpenOnboardingFunction = DefineFunction({
   callback_id: "open_onboarding",
@@ -19,90 +27,64 @@ export const OpenOnboardingFunction = DefineFunction({
 export default SlackFunction(
   OpenOnboardingFunction,
   async ({ inputs, client }) => {
-    const suites = getSupportedSuites();
+    const accountName = resolveAccountPrefill(inputs.dashboard_canvas_content);
 
     await client.views.open({
       interactivity_pointer: inputs.interactivity.interactivity_pointer,
-      view: {
-        type: "modal",
-        callback_id: "submit_onboarding",
-        private_metadata: JSON.stringify({
-          channel_id: inputs.channel_id,
-          dashboard_canvas_content: inputs.dashboard_canvas_content,
-        }),
-        title: { type: "plain_text", text: "TES Onboarding" },
-        submit: { type: "plain_text", text: "Submit" },
-        blocks: [
-          {
-            type: "input",
-            block_id: "customer_name",
-            label: { type: "plain_text", text: "Customer Name" },
-            element: { type: "plain_text_input", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "main_prospect_goal",
-            label: { type: "plain_text", text: "Main Prospect Goal" },
-            element: { type: "plain_text_input", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "deal_history",
-            label: { type: "plain_text", text: "Deal History" },
-            element: { type: "plain_text_input", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "project_type",
-            label: { type: "plain_text", text: "Project Type" },
-            element: { type: "plain_text_input", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "stakeholders",
-            label: { type: "plain_text", text: "Stakeholders" },
-            element: { type: "plain_text_input", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "competitors",
-            label: { type: "plain_text", text: "Competitors" },
-            element: { type: "plain_text_input", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "sailpoint_suite",
-            label: { type: "plain_text", text: "SailPoint Suite" },
-            element: {
-              type: "static_select",
-              action_id: "value",
-              options: suites.map((s) => ({
-                text: { type: "plain_text", text: s },
-                value: s,
-              })),
-            },
-          },
-          {
-            type: "input",
-            block_id: "deadline",
-            label: { type: "plain_text", text: "Deadline" },
-            element: { type: "plain_text_input", action_id: "value" },
-          },
-          {
-            type: "input",
-            block_id: "notes",
-            label: { type: "plain_text", text: "Notes" },
-            optional: true,
-            element: {
-              type: "plain_text_input",
-              action_id: "value",
-              multiline: true,
-            },
-          },
-        ],
-      },
+      view: buildOnboardingModalView({
+        channelId: inputs.channel_id,
+        dashboardCanvasContent: inputs.dashboard_canvas_content,
+        accountName,
+      }),
     });
 
     return { completed: false };
+  },
+).addBlockActionsHandler(
+  "complete_onboarding",
+  async ({ action, body, client }) => {
+    const channelId = body.channel?.id;
+    if (!channelId) {
+      return { error: "Missing channel context for onboarding button." };
+    }
+
+    const dashboardCanvasContent = await loadDashboardContentForButton(
+      client,
+      typeof action.value === "string" ? action.value : undefined,
+      "",
+    );
+
+    const accountName = resolveAccountPrefill(dashboardCanvasContent);
+
+    await client.views.open({
+      interactivity_pointer: body.interactivity.interactivity_pointer,
+      view: buildOnboardingModalView({
+        channelId,
+        dashboardCanvasContent,
+        accountName,
+      }),
+    });
+
+    return { completed: true };
+  },
+).addViewSubmissionHandler(
+  "submit_onboarding",
+  async ({ view, client }) => {
+    const metadata = JSON.parse(view.private_metadata) as {
+      channel_id: string;
+      dashboard_canvas_content: string;
+    };
+
+    const result = await executeOnboardingSubmit(
+      client,
+      metadata,
+      parseOnboardingForm(view.state.values),
+    );
+
+    if (!result.ok) {
+      return { error: result.error };
+    }
+
+    return { completed: true };
   },
 );

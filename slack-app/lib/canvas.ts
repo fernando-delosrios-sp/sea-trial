@@ -110,3 +110,24 @@ export async function replaceCanvasContent(
     }],
   });
 }
+
+/**
+ * Reads canvas markdown by concatenating all section content.
+ */
+export async function readCanvasMarkdown(
+  client: SlackCanvasClient,
+  canvasId: string,
+): Promise<string> {
+  const lookup = await client.canvases.sections.lookup({
+    canvas_id: canvasId,
+    criteria: { section_types: ["any_header"] },
+  });
+
+  const sections = lookup.sections ?? [];
+  if (sections.length === 0) {
+    throw new Error(`Canvas ${canvasId} has no readable sections`);
+  }
+
+  return sections.map((section) => section.markdown ?? "").join("\n");
+}
+

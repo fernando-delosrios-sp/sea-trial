@@ -23,14 +23,5 @@ export function processOnboardingSubmit(
   };
 }
 
-export const ONBOARDING_MODAL_BLOCKS = [
-  "customer_name",
-  "main_prospect_goal",
-  "deal_history",
-  "project_type",
-  "stakeholders",
-  "competitors",
-  "sailpoint_suite",
-  "deadline",
-  "notes",
-] as const;
+export { ONBOARDING_MODAL_BLOCKS } from "./onboarding-modal.ts";
+

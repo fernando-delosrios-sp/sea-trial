@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-08-07 — Complete Provisioning Trigger
+
+### Added
+
+- **Creation modal** — "Create TES Event" global shortcut opens a modal with Project Name, Account, Salesforce Opportunity URL, Members (multi-select), and Context Notes before provisioning
+- **Dashboard Project section** — Seeds Account, SF link, members, notes, and status at channel creation
+- **Complete onboarding button** — Pinned index Block Kit button opens onboarding; Account pre-filled from creation context
+- **Member invitations** — Provision invites all selected members plus the trigger user (deduped)
+
+### Changed
+
+- **Account terminology** — `customerName` renamed to `accountName` across shared types and onboarding; modal label is "Account"
+- **Summon-only agent copy** — Gate messages, pinned index, and requirements template direct users to @mention the bot (no auto-invoke on create or onboarding submit)
+
+### Documentation
+
+- Smoke test checklist updated for creation modal fields and Account pre-fill
+- README trigger setup steps for `create_tes_event` and `complete_onboarding`
+
+---
+
 ## 2026-08-05
 
 ### 📚 Documentation
@@ -93,6 +114,7 @@
 ### Review gate
 
 Deliverables are never written to the Deliverables List without explicit user acceptance via Block Kit buttons.
+
 
 
 

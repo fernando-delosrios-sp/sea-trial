@@ -9,7 +9,7 @@
 - [x] 2.1 Implement `open_create_tes_event` function (modal with project name, Account, SF URL, multi_users_select, context notes)
 - [x] 2.2 Implement creation modal view submission handler wiring to workflow inputs
 - [x] 2.3 Update `create_tes_event` trigger to open modal via interactivity (replace broken shortcut inputs)
-- [ ] 2.4 Document `slack trigger create` / update steps for workspace deployment
+- [x] 2.4 Document `slack trigger create` / update steps for workspace deployment
 
 ## 3. Provision and seed
 
@@ -22,33 +22,33 @@
 
 ## 4. Onboarding updates
 
-- [ ] 4.1 Pre-fill Account in `open_onboarding` from `TesEventContext.accountName`
-- [ ] 4.2 Update submit handler to write submitted Account back to context and dashboard
-- [ ] 4.3 Wire Complete onboarding button to `open_onboarding` (block_actions or interactivity)
-- [ ] 4.4 Update pinned index post-onboarding copy to summon-only language
-- [ ] 4.5 Tests: Account pre-fill and overwrite (`onboarding_test.ts`); gate unchanged (`gate_test.ts`)
+- [x] 4.1 Pre-fill Account in `open_onboarding` from `TesEventContext.accountName`
+- [x] 4.2 Update submit handler to write submitted Account back to context and dashboard
+- [x] 4.3 Wire Complete onboarding button to `open_onboarding` (block_actions or interactivity)
+- [x] 4.4 Update pinned index post-onboarding copy to summon-only language
+- [x] 4.5 Tests: Account pre-fill and overwrite (`onboarding_test.ts`); gate unchanged (`gate_test.ts`)
 
 ## 5. Copy and agent clarity
 
-- [ ] 5.1 Update requirements template and gate messages to summon-only wording
-- [ ] 5.2 Confirm no agent invoke on provision or onboarding submit (code review / test)
+- [x] 5.1 Update requirements template and gate messages to summon-only wording
+- [x] 5.2 Confirm no agent invoke on provision or onboarding submit (code review / test)
 
 ## 6. Verification
 
-- [ ] 6.1 Run `cd slack-app && deno task test`
-- [ ] 6.2 Run `openspec validate complete-provisioning-trigger --json`
+- [x] 6.1 Run `cd slack-app && deno task test`
+- [x] 6.2 Run `openspec validate complete-provisioning-trigger --json`
 - [ ] 6.3 Manual smoke: global shortcut → modal → channel with pinned button → onboarding → @mention gate
 
 ## 7. Documentation
 
-- [ ] 7.1 Update `docs/smoke-test-checklist.md` provisioning section for creation modal fields
-- [ ] 7.2 Update README or slack-app deploy notes with trigger creation steps
-- [ ] 7.3 N/A — no API contract changes for agent-service public docs
+- [x] 7.1 Update `docs/smoke-test-checklist.md` provisioning section for creation modal fields
+- [x] 7.2 Update README or slack-app deploy notes with trigger creation steps
+- [x] 7.3 N/A — no API contract changes for agent-service public docs
 
 ## 8. Changelog
 
-- [ ] 8.1 Create or update changelog entry for this change
-- [ ] 8.2 Confirm entry covers creation modal, Account terminology, and onboarding button CTA
+- [x] 8.1 Create or update changelog entry for this change
+- [x] 8.2 Confirm entry covers creation modal, Account terminology, and onboarding button CTA
 
 
 

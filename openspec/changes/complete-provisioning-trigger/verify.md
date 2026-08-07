@@ -1,45 +1,45 @@
 # Verification Report
 
-> Pre-implementation verification plan. Results to be filled during apply phase.
-
 **Change**: `complete-provisioning-trigger`
-**Verified at**: _pending_
-**Verifier**: _pending_
+**Verified at**: 2026-08-07
+**Verifier**: apply-phase automated verification
 
 ---
 
 ## 1. Structural Validation (`openspec validate complete-provisioning-trigger --json`)
 
-- [ ] Change validates with `"valid": true`
+- [x] Change validates with `"valid": true`
 
 ---
 
 ## 2. Task Completion Sanity Check (`tasks.md`)
 
-- [ ] All implementation tasks complete (except manual smoke if deferred)
+- [x] All implementation tasks complete except manual smoke (6.3 — requires workspace deploy)
 
 ---
 
 ## 3. Spec Scenario Test Coverage
 
-| Scenario | Planned test | Status |
-|----------|--------------|--------|
-| event-channel / Open creation modal | creation modal test | pending |
-| event-channel / Submit valid creation form | workflow wiring test | pending |
-| event-channel / Reject invalid project name at creation | channel validation test | pending |
-| event-channel / Project section populated at seed | template/seed test | pending |
-| event-channel / Creation fields stored in context | `event_context_test.ts` | pending |
-| event-channel / Successful channel creation | `provision_test.ts` | pending |
-| event-channel / Invalid project name | `channel_test.ts` | pending |
-| event-channel / Objects seeded on creation | `provision_test.ts` | pending |
-| event-channel / Metadata round-trip | `event_context_test.ts` | pending |
-| onboarding / Open onboarding form | `onboarding_test.ts` | pending |
-| onboarding / Submit onboarding | `onboarding_test.ts` | pending |
-| onboarding / Agent blocked | `gate_test.ts` | pending |
-| onboarding / Agent available | `gate_test.ts` | pending |
-| onboarding / No auto-invoke on lifecycle events | code inspection / test | pending |
-| requirements-agent / Summon-only invocation | code inspection | pending |
-| ubiquitous-language / Account label | modal structure test | pending |
+| Scenario | Test | Status |
+|----------|------|--------|
+| event-channel / Open creation modal | `create_tes_event_modal_test.ts` | ✅ |
+| event-channel / Submit valid creation form | `create_tes_event_submit_test.ts` | ✅ |
+| event-channel / Reject invalid project name at creation | `create_tes_event_submit_test.ts` | ✅ |
+| event-channel / Project section populated at seed | `dashboard_template_test.ts` | ✅ |
+| event-channel / Creation fields stored in context | `event_context_test.ts` | ✅ |
+| event-channel / Successful channel creation | `provision_test.ts` | ✅ |
+| event-channel / Invalid project name | `channel_test.ts` | ✅ |
+| event-channel / Objects seeded on creation | `provision_test.ts` | ✅ |
+| event-channel / Metadata round-trip | `event_context_test.ts` | ✅ |
+| onboarding / Open onboarding form | `onboarding_test.ts` | ✅ |
+| onboarding / Submit onboarding | `onboarding_test.ts` | ✅ |
+| onboarding / Agent blocked | `gate_test.ts` | ✅ |
+| onboarding / Agent available | `gate_test.ts` | ✅ |
+| onboarding / No auto-invoke on lifecycle events | `onboarding_test.ts` (source inspection) | ✅ |
+| requirements-agent / Summon-only invocation | gate + onboarding copy updates | ✅ |
+| ubiquitous-language / Account label | `onboarding_test.ts`, creation modal test | ✅ |
+
+**Test command:** `cd slack-app && deno task test` → 64 passed, 0 failed
 
 ---
 
@@ -47,13 +47,13 @@
 
 | Design decision | Status |
 |-----------------|--------|
-| D1 Two-step forms | pending |
-| D2 Creation modal workflow | pending |
-| D3 Multi-select members | pending |
-| D4 Account pre-fill editable | pending |
-| D5 SF URL store-only | pending |
-| D6 Onboarding button CTA | pending |
-| D8 Summon-only agent | pending |
+| D1 Two-step forms | ✅ |
+| D2 Creation modal workflow (step outputs pattern) | ✅ |
+| D3 Multi-select members | ✅ |
+| D4 Account pre-fill editable | ✅ |
+| D5 SF URL store-only | ✅ |
+| D6 Onboarding button CTA | ✅ |
+| D8 Summon-only agent | ✅ |
 
 ---
 
@@ -63,11 +63,13 @@
 - [ ] Onboarding button → modal with pre-filled Account
 - [ ] @mention blocked before onboarding; works after
 
+_Deferred to post-deploy smoke checklist (task 6.3)._
+
 ---
 
 ## Overall Decision
 
-- [ ] ✅ PASS — Can proceed to retrospective and archive
-- [x] ⏳ PENDING — Awaiting apply phase
+- [x] ✅ PASS — Automated verification complete; manual smoke deferred to deploy
+- [ ] ❌ FAIL
 
-**Next Step:** Run `/opsx-apply` to implement, then re-run verification.
+**Next Step:** Archive change; run manual smoke after `slack deploy` + trigger create.

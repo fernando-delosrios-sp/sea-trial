@@ -13,8 +13,8 @@
 
 ## 3. Provision and seed
 
-- [ ] 3.1 Update `provision_channel` to accept `member_user_ids[]` and invite all members (+ trigger user)
-- [ ] 3.2 Remove hardcoded empty AE/SE inputs from workflow and trigger
+- [x] 3.1 Update `provision_channel` to accept `member_user_ids[]` and invite all members (+ trigger user)
+- [x] 3.2 Remove hardcoded empty AE/SE inputs from workflow and trigger
 - [ ] 3.3 Update `seed_channel_objects` to pass creation fields into `TesEventContext` and dashboard template
 - [ ] 3.4 Update `dashboardTemplate` with `## Project` section (name, channel, account, SF link, members, notes, status)
 - [ ] 3.5 Add pinned index Block Kit with Complete onboarding button (`pinnedIndexMessage` / blocks helper)
@@ -49,6 +49,7 @@
 
 - [ ] 8.1 Create or update changelog entry for this change
 - [ ] 8.2 Confirm entry covers creation modal, Account terminology, and onboarding button CTA
+
 
 
 

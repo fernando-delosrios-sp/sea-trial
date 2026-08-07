@@ -20,12 +20,10 @@ const openStep = CreateTesEventWorkflow.addStep(OpenCreateTesEventFunction, {
   interactivity: CreateTesEventWorkflow.inputs.interactivity,
 });
 
-// TODO(Task 4): switch to inviting openStep.outputs.member_user_ids (plus
-// submitting_user_id) once provision_channel accepts member_user_ids.
 const provisionStep = CreateTesEventWorkflow.addStep(ProvisionChannelFunction, {
   project_name: openStep.outputs.project_name,
-  ae_user_id: "",
-  se_user_id: "",
+  member_user_ids: openStep.outputs.member_user_ids,
+  submitting_user_id: openStep.outputs.submitting_user_id,
   context_notes: openStep.outputs.context_notes,
   interactivity: CreateTesEventWorkflow.inputs.interactivity,
 });
@@ -36,3 +34,4 @@ CreateTesEventWorkflow.addStep(SeedChannelObjectsFunction, {
 });
 
 export default CreateTesEventWorkflow;
+

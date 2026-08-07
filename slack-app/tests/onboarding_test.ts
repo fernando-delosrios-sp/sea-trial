@@ -28,7 +28,7 @@ Deno.test("Submit onboarding updates context and dashboard", () => {
   const existing = deserializeEventContext(serialized)!;
 
   const result = processOnboardingSubmit(existing, {
-    customerName: "Acme Corp",
+    accountName: "Acme Corp",
     mainProspectGoal: "PoC",
     dealHistory: "New",
     projectType: "PoC",
@@ -44,3 +44,4 @@ Deno.test("Submit onboarding updates context and dashboard", () => {
   assertEquals(result.dashboardContent.includes("Acme Corp"), true);
   assertEquals(result.dashboardContent.includes("<!-- tes-event-context -->"), true);
 });
+

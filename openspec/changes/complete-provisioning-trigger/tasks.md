@@ -1,8 +1,8 @@
 ## 1. Shared types
 
-- [ ] 1.1 Extend `TesEventContext` with `accountName`, `salesforceOpportunityUrl`, `memberUserIds`, `contextNotes`
-- [ ] 1.2 Rename `OnboardingForm.customerName` to `accountName` across shared types and consumers
-- [ ] 1.3 Add/update tests for context serialize/deserialize with new fields (`event_context_test.ts`)
+- [x] 1.1 Extend `TesEventContext` with `accountName`, `salesforceOpportunityUrl`, `memberUserIds`, `contextNotes`
+- [x] 1.2 Rename `OnboardingForm.customerName` to `accountName` across shared types and consumers
+- [x] 1.3 Add/update tests for context serialize/deserialize with new fields (`event_context_test.ts`)
 
 ## 2. Creation modal and trigger
 
@@ -49,3 +49,4 @@
 
 - [ ] 8.1 Create or update changelog entry for this change
 - [ ] 8.2 Confirm entry covers creation modal, Account terminology, and onboarding button CTA
+

@@ -44,7 +44,7 @@ export default SlackFunction(
     const values = view.state.values;
 
     const form: OnboardingForm = {
-      customerName: getInputValue(values, "customer_name"),
+      accountName: getInputValue(values, "customer_name"),
       mainProspectGoal: getInputValue(values, "main_prospect_goal"),
       dealHistory: getInputValue(values, "deal_history"),
       projectType: getInputValue(values, "project_type"),
@@ -83,3 +83,4 @@ export default SlackFunction(
     return { completed: true };
   },
 );
+

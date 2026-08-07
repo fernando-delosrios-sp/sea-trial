@@ -16,7 +16,7 @@ export function dashboardTemplate(
     `- **Onboarding:** ${context.onboardingComplete ? "✅ Complete" : "⏳ Pending"}`,
     "",
     details ? "## Opportunity Details" : "",
-    details ? `- **Customer:** ${details.customerName}` : "",
+    details ? `- **Account:** ${details.accountName}` : "",
     details ? `- **Goal:** ${details.mainProspectGoal}` : "",
     details ? `- **Deal History:** ${details.dealHistory}` : "",
     details ? `- **Project Type:** ${details.projectType}` : "",
@@ -77,3 +77,4 @@ export function pinnedIndexMessage(context: TesEventContext): string {
       : "⏳ *Complete onboarding* to unlock the Requirements Agent.",
   ].join("\n");
 }
+

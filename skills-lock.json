@@ -175,6 +175,12 @@
       "skillPath": "skills/test-driven-development/SKILL.md",
       "computedHash": "a4126a9c5f17be3c228aa9e5755898ade283448b86099f56f40852e8c14532be"
     },
+    "to-questionnaire": {
+      "source": "fernando-delosrios-sp/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/to-questionnaire/SKILL.md",
+      "computedHash": "d8938509f3400d9977343e11e876fc6e1982b0b9c133a2f2e9d3d730a67a103e"
+    },
     "using-git-worktrees": {
       "source": "obra/superpowers",
       "sourceType": "github",

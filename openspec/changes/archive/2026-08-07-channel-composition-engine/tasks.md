@@ -27,4 +27,5 @@
 - [x] 5.1 Update README — document composition manifest and provisioner
 - [x] 5.2 Add CHANGELOG entry for channel-composition-engine
 - [x] 5.3 Mark all tasks complete; write verify.md PASS
-- [ ] 5.4 Squash merge to main; run `openspec archive channel-composition-engine -y`
+- [x] 5.4 Squash merge to main; run `openspec archive channel-composition-engine -y`
+

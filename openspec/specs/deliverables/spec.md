@@ -29,7 +29,7 @@ The system SHALL require explicit user acceptance before writing to the Delivera
 
 ### Requirement: Deliverable list schema
 
-Deliverables List rows SHALL use the mandatory core fields.
+Deliverables List rows SHALL use the mandatory core fields. The list column schema SHALL be defined in `slack-app/content/lists/deliverables.json` with stable column `key` values. Status select options SHALL reference `@domain/deliverable-statuses`.
 
 #### Scenario: Core fields populated
 

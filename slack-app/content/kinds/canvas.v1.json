@@ -1,0 +1,8 @@
+{
+  "kind": "canvas",
+  "version": "1",
+  "api_availability": "stable",
+  "provision": {
+    "handler": "canvas.create"
+  }
+}

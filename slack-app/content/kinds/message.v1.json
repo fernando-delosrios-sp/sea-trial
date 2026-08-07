@@ -1,0 +1,8 @@
+{
+  "kind": "message",
+  "version": "1",
+  "api_availability": "stable",
+  "provision": {
+    "handler": "message.post"
+  }
+}

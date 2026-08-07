@@ -36,6 +36,10 @@ export interface TesEventContext {
   salesforceOpportunityUrl?: string;
   memberUserIds?: string[];
   contextNotes?: string;
+  /** Channel composition type (e.g. tes-event) when seeded via composition manifest. */
+  channelType?: string;
+  /** Version of the composition manifest used at channel create. */
+  compositionVersion?: string;
 }
 
 export interface DeliverableProposal {
@@ -86,3 +90,4 @@ export interface ProcessRequirementsResponse {
   needsClarification: boolean;
   clarificationQuestions?: string[];
 }
+

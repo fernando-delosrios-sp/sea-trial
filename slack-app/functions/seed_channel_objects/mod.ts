@@ -1,20 +1,8 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
-import type { TesEventContext } from "@tes/shared/types/index.ts";
-import { createCanvas, replaceCanvasContent } from "../../lib/canvas.ts";
 import {
-  createDeliverablesList,
-  createIncidentsList,
-} from "../../lib/lists.ts";
-import { serializeEventContext } from "../../lib/event-context.ts";
-import {
-  renderDashboardCanvas,
-  renderInfrastructureCanvas,
-  renderRequirementsCanvas,
-} from "../../lib/content/canvas-renderer.ts";
-import {
-  renderPinnedIndexBlocks,
-  renderPinnedIndexMessage,
-} from "../../lib/content/message-renderer.ts";
+  provisionChannel,
+  serializeProvisionedContext,
+} from "../../lib/content/channel-provisioner.ts";
 
 export const SeedChannelObjectsFunction = DefineFunction({
   callback_id: "seed_channel_objects",
@@ -45,73 +33,18 @@ export const SeedChannelObjectsFunction = DefineFunction({
 export default SlackFunction(
   SeedChannelObjectsFunction,
   async ({ inputs, client }) => {
-    const requirementsId = await createCanvas(client, {
-      channelId: inputs.channel_id,
-      title: "Requirements",
-      content: renderRequirementsCanvas(),
+    const context = await provisionChannel(client, {
+      channel_id: inputs.channel_id,
+      project_name: inputs.project_name,
+      account_name: inputs.account_name,
+      salesforce_opportunity_url: inputs.salesforce_opportunity_url,
+      member_user_ids: inputs.member_user_ids,
+      context_notes: inputs.context_notes,
     });
-
-    const infrastructureId = await createCanvas(client, {
-      channelId: inputs.channel_id,
-      title: "Infrastructure",
-      content: renderInfrastructureCanvas(),
-    });
-
-    const deliverablesListId = await createDeliverablesList(
-      client,
-      inputs.channel_id,
-    );
-    const incidentsListId = await createIncidentsList(
-      client,
-      inputs.channel_id,
-    );
-
-    const context: TesEventContext = {
-      channelId: inputs.channel_id,
-      projectName: inputs.project_name,
-      onboardingComplete: false,
-      derivedComponents: [],
-      dashboardCanvasId: "",
-      requirementsCanvasId: requirementsId,
-      deliverablesListId,
-      incidentsListId,
-      infrastructureCanvasId: infrastructureId,
-      accountName: inputs.account_name,
-      salesforceOpportunityUrl: inputs.salesforce_opportunity_url,
-      memberUserIds: inputs.member_user_ids,
-      contextNotes: inputs.context_notes,
-    };
-
-    const dashboardId = await createCanvas(client, {
-      channelId: inputs.channel_id,
-      title: "Dashboard",
-      content: renderDashboardCanvas(context),
-    });
-
-    context.dashboardCanvasId = dashboardId;
-
-    await replaceCanvasContent(
-      client,
-      dashboardId,
-      renderDashboardCanvas(context),
-    );
-
-    const indexMessage = await client.chat.postMessage({
-      channel: inputs.channel_id,
-      text: renderPinnedIndexMessage(context),
-      blocks: renderPinnedIndexBlocks(context),
-    });
-
-    if (indexMessage.ts) {
-      await client.pins.add({
-        channel: inputs.channel_id,
-        timestamp: indexMessage.ts,
-      });
-    }
 
     return {
       outputs: {
-        context_json: serializeEventContext(context),
+        context_json: serializeProvisionedContext(context),
       },
     };
   },

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-08-07 — Channel Composition Engine
+
+### Added
+
+- **Channel composition manifest** — `slack-app/content/channels/tes-event.json` defining resources, chrome, gates, modals, navigation, and dynamic resources
+- **Kind registry** — `slack-app/content/kinds/*.v1.json` with `api_availability` gating for extensible object types
+- **Composition loaders** — `composition-resolver.ts`, `kind-registry.ts`, `channel-provisioner.ts`
+- **Composition schema and tests** — `composition.schema.json` and `composition_test.ts` for validation, topological sort, slot bridging, and navigation
+
+### Changed
+
+- **`seed_channel_objects`** — Thin executor delegating to `channel-provisioner`
+- **Pinned index message** — Links auto-generated from `navigation.entries` in composition manifest
+- **`TesEventContext`** — Optional `channelType` and `compositionVersion` fields when seeded via composition
+
+---
+
 ## 2026-08-07 — Declarative Slack Content
 
 ### Added
@@ -166,6 +183,7 @@
 ### Review gate
 
 Deliverables are never written to the Deliverables List without explicit user acceptance via Block Kit buttons.
+
 
 
 

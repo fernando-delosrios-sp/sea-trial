@@ -1,5 +1,10 @@
 import Handlebars from "handlebars";
 import type { TesEventContext } from "@tes/shared/types/index.ts";
+import {
+  getContextFieldForSlot,
+  loadComposition,
+  type CompositionManifest,
+} from "./composition-resolver.ts";
 import { readContentText } from "./paths.ts";
 
 let cachedTemplate: Handlebars.TemplateDelegate | null = null;
@@ -26,15 +31,44 @@ export function resetMessageCacheForTests(): void {
   cachedTemplate = null;
 }
 
-function buildIndexMessageText(context: TesEventContext): string {
+function resolveComposition(
+  composition?: CompositionManifest,
+): CompositionManifest {
+  return composition ?? loadComposition("tes-event");
+}
+
+function getSlotId(
+  context: TesEventContext,
+  composition: CompositionManifest,
+  slot: string,
+): string {
+  const field = getContextFieldForSlot(composition, slot);
+  if (!field) return "";
+  const value = context[field];
+  return typeof value === "string" ? value : "";
+}
+
+function buildNavigationLinks(
+  context: TesEventContext,
+  composition: CompositionManifest,
+): string[] {
+  return composition.navigation.entries.map((entry) => {
+    const id = getSlotId(context, composition, entry.slot);
+    return `- <${entry.link_type}:${id}|${entry.label}>`;
+  });
+}
+
+function buildIndexMessageText(
+  context: TesEventContext,
+  composition?: CompositionManifest,
+): string {
+  const manifest = resolveComposition(composition);
+  const links = buildNavigationLinks(context, manifest);
+
   return [
-    "📋 *TES Event Channel Index*",
+    `📋 *${manifest.navigation.title}*`,
     "",
-    `- <canvas:${context.dashboardCanvasId}|Dashboard>`,
-    `- <canvas:${context.requirementsCanvasId}|Requirements>`,
-    `- <canvas:${context.infrastructureCanvasId}|Infrastructure>`,
-    `- <list:${context.deliverablesListId}|Deliverables>`,
-    `- <list:${context.incidentsListId}|Incidents>`,
+    ...links,
     "",
     context.onboardingComplete
       ? "✅ Onboarding complete — @mention the bot with documents to summon the Requirements Agent."
@@ -42,18 +76,22 @@ function buildIndexMessageText(context: TesEventContext): string {
   ].join("\n");
 }
 
-/** Renders pinned index message plain text. */
-export function renderPinnedIndexMessage(context: TesEventContext): string {
-  return buildIndexMessageText(context);
+/** Renders pinned index message plain text from composition navigation. */
+export function renderPinnedIndexMessage(
+  context: TesEventContext,
+  composition?: CompositionManifest,
+): string {
+  return buildIndexMessageText(context, composition);
 }
 
 /** Renders pinned index Block Kit blocks from declarative template. */
 export function renderPinnedIndexBlocks(
   context: TesEventContext,
+  composition?: CompositionManifest,
 ): Record<string, unknown>[] {
   const template = loadPinnedIndexTemplate();
   const rendered = template({
-    messageText: buildIndexMessageText(context),
+    messageText: buildIndexMessageText(context, composition),
     onboardingComplete: context.onboardingComplete,
     buttonValueJson: {
       dashboard_canvas_id: context.dashboardCanvasId,

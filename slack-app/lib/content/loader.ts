@@ -53,3 +53,31 @@ export {
   parseSailpointSuitesJson,
   resetDomainCacheForTests,
 } from "./domain.ts";
+
+export {
+  applySlotIds,
+  getContextFieldForSlot,
+  loadComposition,
+  parseCompositionJson,
+  resolveProvisioningOrder,
+  resetCompositionCacheForTests,
+} from "./composition-resolver.ts";
+export type {
+  CompositionManifest,
+  NavigationEntry,
+  ProvisionEntry,
+} from "./composition-resolver.ts";
+
+export {
+  isKindProvisionable,
+  loadKindDefinition,
+  resetKindCacheForTests,
+} from "./kind-registry.ts";
+export type { ApiAvailability, KindDefinition } from "./kind-registry.ts";
+
+export {
+  provisionChannel,
+  serializeProvisionedContext,
+} from "./channel-provisioner.ts";
+export type { ChannelProvisionClient, ProvisionInputs } from "./channel-provisioner.ts";
+

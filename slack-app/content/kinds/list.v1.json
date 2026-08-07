@@ -1,0 +1,8 @@
+{
+  "kind": "list",
+  "version": "1",
+  "api_availability": "stable",
+  "provision": {
+    "handler": "list.create"
+  }
+}

@@ -62,6 +62,18 @@ Modals, list schemas, canvas markdown, and pinned index Block Kit live under `sl
 
 Import from `slack-app/lib/content/loader.ts` for the full public surface. JSON Schema files under `slack-app/schemas/content/` describe content shapes; tests in `slack_content_test.ts` enforce contracts.
 
+#### Channel composition
+
+TES Event Channel structure — which objects are seeded, in what order, and how IDs link to context — is declared in `slack-app/content/channels/tes-event.json`. The kind registry under `slack-app/content/kinds/*.v1.json` defines extensible object types with `api_availability` gating. Loaders:
+
+| Module | Purpose |
+|--------|---------|
+| `composition-resolver.ts` | Load manifest, validate, topological sort on `depends_on`, slot map |
+| `kind-registry.ts` | Load kind definitions; skip non-stable kinds |
+| `channel-provisioner.ts` | Orchestrate channel create; `seed_channel_objects` is a thin executor |
+
+Slot identifiers in the manifest bridge to flat `TesEventContext` fields via `runtime.context_slot_map`. Pinned index links are auto-generated from `navigation.entries`. Tests in `composition_test.ts` enforce schema, order, and slot bridging.
+
 #### Triggers (automatic on deploy)
 
 The GitHub Actions deploy workflow provisions Slack triggers after `slack deploy` using `slack-app/triggers.config.yaml`. No manual `slack trigger create` is required for standard deploys.
@@ -180,6 +192,7 @@ All application state lives in Slack canvases and lists.
 - [Infrastructure setup checklist](docs/infrastructure-setup-checklist.md)
 - [Tech stack requirements](docs/tech-stack-requirements.md)
 - [Smoke test checklist](docs/smoke-test-checklist.md)
+
 
 
 

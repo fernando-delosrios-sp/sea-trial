@@ -10,6 +10,8 @@ export interface UpdateCanvasSectionParams {
   newContent: string;
 }
 
+import { METADATA_MARKER } from "./event-context.ts";
+
 export interface SlackCanvasClient {
   canvases: {
     create: (params: {
@@ -28,7 +30,37 @@ export interface SlackCanvasClient {
     sections: {
       lookup: (params: {
         canvas_id: string;
-        criteria: { section_types: string[] };
+        criteria: {
+          section_types?: string[];
+          contains_text?: string;
+        };
+      }) => Promise<{ sections?: Array<{ id: string; markdown?: string }> }>;
+    };
+  };
+}
+
+/** Minimal client surface for replacing full canvas markdown. */
+export interface CanvasEditClient {
+  canvases: {
+    edit: (params: {
+      canvas_id: string;
+      changes: Array<{
+        operation: string;
+        document_content?: { type: string; markdown: string };
+      }>;
+    }) => Promise<unknown>;
+  };
+}
+/** Minimal client surface for reading canvas markdown (sections.lookup only). */
+export interface CanvasSectionsClient {
+  canvases: {
+    sections: {
+      lookup: (params: {
+        canvas_id: string;
+        criteria: {
+          section_types?: string[];
+          contains_text?: string;
+        };
       }) => Promise<{ sections?: Array<{ id: string; markdown?: string }> }>;
     };
   };
@@ -98,7 +130,7 @@ export async function updateCanvasSection(
  * Replaces the entire canvas content (used for Requirements canvas updates).
  */
 export async function replaceCanvasContent(
-  client: SlackCanvasClient,
+  client: CanvasEditClient,
   canvasId: string,
   content: string,
 ): Promise<void> {
@@ -112,22 +144,42 @@ export async function replaceCanvasContent(
 }
 
 /**
- * Reads canvas markdown by concatenating all section content.
+ * Reads canvas markdown by concatenating header sections and any section
+ * containing the TesEventContext metadata marker (which may live outside headers).
  */
 export async function readCanvasMarkdown(
-  client: SlackCanvasClient,
+  client: CanvasSectionsClient,
   canvasId: string,
 ): Promise<string> {
-  const lookup = await client.canvases.sections.lookup({
-    canvas_id: canvasId,
-    criteria: { section_types: ["any_header"] },
-  });
+  const [headerLookup, metadataLookup] = await Promise.all([
+    client.canvases.sections.lookup({
+      canvas_id: canvasId,
+      criteria: { section_types: ["any_header", "h1", "h2", "h3"] },
+    }),
+    client.canvases.sections.lookup({
+      canvas_id: canvasId,
+      criteria: { contains_text: METADATA_MARKER },
+    }),
+  ]);
 
-  const sections = lookup.sections ?? [];
-  if (sections.length === 0) {
+  const seen = new Set<string>();
+  const parts: string[] = [];
+
+  for (const section of [
+    ...(headerLookup.sections ?? []),
+    ...(metadataLookup.sections ?? []),
+  ]) {
+    if (section.id && seen.has(section.id)) continue;
+    if (section.id) seen.add(section.id);
+    if (section.markdown) parts.push(section.markdown);
+  }
+
+  const content = parts.join("\n");
+  if (!content) {
     throw new Error(`Canvas ${canvasId} has no readable sections`);
   }
 
-  return sections.map((section) => section.markdown ?? "").join("\n");
+  return content;
 }
+
 

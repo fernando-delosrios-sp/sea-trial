@@ -27,6 +27,13 @@ export const OpenOnboardingFunction = DefineFunction({
 export default SlackFunction(
   OpenOnboardingFunction,
   async ({ inputs, client }) => {
+    if (!inputs.dashboard_canvas_content.trim()) {
+      return {
+        error:
+          "Dashboard content is unavailable. Use the Complete onboarding button on the pinned index message.",
+      };
+    }
+
     const accountName = resolveAccountPrefill(inputs.dashboard_canvas_content);
 
     await client.views.open({
@@ -88,3 +95,4 @@ export default SlackFunction(
     return { completed: true };
   },
 );
+

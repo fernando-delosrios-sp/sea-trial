@@ -46,6 +46,16 @@ export function parseCreateTesEventSubmission(
     };
   }
 
+  const memberUserIds = getSelectedUsers(values, "members");
+  if (memberUserIds.length === 0) {
+    return {
+      valid: false,
+      errors: {
+        members: "Select at least one channel member.",
+      },
+    };
+  }
+
   return {
     valid: true,
     channelName: validation.channelName,
@@ -53,8 +63,9 @@ export function parseCreateTesEventSubmission(
       projectName,
       accountName: getText(values, "account"),
       salesforceOpportunityUrl: getText(values, "salesforce_url"),
-      memberUserIds: getSelectedUsers(values, "members"),
+      memberUserIds,
       contextNotes: getText(values, "context_notes"),
     },
   };
 }
+

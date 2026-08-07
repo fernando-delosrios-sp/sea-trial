@@ -4,7 +4,8 @@ import OpenOnboardingFunction from "../functions/open_onboarding/mod.ts";
 const tesOnboardTrigger = {
   type: TriggerTypes.Shortcut,
   name: "TES Onboard",
-  description: "Open onboarding form in the current channel",
+  description:
+    "Legacy channel shortcut — prefer Complete onboarding on the pinned index (no Account pre-fill)",
   workflow: `#/functions/${OpenOnboardingFunction.definition.callback_id}`,
   inputs: {
     channel_id: {
@@ -20,3 +21,4 @@ const tesOnboardTrigger = {
 };
 
 export default tesOnboardTrigger;
+

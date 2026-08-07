@@ -1,7 +1,7 @@
 import type { OnboardingForm } from "@tes/shared/types/index.ts";
 import { deserializeEventContext } from "./event-context.ts";
 import { processOnboardingSubmit } from "./onboarding-submit.ts";
-import { readCanvasMarkdown, replaceCanvasContent } from "./canvas.ts";
+import { readCanvasMarkdown, replaceCanvasContent, type CanvasSectionsClient } from "./canvas.ts";
 
 export function getInputValue(
   state: Record<string, Record<string, unknown>>,
@@ -36,11 +36,11 @@ export interface OnboardingViewMetadata {
   dashboard_canvas_content: string;
 }
 
-export interface SlackOnboardingSubmitClient {
+export interface SlackOnboardingSubmitClient extends CanvasSectionsClient {
   chat: {
     postMessage: (params: { channel: string; text: string }) => Promise<unknown>;
   };
-  canvases: {
+  canvases: CanvasSectionsClient["canvases"] & {
     edit: (params: {
       canvas_id: string;
       changes: Array<{
@@ -48,12 +48,6 @@ export interface SlackOnboardingSubmitClient {
         document_content?: { type: string; markdown: string };
       }>;
     }) => Promise<unknown>;
-    sections: {
-      lookup: (params: {
-        canvas_id: string;
-        criteria: { section_types: string[] };
-      }) => Promise<{ sections?: Array<{ markdown?: string }> }>;
-    };
   };
 }
 
@@ -117,3 +111,4 @@ export async function loadDashboardContentForButton(
 
   return fallbackContent;
 }
+

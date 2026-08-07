@@ -39,7 +39,15 @@
 | requirements-agent / Summon-only invocation | gate + onboarding copy updates | ✅ |
 | ubiquitous-language / Account label | `onboarding_test.ts`, creation modal test | ✅ |
 
-**Test command:** `cd slack-app && deno task test` → 64 passed, 0 failed
+**Test command:** `cd slack-app && deno task test` → 68 passed, 0 failed
+
+### Post-verify fixes (2026-08-07)
+
+- ✅ Member required validation in creation modal (`create-tes-event-submit.ts`)
+- ✅ `readCanvasMarkdown` reads metadata via `contains_text` lookup
+- ✅ Unit tests for `loadDashboardContentForButton` and canvas read
+- ✅ Removed duplicate `SubmitOnboardingFunction` (view submit via `open_onboarding`)
+- ✅ Legacy `tes_onboard` shortcut returns clear error when dashboard content missing
 
 ---
 
@@ -73,3 +81,4 @@ _Deferred to post-deploy smoke checklist (task 6.3)._
 - [ ] ❌ FAIL
 
 **Next Step:** Archive change; run manual smoke after `slack deploy` + trigger create.
+

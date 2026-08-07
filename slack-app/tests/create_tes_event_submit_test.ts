@@ -64,3 +64,16 @@ Deno.test("Reject invalid project name at creation — reserved slug fails", () 
     assertEquals(result.errors.project_name?.includes("reserved"), true);
   }
 });
+
+Deno.test("Reject creation form with no members selected", () => {
+  const result = parseCreateTesEventSubmission(buildValues({
+    projectName: "Acme Demo",
+    memberUserIds: [],
+  }));
+
+  assertEquals(result.valid, false);
+  if (!result.valid) {
+    assertEquals(result.errors.members, "Select at least one channel member.");
+  }
+});
+

@@ -1,0 +1,27 @@
+{
+  "suites": {
+    "Identity Security Cloud": [
+      "IdentityNow",
+      "Access Management",
+      "Lifecycle Management",
+      "Certification",
+      "Password Management",
+      "SaaS Connectors"
+    ],
+    "IdentityIQ": [
+      "IdentityIQ Core",
+      "Lifecycle Manager",
+      "Access Request",
+      "Certification",
+      "Password Management",
+      "Connector Framework"
+    ],
+    "IdentityNow": [
+      "IdentityNow Core",
+      "Access Profiles",
+      "Certification Campaigns",
+      "SaaS Connectors",
+      "Password Management"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "choices": [
+    { "value": "Not started", "label": "Not started" },
+    { "value": "Not needed", "label": "Not needed" },
+    { "value": "Not doable", "label": "Not doable" },
+    { "value": "In progress", "label": "In progress" },
+    { "value": "Blocked", "label": "Blocked" },
+    { "value": "Validation required", "label": "Validation required" },
+    { "value": "Accepted", "label": "Accepted" },
+    { "value": "Needs clarification", "label": "Needs clarification" }
+  ]
+}

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-07 — Domain Content JSON
+
+### Added
+
+- **Domain reference JSON** — `slack-app/content/domain/sailpoint-suites.json` and `deliverable-statuses.json` as the canonical source for suite mappings and status vocabulary
+- **Domain loader** — `slack-app/lib/content/domain.ts` with schema validation and typed accessors (`getSupportedSuites`, `deriveComponents`, `getDeliverableStatusChoices`)
+- **Sync tests** — Automated parity checks between domain JSON and `DeliverableStatus` shared type
+
+### Changed
+
+- **`suite-components.ts`** — Thin re-export from domain loader; no behavior change
+
+---
+
 ## 2026-08-07 — CI Slack Trigger Provisioning
 
 ### Added
@@ -130,6 +144,7 @@
 ### Review gate
 
 Deliverables are never written to the Deliverables List without explicit user acceptance via Block Kit buttons.
+
 
 
 

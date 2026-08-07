@@ -45,6 +45,10 @@ deno task test
 
 Set `AGENT_SERVICE_URL` in slack-app environment to point at agent-service.
 
+#### Domain reference data
+
+SailPoint suite mappings and deliverable status vocabulary live in versioned JSON under `slack-app/content/domain/`. The loader at `slack-app/lib/content/domain.ts` validates files at load time; tests enforce parity with `packages/shared` types.
+
 #### Triggers (automatic on deploy)
 
 The GitHub Actions deploy workflow provisions Slack triggers after `slack deploy` using `slack-app/triggers.config.yaml`. No manual `slack trigger create` is required for standard deploys.
@@ -163,6 +167,7 @@ All application state lives in Slack canvases and lists.
 - [Infrastructure setup checklist](docs/infrastructure-setup-checklist.md)
 - [Tech stack requirements](docs/tech-stack-requirements.md)
 - [Smoke test checklist](docs/smoke-test-checklist.md)
+
 
 
 

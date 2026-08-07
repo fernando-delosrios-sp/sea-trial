@@ -31,7 +31,12 @@ const provisionStep = CreateTesEventWorkflow.addStep(ProvisionChannelFunction, {
 CreateTesEventWorkflow.addStep(SeedChannelObjectsFunction, {
   channel_id: provisionStep.outputs.channel_id,
   project_name: openStep.outputs.project_name,
+  account_name: openStep.outputs.account_name,
+  salesforce_opportunity_url: openStep.outputs.salesforce_opportunity_url,
+  member_user_ids: openStep.outputs.member_user_ids,
+  context_notes: openStep.outputs.context_notes,
 });
 
 export default CreateTesEventWorkflow;
+
 

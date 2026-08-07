@@ -15,10 +15,10 @@
 
 - [x] 3.1 Update `provision_channel` to accept `member_user_ids[]` and invite all members (+ trigger user)
 - [x] 3.2 Remove hardcoded empty AE/SE inputs from workflow and trigger
-- [ ] 3.3 Update `seed_channel_objects` to pass creation fields into `TesEventContext` and dashboard template
-- [ ] 3.4 Update `dashboardTemplate` with `## Project` section (name, channel, account, SF link, members, notes, status)
-- [ ] 3.5 Add pinned index Block Kit with Complete onboarding button (`pinnedIndexMessage` / blocks helper)
-- [ ] 3.6 Tests: provision with member list (`provision_test.ts`); dashboard project section (`canvas_test.ts` or template test)
+- [x] 3.3 Update `seed_channel_objects` to pass creation fields into `TesEventContext` and dashboard template
+- [x] 3.4 Update `dashboardTemplate` with `## Project` section (name, channel, account, SF link, members, notes, status)
+- [x] 3.5 Add pinned index Block Kit with Complete onboarding button (`pinnedIndexMessage` / blocks helper)
+- [x] 3.6 Tests: provision with member list (`provision_test.ts`); dashboard project section (`canvas_test.ts` or template test)
 
 ## 4. Onboarding updates
 
@@ -49,6 +49,7 @@
 
 - [ ] 8.1 Create or update changelog entry for this change
 - [ ] 8.2 Confirm entry covers creation modal, Account terminology, and onboarding button CTA
+
 
 
 

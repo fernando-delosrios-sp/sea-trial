@@ -9,6 +9,7 @@ import { serializeEventContext } from "../../lib/event-context.ts";
 import {
   dashboardTemplate,
   infrastructureTemplate,
+  pinnedIndexBlocks,
   pinnedIndexMessage,
   requirementsTemplate,
 } from "../../templates/index.ts";
@@ -21,6 +22,13 @@ export const SeedChannelObjectsFunction = DefineFunction({
     properties: {
       channel_id: { type: Schema.slack.types.channel_id },
       project_name: { type: Schema.types.string },
+      account_name: { type: Schema.types.string },
+      salesforce_opportunity_url: { type: Schema.types.string },
+      member_user_ids: {
+        type: Schema.types.array,
+        items: { type: Schema.slack.types.user_id },
+      },
+      context_notes: { type: Schema.types.string },
     },
     required: ["channel_id", "project_name"],
   },
@@ -66,6 +74,10 @@ export default SlackFunction(
       deliverablesListId,
       incidentsListId,
       infrastructureCanvasId: infrastructureId,
+      accountName: inputs.account_name,
+      salesforceOpportunityUrl: inputs.salesforce_opportunity_url,
+      memberUserIds: inputs.member_user_ids,
+      contextNotes: inputs.context_notes,
     };
 
     const dashboardId = await createCanvas(client, {
@@ -85,6 +97,7 @@ export default SlackFunction(
     const indexMessage = await client.chat.postMessage({
       channel: inputs.channel_id,
       text: pinnedIndexMessage(context),
+      blocks: pinnedIndexBlocks(context),
     });
 
     if (indexMessage.ts) {
@@ -101,3 +114,4 @@ export default SlackFunction(
     };
   },
 );
+

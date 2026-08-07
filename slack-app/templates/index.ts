@@ -7,13 +7,23 @@ export function dashboardTemplate(
 ): string {
   const details = form ?? context.onboarding;
 
+  const members = context.memberUserIds?.length
+    ? context.memberUserIds.map((id) => `<@${id}>`).join(", ")
+    : "_Not set_";
+
   return [
     "# TES Event Dashboard",
     "",
     "## Project",
     `- **Name:** ${context.projectName}`,
     `- **Channel:** <#${context.channelId}>`,
-    `- **Onboarding:** ${context.onboardingComplete ? "✅ Complete" : "⏳ Pending"}`,
+    `- **Account:** ${context.accountName ?? "_Not set_"}`,
+    `- **Salesforce Opportunity:** ${
+      context.salesforceOpportunityUrl ?? "_Not set_"
+    }`,
+    `- **Members:** ${members}`,
+    `- **Notes:** ${context.contextNotes ?? "_Not set_"}`,
+    `- **Status:** ${context.onboardingComplete ? "✅ Complete" : "⏳ Pending"}`,
     "",
     details ? "## Opportunity Details" : "",
     details ? `- **Account:** ${details.accountName}` : "",
@@ -77,4 +87,39 @@ export function pinnedIndexMessage(context: TesEventContext): string {
       : "⏳ *Complete onboarding* to unlock the Requirements Agent.",
   ].join("\n");
 }
+
+/**
+ * Builds Block Kit blocks for the pinned index message. Includes a
+ * "Complete onboarding" button (`action_id: "complete_onboarding"`) until
+ * onboarding is complete. Interactivity wiring to `open_onboarding` happens
+ * separately.
+ */
+export function pinnedIndexBlocks(
+  context: TesEventContext,
+): Record<string, unknown>[] {
+  const blocks: Record<string, unknown>[] = [
+    {
+      type: "section",
+      text: { type: "mrkdwn", text: pinnedIndexMessage(context) },
+    },
+  ];
+
+  if (!context.onboardingComplete) {
+    blocks.push({
+      type: "actions",
+      block_id: "pinned_index_actions",
+      elements: [
+        {
+          type: "button",
+          text: { type: "plain_text", text: "Complete onboarding" },
+          style: "primary",
+          action_id: "complete_onboarding",
+        },
+      ],
+    });
+  }
+
+  return blocks;
+}
+
 

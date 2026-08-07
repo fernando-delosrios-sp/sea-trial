@@ -45,6 +45,22 @@ deno task test
 
 Set `AGENT_SERVICE_URL` in slack-app environment to point at agent-service.
 
+#### Triggers (after deploy)
+
+Create or update workspace triggers from the definitions in `slack-app/triggers/`:
+
+```bash
+cd slack-app
+slack trigger create --trigger-def triggers/create_tes_event.ts
+slack trigger create --trigger-def triggers/complete_onboarding.ts
+# Optional legacy shortcut:
+slack trigger create --trigger-def triggers/tes_onboard.ts
+```
+
+- **Create TES Event** — global shortcut → creation modal → provision workflow
+- **Complete Onboarding** — link trigger for the pinned index button (also routed via `complete_onboarding` block action handler)
+- **TES Onboard** — optional channel shortcut fallback
+
 ## Deploy via GitHub Actions
 
 Configuration is stored in GitHub Secrets and Variables. A manual workflow deploys both services with those settings.
@@ -138,5 +154,6 @@ All application state lives in Slack canvases and lists.
 - [Infrastructure setup checklist](docs/infrastructure-setup-checklist.md)
 - [Tech stack requirements](docs/tech-stack-requirements.md)
 - [Smoke test checklist](docs/smoke-test-checklist.md)
+
 
 

@@ -183,7 +183,8 @@ export function buildProposalBlocks(
  */
 export function onboardingGateMessage(): string {
   return (
-    "Onboarding is not complete. Please click *Complete onboarding* in the pinned index message or run `/tes-onboard` before using the Requirements Agent."
+    "Onboarding is not complete. Click *Complete onboarding* in the pinned index message before @mentioning the bot with documents."
   );
 }
+
 

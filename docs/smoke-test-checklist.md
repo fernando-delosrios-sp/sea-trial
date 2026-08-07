@@ -8,14 +8,16 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 
 | Date | Tester | Workspace | Result | Notes |
 |------|--------|-----------|--------|-------|
-| | | | | |
+| 2026-08-07 | _pending deploy_ | dev tenant | ⏳ | Automated tests pass (68/68). Manual smoke after `slack deploy` + trigger create. |
 
 ## Channel provisioning
 
 - [ ] Invoke "Create TES Event" global shortcut
+- [ ] Creation modal shows: Project Name, Account, Salesforce Opportunity URL, Members (multi-select), Context Notes
 - [ ] Submit valid project name → channel `#proj-{slug}-tes` created
-- [ ] Submit invalid project name → clear error shown
-- [ ] AE and SE users invited to channel
+- [ ] Submit creation form with zero members → inline modal error; no channel created
+- [ ] Submit invalid project name → inline modal error; no channel created
+- [ ] Selected members plus trigger user invited to channel
 
 ## Object seeding
 
@@ -26,10 +28,11 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 
 ## Onboarding
 
-- [ ] Click "Complete onboarding" → modal opens with all fields
-- [ ] Submit form → Dashboard updated, `onboardingComplete` true
+- [ ] Click "Complete onboarding" on pinned index → modal opens with all fields
+- [ ] Account field pre-filled from creation context (editable)
+- [ ] Submit form → Dashboard updated, `onboardingComplete` true, Account reflects submitted value
 - [ ] Identity Security Cloud → correct components derived
-- [ ] Channel message announces agent availability
+- [ ] Channel message announces agent available when summoned (@mention)
 
 ## Agent gate
 
@@ -52,3 +55,5 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 - [ ] Accept → Requirements canvas candidates marked promoted
 - [ ] Reject → no list write
 - [ ] No button click → list unchanged
+
+

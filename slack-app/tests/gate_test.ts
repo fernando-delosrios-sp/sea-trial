@@ -19,7 +19,8 @@ const completeContext = { ...incompleteContext, onboardingComplete: true };
 Deno.test("onboardingGateMessage directs user to complete onboarding", () => {
   const message = onboardingGateMessage();
   assertEquals(message.includes("Onboarding is not complete"), true);
-  assertEquals(message.includes("/tes-onboard"), true);
+  assertEquals(message.includes("Complete onboarding"), true);
+  assertEquals(message.includes("@mention"), true);
 });
 
 Deno.test("agent gate blocks when onboardingComplete is false", () => {
@@ -30,3 +31,4 @@ Deno.test("agent gate blocks when onboardingComplete is false", () => {
 Deno.test("agent gate allows when onboardingComplete is true", () => {
   assertEquals(shouldProceedWithAgent(completeContext), true);
 });
+

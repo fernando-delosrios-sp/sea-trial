@@ -1,9 +1,5 @@
-# Onboarding
+## MODIFIED Requirements
 
-## Purpose
-
-AE/SE onboarding flow, suite-to-components mapping, and agent gate control.
-## Requirements
 ### Requirement: Onboarding modal
 
 The system SHALL provide an onboarding modal accessible from the Complete onboarding button on the pinned index message. The Account field SHALL be pre-filled from creation context and SHALL remain editable.
@@ -25,17 +21,6 @@ The system SHALL provide an onboarding modal accessible from the Complete onboar
 - **AND** a channel message SHALL announce that the agent is available when summoned
 
 ---
-
-### Requirement: Suite-to-components mapping
-
-The system SHALL derive technical components from the selected SailPoint suite via a
-static mapping.
-
-#### Scenario: Identity Security Cloud mapping
-
-- **GIVEN** onboarding form with `sailpointSuite` set to "Identity Security Cloud"
-- **WHEN** `deriveComponents` is called
-- **THEN** the expected module list for that suite SHALL be returned
 
 ### Requirement: Agent gate
 
@@ -59,4 +44,3 @@ The system SHALL block Requirements Agent invocation until onboarding is complet
 - **GIVEN** a TES Event Channel is provisioned or onboarding is submitted
 - **WHEN** provisioning or onboarding completes
 - **THEN** the Requirements Agent SHALL NOT be invoked automatically
-

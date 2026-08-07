@@ -24,9 +24,24 @@ Deno.test("serializeEventContext round-trips via deserializeEventContext", () =>
   assertEquals(deserialized, baseContext);
 });
 
+Deno.test("serializeEventContext round-trips creation-modal fields", () => {
+  const contextWithCreationFields: TesEventContext = {
+    ...baseContext,
+    accountName: "Acme Corp",
+    salesforceOpportunityUrl: "https://acme.my.salesforce.com/0061",
+    memberUserIds: ["U123", "U456"],
+    contextNotes: "Kickoff scheduled for next week",
+  };
+
+  const serialized = serializeEventContext(contextWithCreationFields);
+  const deserialized = deserializeEventContext(serialized);
+
+  assertEquals(deserialized, contextWithCreationFields);
+});
+
 Deno.test("applyOnboarding sets onboardingComplete and derived components", () => {
   const form = {
-    customerName: "Acme",
+    accountName: "Acme",
     mainProspectGoal: "PoC",
     dealHistory: "New",
     projectType: "PoC",
@@ -42,3 +57,4 @@ Deno.test("applyOnboarding sets onboardingComplete and derived components", () =
   assertEquals(updated.onboarding, form);
   assertEquals(updated.derivedComponents, ["IdentityNow"]);
 });
+

@@ -7,16 +7,26 @@ export function dashboardTemplate(
 ): string {
   const details = form ?? context.onboarding;
 
+  const members = context.memberUserIds?.length
+    ? context.memberUserIds.map((id) => `<@${id}>`).join(", ")
+    : "_Not set_";
+
   return [
     "# TES Event Dashboard",
     "",
     "## Project",
     `- **Name:** ${context.projectName}`,
     `- **Channel:** <#${context.channelId}>`,
-    `- **Onboarding:** ${context.onboardingComplete ? "✅ Complete" : "⏳ Pending"}`,
+    `- **Account:** ${context.accountName ?? "_Not set_"}`,
+    `- **Salesforce Opportunity:** ${
+      context.salesforceOpportunityUrl ?? "_Not set_"
+    }`,
+    `- **Members:** ${members}`,
+    `- **Notes:** ${context.contextNotes ?? "_Not set_"}`,
+    `- **Status:** ${context.onboardingComplete ? "✅ Complete" : "⏳ Pending"}`,
     "",
     details ? "## Opportunity Details" : "",
-    details ? `- **Customer:** ${details.customerName}` : "",
+    details ? `- **Account:** ${details.accountName}` : "",
     details ? `- **Goal:** ${details.mainProspectGoal}` : "",
     details ? `- **Deal History:** ${details.dealHistory}` : "",
     details ? `- **Project Type:** ${details.projectType}` : "",
@@ -40,7 +50,7 @@ export function requirementsTemplate(): string {
     "# Requirements Canvas",
     "",
     "## Extracted Requirements",
-    "_No requirements extracted yet. @mention the bot with documents to begin._",
+    "_No requirements extracted yet. @mention the bot with documents to summon the Requirements Agent._",
     "",
     "## Deliverable Candidates",
     "_Candidates will appear here after agent processing._",
@@ -73,7 +83,47 @@ export function pinnedIndexMessage(context: TesEventContext): string {
     `- <list:${context.incidentsListId}|Incidents>`,
     "",
     context.onboardingComplete
-      ? "✅ Onboarding complete — @mention the bot with documents to run the Requirements Agent."
-      : "⏳ *Complete onboarding* to unlock the Requirements Agent.",
+      ? "✅ Onboarding complete — @mention the bot with documents to summon the Requirements Agent."
+      : "⏳ Click *Complete onboarding* below to unlock the Requirements Agent.",
   ].join("\n");
 }
+
+/**
+ * Builds Block Kit blocks for the pinned index message. Includes a
+ * "Complete onboarding" button (`action_id: "complete_onboarding"`) until
+ * onboarding is complete. Interactivity wiring to `open_onboarding` happens
+ * separately.
+ */
+export function pinnedIndexBlocks(
+  context: TesEventContext,
+): Record<string, unknown>[] {
+  const blocks: Record<string, unknown>[] = [
+    {
+      type: "section",
+      text: { type: "mrkdwn", text: pinnedIndexMessage(context) },
+    },
+  ];
+
+  if (!context.onboardingComplete) {
+    blocks.push({
+      type: "actions",
+      block_id: "pinned_index_actions",
+      elements: [
+        {
+          type: "button",
+          text: { type: "plain_text", text: "Complete onboarding" },
+          style: "primary",
+          action_id: "complete_onboarding",
+          value: JSON.stringify({
+            dashboard_canvas_id: context.dashboardCanvasId,
+          }),
+        },
+      ],
+    });
+  }
+
+  return blocks;
+}
+
+
+

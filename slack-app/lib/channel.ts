@@ -71,3 +71,25 @@ export function validateChannelName(projectName: string): ChannelNameValidation 
 
   return { valid: true, channelName };
 }
+
+/**
+ * Builds the deduplicated list of user IDs to invite to a TES event channel:
+ * all selected members plus the submitting/trigger user.
+ * @param memberUserIds - User IDs selected via the multi_users_select field
+ * @param submittingUserId - User ID of the person who submitted the creation form
+ * @returns Ordered, deduplicated list of user IDs to invite
+ */
+export function buildInviteUserIds(
+  memberUserIds: string[],
+  submittingUserId: string,
+): string[] {
+  const seen = new Set(memberUserIds);
+  const result = [...memberUserIds];
+
+  if (!seen.has(submittingUserId)) {
+    result.push(submittingUserId);
+  }
+
+  return result;
+}
+

@@ -33,7 +33,7 @@ Deno.test("outgoingDomains includes agent-service and OTLP gateway hosts", () =>
 
   assertEquals(domains.includes("tes-agent.onrender.com"), true);
   assertEquals(domains.includes("otlp-gateway-prod-eu-west-6.grafana.net"), true);
-  assertEquals(domains.includes("localhost"), true);
+  assertEquals(domains.includes("localhost"), false);
 });
 
 Deno.test("callRequirementsAgent sends X-Correlation-Id header", async () => {
@@ -142,3 +142,4 @@ Deno.test("logger flush does not throw when OTLP export fails", async () => {
 
   resetLoggerTestHooks();
 });
+

@@ -1,5 +1,5 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
-import { validateChannelName } from "../../lib/channel.ts";
+import { buildInviteUserIds, validateChannelName } from "../../lib/channel.ts";
 
 export const ProvisionChannelFunction = DefineFunction({
   callback_id: "provision_channel",
@@ -8,12 +8,20 @@ export const ProvisionChannelFunction = DefineFunction({
   input_parameters: {
     properties: {
       project_name: { type: Schema.types.string },
-      ae_user_id: { type: Schema.slack.types.user_id },
-      se_user_id: { type: Schema.slack.types.user_id },
+      member_user_ids: {
+        type: Schema.types.array,
+        items: { type: Schema.slack.types.user_id },
+      },
+      submitting_user_id: { type: Schema.slack.types.user_id },
       context_notes: { type: Schema.types.string },
       interactivity: { type: Schema.slack.types.interactivity },
     },
-    required: ["project_name", "ae_user_id", "se_user_id", "interactivity"],
+    required: [
+      "project_name",
+      "member_user_ids",
+      "submitting_user_id",
+      "interactivity",
+    ],
   },
   output_parameters: {
     properties: {
@@ -45,9 +53,14 @@ export default SlackFunction(
 
     const channelId = createResult.channel.id;
 
+    const inviteUserIds = buildInviteUserIds(
+      inputs.member_user_ids,
+      inputs.submitting_user_id,
+    );
+
     await client.conversations.invite({
       channel: channelId,
-      users: [inputs.ae_user_id, inputs.se_user_id].join(","),
+      users: inviteUserIds.join(","),
     });
 
     return {
@@ -58,3 +71,4 @@ export default SlackFunction(
     };
   },
 );
+

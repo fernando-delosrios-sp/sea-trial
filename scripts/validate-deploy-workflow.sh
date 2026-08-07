@@ -61,6 +61,21 @@ require_in_file "$WORKFLOW" 'slack env set AGENT_SERVICE_URL' \
   "deploy-slack-app must set AGENT_SERVICE_URL via slack env set"
 require_in_file "$WORKFLOW" 'slack deploy' "deploy-slack-app must run slack deploy"
 
+# Scenario: Provision Slack triggers step references existing scripts
+require_in_file "$WORKFLOW" 'Provision Slack triggers' \
+  "$WORKFLOW must define Provision Slack triggers step"
+require_in_file "$WORKFLOW" '\./scripts/provision-triggers\.sh' \
+  "$WORKFLOW must invoke slack-app/scripts/provision-triggers.sh"
+
+PROVISION_SCRIPT="$ROOT/slack-app/scripts/provision-triggers.sh"
+PROVISION_TS="$ROOT/slack-app/scripts/provision-triggers.ts"
+TRIGGERS_CONFIG="$ROOT/slack-app/triggers.config.yaml"
+
+[[ -f "$PROVISION_SCRIPT" ]] || fail "missing $PROVISION_SCRIPT (referenced by deploy workflow)"
+[[ -x "$PROVISION_SCRIPT" ]] || fail "$PROVISION_SCRIPT must be executable"
+[[ -f "$PROVISION_TS" ]] || fail "missing $PROVISION_TS (invoked by provision-triggers.sh)"
+[[ -f "$TRIGGERS_CONFIG" ]] || fail "missing $TRIGGERS_CONFIG (read by provision-triggers.ts)"
+
 # Scenario: Secrets inventory documented
 for doc in "$README" "$CHECKLIST"; do
   [[ -f "$doc" ]] || fail "missing documentation file: $doc"
@@ -75,3 +90,4 @@ require_in_file "$GITIGNORE" '^\.env$' ".gitignore must ignore .env"
 require_in_file "$GITIGNORE" '^\.env\.\*$' ".gitignore must ignore .env.*"
 
 echo "validate-deploy-workflow: all contract checks passed"
+

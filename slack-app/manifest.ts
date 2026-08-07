@@ -4,6 +4,7 @@ import ProvisionChannelFunction from "./functions/provision_channel/mod.ts";
 import SeedChannelObjectsFunction from "./functions/seed_channel_objects/mod.ts";
 import OpenOnboardingFunction from "./functions/open_onboarding/mod.ts";
 import SubmitOnboardingFunction from "./functions/submit_onboarding/mod.ts";
+import OpenCreateTesEventFunction from "./functions/open_create_tes_event/mod.ts";
 import InvokeAgentFunction from "./functions/invoke_agent/mod.ts";
 import AcceptProposalsFunction from "./functions/accept_proposals/mod.ts";
 import HandleThreadReplyFunction from "./functions/handle_thread_reply/mod.ts";
@@ -20,6 +21,7 @@ export default Manifest({
     SeedChannelObjectsFunction,
     OpenOnboardingFunction,
     SubmitOnboardingFunction,
+    OpenCreateTesEventFunction,
     InvokeAgentFunction,
     AcceptProposalsFunction,
     HandleThreadReplyFunction,
@@ -42,6 +44,3 @@ export default Manifest({
     "lists:write",
   ],
 });
-
-
-

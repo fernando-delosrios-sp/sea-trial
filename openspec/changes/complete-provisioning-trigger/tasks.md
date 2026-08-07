@@ -6,7 +6,7 @@
 
 ## 2. Creation modal and trigger
 
-- [ ] 2.1 Implement `open_create_tes_event` function (modal with project name, Account, SF URL, multi_users_select, context notes)
+- [x] 2.1 Implement `open_create_tes_event` function (modal with project name, Account, SF URL, multi_users_select, context notes)
 - [ ] 2.2 Implement creation modal view submission handler wiring to workflow inputs
 - [ ] 2.3 Update `create_tes_event` trigger to open modal via interactivity (replace broken shortcut inputs)
 - [ ] 2.4 Document `slack trigger create` / update steps for workspace deployment
@@ -49,4 +49,5 @@
 
 - [ ] 8.1 Create or update changelog entry for this change
 - [ ] 8.2 Confirm entry covers creation modal, Account terminology, and onboarding button CTA
+
 

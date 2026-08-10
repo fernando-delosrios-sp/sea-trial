@@ -1,11 +1,20 @@
 import Handlebars from "handlebars";
 import type { OnboardingForm, TesEventContext } from "@tes/shared/types/index.ts";
 import { serializeEventContext } from "../event-context.ts";
+import { applyCanvasAssetUrls } from "./canvas-assets.ts";
 import { readContentText } from "./paths.ts";
 
 const NOT_SET = "_Not set_";
 
 let cachedTemplates: Map<string, Handlebars.TemplateDelegate> | null = null;
+let cachedDefaultDashboard: string | null = null;
+
+function loadDefaultDashboardContent(): string {
+  if (cachedDefaultDashboard === null) {
+    cachedDefaultDashboard = readContentText("canvases/dashboard.md");
+  }
+  return cachedDefaultDashboard;
+}
 
 function loadTemplate(relativePath: string): Handlebars.TemplateDelegate {
   if (!cachedTemplates) {
@@ -20,9 +29,10 @@ function loadTemplate(relativePath: string): Handlebars.TemplateDelegate {
   return template;
 }
 
-/** Resets cached Handlebars templates — for tests only. */
+/** Resets cached canvas content — for tests only. */
 export function resetCanvasCacheForTests(): void {
   cachedTemplates = null;
+  cachedDefaultDashboard = null;
 }
 
 function formatMembers(context: TesEventContext): string {
@@ -60,13 +70,24 @@ function buildDashboardViewModel(
   };
 }
 
+export interface DashboardRenderOptions {
+  /** Slack-hosted image URLs keyed by the local path used in canvas markdown. */
+  assetUrls?: Record<string, string>;
+}
+
 /** Renders the Dashboard canvas markdown with metadata injected by code. */
 export function renderDashboardCanvas(
   context: TesEventContext,
   form?: OnboardingForm,
+  options?: DashboardRenderOptions,
 ): string {
+  const defaultContent = loadDefaultDashboardContent().trim();
   const template = loadTemplate("canvases/dashboard.hbs.md");
-  const body = template(buildDashboardViewModel(context, form)).trim();
+  const dynamicContent = template(buildDashboardViewModel(context, form)).trim();
+  let body = [defaultContent, dynamicContent].filter(Boolean).join("\n\n");
+  if (options?.assetUrls && Object.keys(options.assetUrls).length > 0) {
+    body = applyCanvasAssetUrls(body, options.assetUrls);
+  }
   return [body, serializeEventContext(context)].join("\n");
 }
 
@@ -99,3 +120,4 @@ export function requirementsTemplate(): string {
 export function infrastructureTemplate(): string {
   return renderInfrastructureCanvas();
 }
+

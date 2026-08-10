@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-10 — TES Event Dashboard Canvas
+
+### Added
+
+- **Default dashboard canvas content** — `slack-app/content/canvases/dashboard.md` with rules of engagement, role banners, and onboarding checklists
+- **Canvas banner uploads** — Role banner images upload to Slack at channel provision and onboarding submit, with repo-relative paths for Markdown preview
+
+### Changed
+
+- **Dashboard Handlebars overlay** — `dashboard.hbs.md` now only renders dynamic Project, Opportunity, and Derived Components sections appended to the default template
+- **Slack app scopes and outgoing domains** — Added `files:write` and allowlisted `files.slack.com` for canvas banner uploads
+
+---
+
 ## 2026-08-07 — Channel Composition Engine
 
 ### Added
@@ -183,6 +197,7 @@
 ### Review gate
 
 Deliverables are never written to the Deliverables List without explicit user acceptance via Block Kit buttons.
+
 
 
 

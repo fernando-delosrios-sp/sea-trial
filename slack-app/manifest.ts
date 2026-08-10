@@ -39,6 +39,7 @@ export default Manifest({
     "channels:manage",
     "channels:read",
     "files:read",
+    "files:write",
     "users:read",
     "canvases:read",
     "canvases:write",

@@ -2,6 +2,7 @@ import type { OnboardingForm } from "@tes/shared/types/index.ts";
 import { deserializeEventContext } from "./event-context.ts";
 import { processOnboardingSubmit } from "./onboarding-submit.ts";
 import { readCanvasMarkdown, replaceCanvasContent, type CanvasSectionsClient } from "./canvas.ts";
+import { renderDashboardCanvasForSlack, type CanvasAssetUploadClient } from "./content/canvas-assets.ts";
 
 export function getInputValue(
   state: Record<string, Record<string, unknown>>,
@@ -36,7 +37,8 @@ export interface OnboardingViewMetadata {
   dashboard_canvas_content: string;
 }
 
-export interface SlackOnboardingSubmitClient extends CanvasSectionsClient {
+export interface SlackOnboardingSubmitClient
+  extends CanvasSectionsClient, CanvasAssetUploadClient {
   chat: {
     postMessage: (params: { channel: string; text: string }) => Promise<unknown>;
   };
@@ -70,8 +72,15 @@ export async function executeOnboardingSubmit(
     };
   }
 
-  const { context, dashboardContent } = processOnboardingSubmit(
+  const { context } = processOnboardingSubmit(
     existingContext,
+    form,
+  );
+
+  const dashboardContent = await renderDashboardCanvasForSlack(
+    client,
+    metadata.channel_id,
+    context,
     form,
   );
 
@@ -94,7 +103,7 @@ export async function executeOnboardingSubmit(
  * Loads dashboard markdown for opening onboarding from the pinned index button.
  */
 export async function loadDashboardContentForButton(
-  client: SlackOnboardingSubmitClient,
+  client: CanvasSectionsClient,
   buttonValue: string | undefined,
   fallbackContent: string,
 ): Promise<string> {
@@ -111,4 +120,5 @@ export async function loadDashboardContentForButton(
 
   return fallbackContent;
 }
+
 

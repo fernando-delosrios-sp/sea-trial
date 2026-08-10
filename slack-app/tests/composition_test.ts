@@ -137,8 +137,25 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   resetMessageCacheForTests();
 
   const createOrder: string[] = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(null, { status: 200 });
 
+  try {
   const client = {
+    files: {
+      getUploadURLExternal: async () => ({
+        ok: true,
+        upload_url: "https://upload.example.test",
+        file_id: `F-${crypto.randomUUID()}`,
+      }),
+      completeUploadExternal: async () => ({
+        ok: true,
+        files: [{
+          permalink: "https://example.slack.com/files/U1/F1/banner.png",
+        }],
+      }),
+      info: async () => ({ ok: true, file: { permalink: "unused" } }),
+    },
     canvases: {
       create: async (params: {
         title: string;
@@ -180,4 +197,8 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   assertEquals(context.deliverablesListId, "L-Deliverables");
   assertEquals(context.incidentsListId, "L-Incidents");
   assertEquals(createOrder.indexOf("canvas:Dashboard"), createOrder.length - 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
+

@@ -25,6 +25,11 @@ const completeContext: TesEventContext = {
   infrastructureCanvasId: "i1",
 };
 
+Deno.test("outgoingDomains includes files.slack.com for canvas banner uploads", () => {
+  const domains = buildOutgoingDomains(undefined, undefined);
+  assertEquals(domains.includes("files.slack.com"), true);
+});
+
 Deno.test("outgoingDomains includes agent-service and OTLP gateway hosts", () => {
   const domains = buildOutgoingDomains(
     "https://tes-agent.onrender.com",
@@ -142,4 +147,5 @@ Deno.test("logger flush does not throw when OTLP export fails", async () => {
 
   resetLoggerTestHooks();
 });
+
 

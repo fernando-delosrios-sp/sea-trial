@@ -4,6 +4,7 @@ import {
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   dashboardTemplate,
+  renderDashboardCanvas,
 } from "../lib/content/canvas-renderer.ts";
 import { pinnedIndexBlocks } from "../lib/content/message-renderer.ts";
 import type { TesEventContext } from "@tes/shared/types/index.ts";
@@ -23,6 +24,29 @@ const baseContext: TesEventContext = {
   memberUserIds: ["U123", "U456"],
   contextNotes: "Kickoff scheduled for next week",
 };
+
+Deno.test("dashboardTemplate includes default editorial content from dashboard.md", () => {
+  const markdown = dashboardTemplate(baseContext);
+
+  assertStringIncludes(markdown, "Welcome to your TES event dashboard!");
+  assertStringIncludes(markdown, "Rules of engagement");
+  assertStringIncludes(markdown, "../../assets/Sales%20Engineer%20banner.png");
+  assertStringIncludes(markdown, "Identify the main stakeholders");
+});
+
+Deno.test("renderDashboardCanvas substitutes provided asset URLs", () => {
+  const markdown = renderDashboardCanvas(baseContext, undefined, {
+    assetUrls: {
+      "../../assets/Sales Engineer banner.png":
+        "https://example.slack.com/files/U1/F1/banner.png",
+    },
+  });
+
+  assertStringIncludes(
+    markdown,
+    "![Sales Engineer](https://example.slack.com/files/U1/F1/banner.png)",
+  );
+});
 
 Deno.test("dashboardTemplate Project section includes Account and Salesforce URL when set on context", () => {
   const markdown = dashboardTemplate(baseContext);
@@ -70,3 +94,4 @@ Deno.test("pinnedIndexBlocks omits the Complete onboarding button once onboardin
 
   assertEquals(actionsBlock, undefined);
 });
+

@@ -21,6 +21,14 @@ export {
 } from "./canvas-renderer.ts";
 
 export {
+  applyCanvasAssetUrls,
+  findCanvasImageRefs,
+  renderDashboardCanvasForSlack,
+  resolveCanvasAssetUrls,
+} from "./canvas-assets.ts";
+export type { CanvasAssetUploadClient } from "./canvas-assets.ts";
+
+export {
   getDeliverablesStatusOptions,
   getListColumns,
   getListName,
@@ -80,4 +88,5 @@ export {
   serializeProvisionedContext,
 } from "./channel-provisioner.ts";
 export type { ChannelProvisionClient, ProvisionInputs } from "./channel-provisioner.ts";
+
 

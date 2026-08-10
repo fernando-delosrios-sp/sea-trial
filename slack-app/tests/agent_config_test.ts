@@ -28,8 +28,9 @@ Deno.test("resolveAgentServiceUrl returns trimmed URL", () => {
 });
 
 Deno.test("buildOutgoingDomains includes localhost only for local dev", () => {
-  assertEquals(buildOutgoingDomains(undefined), ["localhost"]);
+  assertEquals(buildOutgoingDomains(undefined), ["files.slack.com", "localhost"]);
   assertEquals(buildOutgoingDomains("http://localhost:3000"), [
+    "files.slack.com",
     "localhost",
   ]);
 });
@@ -39,4 +40,5 @@ Deno.test("buildOutgoingDomains includes agent-service host without localhost fo
   assertEquals(domains.includes("localhost"), false);
   assertEquals(domains.includes("tes-agent.onrender.com"), true);
 });
+
 

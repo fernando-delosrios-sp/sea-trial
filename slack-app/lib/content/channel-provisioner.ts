@@ -1,6 +1,6 @@
 import type { TesEventContext } from "@tes/shared/types/index.ts";
 import type { SlackCanvasClient } from "../canvas.ts";
-import { createCanvas, replaceCanvasContent } from "../canvas.ts";
+import { createCanvas } from "../canvas.ts";
 import type { SlackListClient } from "../lists.ts";
 import {
   createDeliverablesList,
@@ -15,7 +15,10 @@ import {
   type ProvisionEntry,
 } from "./composition-resolver.ts";
 import {
-  renderDashboardCanvas,
+  renderDashboardCanvasForSlack,
+  type CanvasAssetUploadClient,
+} from "./canvas-assets.ts";
+import {
   renderInfrastructureCanvas,
   renderRequirementsCanvas,
 } from "./canvas-renderer.ts";
@@ -34,7 +37,8 @@ export interface ProvisionInputs {
   context_notes?: string;
 }
 
-export interface ChannelProvisionClient extends SlackCanvasClient, SlackListClient {
+export interface ChannelProvisionClient
+  extends SlackCanvasClient, SlackListClient, CanvasAssetUploadClient {
   chat: {
     postMessage: (params: {
       channel: string;
@@ -61,22 +65,17 @@ async function provisionResource(
 
   switch (entry.kind) {
     case "canvas": {
-      const content = renderCanvasContent(entry.ref, context);
-      const canvasId = await createCanvas(client, {
+      const content = await renderCanvasContent(
+        client,
+        entry.ref,
+        channelId,
+        context,
+      );
+      return await createCanvas(client, {
         channelId,
         title: entry.title ?? entry.ref,
         content,
       });
-
-      if (entry.ref === "dashboard") {
-        await replaceCanvasContent(
-          client,
-          canvasId,
-          renderDashboardCanvas(context),
-        );
-      }
-
-      return canvasId;
     }
     case "list": {
       if (entry.ref === "deliverables") {
@@ -92,14 +91,19 @@ async function provisionResource(
   }
 }
 
-function renderCanvasContent(ref: string, context: TesEventContext): string {
+async function renderCanvasContent(
+  client: ChannelProvisionClient,
+  ref: string,
+  channelId: string,
+  context: TesEventContext,
+): Promise<string> {
   switch (ref) {
     case "requirements":
       return renderRequirementsCanvas();
     case "infrastructure":
       return renderInfrastructureCanvas();
     case "dashboard":
-      return renderDashboardCanvas(context);
+      return await renderDashboardCanvasForSlack(client, channelId, context);
     default:
       throw new Error(`Unknown canvas ref "${ref}"`);
   }
@@ -187,3 +191,4 @@ export async function provisionChannel(
 export function serializeProvisionedContext(context: TesEventContext): string {
   return serializeEventContext(context);
 }
+

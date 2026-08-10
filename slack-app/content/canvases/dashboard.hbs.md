@@ -1,5 +1,3 @@
-# TES Event Dashboard
-
 ## Project
 - **Name:** {{projectName}}
 - **Channel:** <#{{channelId}}>

@@ -22,6 +22,7 @@ const baseRequest: ProcessRequirementsRequest = {
     deliverablesListId: "l1",
     incidentsListId: "l2",
     infrastructureCanvasId: "i1",
+            situationReportCanvasId: "sr1",
   },
   requirementsCanvasMarkdown: "# Requirements\n",
   existingDeliverables: [],

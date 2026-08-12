@@ -6,6 +6,7 @@ import OpenOnboardingFunction from "./functions/open_onboarding/mod.ts";
 import OpenCreateTesEventFunction from "./functions/open_create_tes_event/mod.ts";
 import InvokeAgentFunction from "./functions/invoke_agent/mod.ts";
 import AcceptProposalsFunction from "./functions/accept_proposals/mod.ts";
+import PublishSituationReportFunction from "./functions/publish_situation_report/mod.ts";
 import HandleThreadReplyFunction from "./functions/handle_thread_reply/mod.ts";
 import CreateTesEventWorkflow from "./workflows/create_tes_event.ts";
 import { buildOutgoingDomains } from "./lib/outgoing-domains.ts";
@@ -26,6 +27,7 @@ export default Manifest({
     OpenCreateTesEventFunction,
     InvokeAgentFunction,
     AcceptProposalsFunction,
+    PublishSituationReportFunction,
     HandleThreadReplyFunction,
   ],
   workflows: [CreateTesEventWorkflow],

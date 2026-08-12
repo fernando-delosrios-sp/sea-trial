@@ -1,0 +1,61 @@
+{
+  "$comment": "Slack Block Kit input block elements — https://docs.slack.dev/reference/block-kit/block-elements",
+  "surface": "modal",
+  "version": "1",
+  "input_elements": {
+    "plain_text_input": {
+      "forbidden_properties": ["options", "option_groups"]
+    },
+    "rich_text_input": {
+      "forbidden_properties": ["options", "option_groups", "multiline"]
+    },
+    "static_select": {
+      "forbidden_properties": ["multiline", "filetypes"]
+    },
+    "external_select": {
+      "forbidden_properties": ["multiline", "filetypes"]
+    },
+    "multi_static_select": {
+      "forbidden_properties": ["multiline", "filetypes"]
+    },
+    "users_select": {
+      "forbidden_properties": ["multiline", "options", "filetypes"]
+    },
+    "multi_users_select": {
+      "forbidden_properties": ["multiline", "options", "filetypes"]
+    },
+    "conversations_select": {
+      "forbidden_properties": ["multiline", "options", "filetypes"]
+    },
+    "channels_select": {
+      "forbidden_properties": ["multiline", "options", "filetypes"]
+    },
+    "radio_buttons": {
+      "forbidden_properties": ["multiline", "filetypes"]
+    },
+    "checkboxes": {
+      "forbidden_properties": ["multiline", "filetypes"]
+    },
+    "datepicker": {
+      "forbidden_properties": ["multiline", "options", "filetypes"]
+    },
+    "datetimepicker": {
+      "forbidden_properties": ["multiline", "options", "filetypes"]
+    },
+    "timepicker": {
+      "forbidden_properties": ["multiline", "options", "filetypes"]
+    },
+    "number_input": {
+      "forbidden_properties": ["multiline", "options", "filetypes"]
+    },
+    "email_text_input": {
+      "forbidden_properties": ["multiline", "options", "filetypes"]
+    },
+    "url_text_input": {
+      "forbidden_properties": ["multiline", "options", "filetypes"]
+    },
+    "file_input": {
+      "forbidden_properties": ["multiline", "options", "option_groups"]
+    }
+  }
+}

@@ -9,6 +9,12 @@ export interface DeliverableRowInput {
   requirements: string;
   dueDate?: string;
   deliverableUrl?: string;
+  openQuestions?: string;
+}
+
+/** Serializes proposal open questions for the list text column. */
+export function formatOpenQuestions(questions?: string[]): string {
+  return questions?.filter((q) => q.trim().length > 0).join("; ") ?? "";
 }
 
 export interface ListColumnMap {
@@ -38,6 +44,7 @@ export function proposalToRowInput(
     requirements: proposal.requirements,
     dueDate: undefined,
     deliverableUrl: undefined,
+    openQuestions: formatOpenQuestions(proposal.openQuestions),
   };
 }
 

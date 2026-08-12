@@ -37,6 +37,7 @@ const baseContext: TesEventContext = {
   deliverablesListId: "list1",
   incidentsListId: "list2",
   infrastructureCanvasId: "infra1",
+  situationReportCanvasId: "sr1",
 };
 
 Deno.test("create-tes-event modal block_ids match contract", () => {
@@ -85,7 +86,7 @@ Deno.test("deliverables list columns load with domain status options", () => {
 
 Deno.test("deliverables Slack schema matches JSON column names", () => {
   const schema = getSlackListSchema("deliverables");
-  assertEquals(schema.length, 8);
+  assertEquals(schema.length, 9);
   assertEquals(schema[0].name, "Task ID");
   assertEquals(schema[2].name, "Status");
 });
@@ -112,10 +113,10 @@ Deno.test("pinned index blocks conditional onboarding button", () => {
   );
 
   const complete = pinnedIndexBlocks({ ...baseContext, onboardingComplete: true });
-  assertEquals(
-    complete.some((b) => (b as { type: string }).type === "actions"),
-    false,
-  );
+  const publishActions = complete.find(
+    (b) => (b as { type: string }).type === "actions",
+  ) as { elements: Array<{ action_id: string }> } | undefined;
+  assertEquals(publishActions?.elements[0]?.action_id, "publish_situation_report");
 });
 
 Deno.test("content loader caches reset for tests", () => {

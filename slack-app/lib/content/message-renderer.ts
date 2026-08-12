@@ -5,6 +5,9 @@ import {
   loadComposition,
   type CompositionManifest,
 } from "./composition-resolver.ts";
+import {
+  validateMessageBlocks,
+} from "./capability-validator.ts";
 import { readContentText } from "./paths.ts";
 
 let cachedTemplate: Handlebars.TemplateDelegate | null = null;
@@ -76,7 +79,7 @@ function buildIndexMessageText(
     ...links,
     "",
     context.onboardingComplete
-      ? "✅ Onboarding complete — @mention the bot with documents to summon the Requirements Agent."
+      ? "✅ Onboarding complete — publish a situation report or @mention the bot with documents to summon the Requirements Agent."
       : "⏳ Click *Complete onboarding* below to unlock the Requirements Agent.",
   ].join("\n");
 }
@@ -101,9 +104,15 @@ export function renderPinnedIndexBlocks(
     buttonValueJson: {
       dashboard_canvas_id: context.dashboardCanvasId,
     },
+    publishButtonValueJson: {
+      dashboard_canvas_id: context.dashboardCanvasId,
+      situation_report_canvas_id: context.situationReportCanvasId,
+    },
   });
 
-  return JSON.parse(rendered) as Record<string, unknown>[];
+  const blocks = JSON.parse(rendered) as Record<string, unknown>[];
+  validateMessageBlocks(blocks, "messages/pinned-index.hbs.json");
+  return blocks;
 }
 
 /** Backward-compatible alias. */
@@ -117,3 +126,4 @@ export function pinnedIndexBlocks(
 ): Record<string, unknown>[] {
   return renderPinnedIndexBlocks(context);
 }
+

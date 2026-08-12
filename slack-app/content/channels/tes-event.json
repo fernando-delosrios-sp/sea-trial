@@ -7,7 +7,8 @@
       "requirements": "requirementsCanvasId",
       "infrastructure": "infrastructureCanvasId",
       "deliverables": "deliverablesListId",
-      "incidents": "incidentsListId"
+      "incidents": "incidentsListId",
+      "situation_report": "situationReportCanvasId"
     }
   },
   "resources": [
@@ -34,11 +35,23 @@
       "ref": "incidents"
     },
     {
+      "slot": "situation_report",
+      "kind": "canvas",
+      "ref": "situation-report",
+      "title": "Situation Report"
+    },
+    {
       "slot": "dashboard",
       "kind": "canvas",
       "ref": "dashboard",
       "title": "Dashboard",
-      "depends_on": ["requirements", "infrastructure", "deliverables", "incidents"]
+      "depends_on": [
+        "requirements",
+        "infrastructure",
+        "deliverables",
+        "incidents",
+        "situation_report"
+      ]
     }
   ],
   "chrome": [
@@ -73,7 +86,12 @@
       { "slot": "requirements", "label": "Requirements", "link_type": "canvas" },
       { "slot": "infrastructure", "label": "Infrastructure", "link_type": "canvas" },
       { "slot": "deliverables", "label": "Deliverables", "link_type": "list" },
-      { "slot": "incidents", "label": "Incidents", "link_type": "list" }
+      { "slot": "incidents", "label": "Incidents", "link_type": "list" },
+      {
+        "slot": "situation_report",
+        "label": "Situation Report",
+        "link_type": "canvas"
+      }
     ]
   },
   "dynamic_resources": [

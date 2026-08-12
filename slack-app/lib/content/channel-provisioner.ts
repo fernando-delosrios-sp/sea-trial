@@ -21,6 +21,7 @@ import {
 import {
   renderInfrastructureCanvas,
   renderRequirementsCanvas,
+  renderSituationReportSeedCanvas,
 } from "./canvas-renderer.ts";
 import {
   renderPinnedIndexBlocks,
@@ -102,6 +103,8 @@ async function renderCanvasContent(
       return renderRequirementsCanvas();
     case "infrastructure":
       return renderInfrastructureCanvas();
+    case "situation-report":
+      return renderSituationReportSeedCanvas(context);
     case "dashboard":
       return await renderDashboardCanvasForSlack(client, channelId, context);
     default:
@@ -153,6 +156,7 @@ export async function provisionChannel(
     deliverablesListId: "",
     incidentsListId: "",
     infrastructureCanvasId: "",
+    situationReportCanvasId: "",
     accountName: inputs.account_name,
     salesforceOpportunityUrl: inputs.salesforce_opportunity_url,
     memberUserIds: inputs.member_user_ids,

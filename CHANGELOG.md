@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-08-12 — Customer Situation Report
+
+### Added
+
+- **Situation Report canvas** — `situation-report.hbs.md` seeded per TES event channel with executive summary, category-grouped detail, and changelog table
+- **Customer status buckets** — `customer-deliverable-statuses.json` maps internal deliverable statuses to customer-facing labels (In progress, Needs your input, In review, Complete, Out of scope)
+- **Manual publish** — Pinned index **Publish situation report** button (post-onboarding) reads Deliverables List rows and updates the Situation Report canvas without modifying list data
+- **`situationReportCanvasId`** — New `TesEventContext` field and `situation_report` composition slot with navigation link
+
+### Changed
+
+- **Pinned index** — Shows publish button when onboarding is complete; copy mentions situation report publishing
+- **Channel composition** — `tes-event.json` provisions Situation Report canvas before Dashboard
+
+---
+
+## 2026-08-10 — Content Capability Catalog
+
+### Added
+
+- **Capability catalog** — Full Slack surface definitions under `slack-app/schemas/content/capabilities/` for modals (input elements), lists (column types), messages (Block Kit blocks), canvas rules, TES extensions, and `@domain/*` ref registry
+- **Capability validator** — `capability-catalog.ts`, `capability-validator.ts`, and `domain-ref-resolver.ts` drive compile-time validation from the same catalog used for authoring
+- **Message blocks JSON Schema** — `schemas/content/message-blocks.schema.json` with `content/messages/pinned-index.meta.json` schema link for Handlebars templates
+- **Content author guide** — `slack-app/content/README.md` listing valid types and Slack-native list options shape
+
+### Changed
+
+- **List select options** — Authored lists use Slack shape `options: { format, choices[] }`; flat root `options[]` rejected; `options_ref` resolves to `options.choices` at compile time
+- **List Slack schema** — `getSlackListSchema()` emits column `key` and `options` for select columns
+- **JSON Schema** — `modal.schema.json` and `list.schema.json` enum all Slack-native types from the catalog
+- **Compilers** — Modal, list, message, and canvas loaders validate against capability catalog before use
+
+---
+
 ## 2026-08-10 — TES Event Dashboard Canvas
 
 ### Added
@@ -197,6 +231,7 @@
 ### Review gate
 
 Deliverables are never written to the Deliverables List without explicit user acceptance via Block Kit buttons.
+
 
 
 

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Rendered Block Kit blocks for messages — block types from schemas/content/capabilities/message.v1.json",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["type"],
+    "properties": {
+      "type": {
+        "enum": [
+          "section",
+          "divider",
+          "image",
+          "actions",
+          "context",
+          "input",
+          "file",
+          "header",
+          "video",
+          "rich_text"
+        ]
+      },
+      "block_id": { "type": "string" },
+      "text": { "type": "object" },
+      "elements": { "type": "array" },
+      "accessory": { "type": "object" },
+      "fields": { "type": "array" }
+    }
+  }
+}

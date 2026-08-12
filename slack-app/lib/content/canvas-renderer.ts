@@ -2,7 +2,11 @@ import Handlebars from "handlebars";
 import type { OnboardingForm, TesEventContext } from "@tes/shared/types/index.ts";
 import { serializeEventContext } from "../event-context.ts";
 import { applyCanvasAssetUrls } from "./canvas-assets.ts";
+import {
+  validateCanvasTemplateSource,
+} from "./capability-validator.ts";
 import { readContentText } from "./paths.ts";
+import { buildSituationReportSeedMarkdown } from "../situation-report.ts";
 
 const NOT_SET = "_Not set_";
 
@@ -24,6 +28,7 @@ function loadTemplate(relativePath: string): Handlebars.TemplateDelegate {
   if (cached) return cached;
 
   const source = readContentText(relativePath);
+  validateCanvasTemplateSource(source, relativePath);
   const template = Handlebars.compile(source, { strict: false, noEscape: true });
   cachedTemplates.set(relativePath, template);
   return template;
@@ -103,6 +108,13 @@ export function renderInfrastructureCanvas(): string {
   return template({}).trim();
 }
 
+/** Renders the Situation Report canvas seed content before first publish. */
+export function renderSituationReportSeedCanvas(
+  context: TesEventContext,
+): string {
+  return buildSituationReportSeedMarkdown(context);
+}
+
 /** Backward-compatible alias for dashboard rendering. */
 export function dashboardTemplate(
   context: TesEventContext,
@@ -120,4 +132,5 @@ export function requirementsTemplate(): string {
 export function infrastructureTemplate(): string {
   return renderInfrastructureCanvas();
 }
+
 

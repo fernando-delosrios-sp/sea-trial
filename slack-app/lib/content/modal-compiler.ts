@@ -1,7 +1,9 @@
 import {
-  getDeliverableStatusChoices,
-  getSupportedSuites,
-} from "./domain.ts";
+  validateModalBlocks,
+  validateModalDynamicOverlay,
+  validateModalRoot,
+} from "./capability-validator.ts";
+import { resolveModalSelectOptionsRef } from "./domain-ref-resolver.ts";
 import { readContentJson } from "./paths.ts";
 
 export interface ModalDefinition {
@@ -31,6 +33,7 @@ function validateModalDefinition(data: unknown, source: string): ModalDefinition
     throw new Error(`${source} must be an object`);
   }
   const row = data as Record<string, unknown>;
+  validateModalRoot(row, source);
   const callback_id = requireString(row, "callback_id", source);
   const title = requireObject(row, "title", source);
   const submit = requireObject(row, "submit", source);
@@ -43,6 +46,11 @@ function validateModalDefinition(data: unknown, source: string): ModalDefinition
   }
 
   assertBlockIdContract(blocks, contract.block_ids, source);
+  validateModalBlocks(blocks, source);
+  validateModalDynamicOverlay(
+    dynamic as Record<string, Record<string, string>> | undefined,
+    source,
+  );
 
   return {
     callback_id,
@@ -229,11 +237,8 @@ function applyDynamicOverlay(
       element.initial_value = params.accountName;
     }
 
-    if (config.options_ref === "@domain/sailpoint-suites") {
-      element.options = getSupportedSuites().map((suite) => ({
-        text: { type: "plain_text", text: suite },
-        value: suite,
-      }));
+    if (config.options_ref) {
+      element.options = resolveModalSelectOptionsRef(config.options_ref);
     }
   }
 }
@@ -243,3 +248,4 @@ export const CREATE_TES_EVENT_MODAL_BLOCKS = getModalBlockIds("create-tes-event"
 
 /** Block IDs for the onboarding modal (backward-compatible export). */
 export const ONBOARDING_MODAL_BLOCKS = getModalBlockIds("onboarding");
+

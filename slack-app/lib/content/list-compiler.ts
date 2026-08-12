@@ -1,21 +1,33 @@
-import { getDeliverableStatusChoices } from "./domain.ts";
+import {
+  validateListColumns,
+} from "./capability-validator.ts";
+import { resolveListOptionsRef } from "./domain-ref-resolver.ts";
 import { readContentJson } from "./paths.ts";
 
-export interface ListColumnOption {
+export interface ListColumnChoice {
   value: string;
   label: string;
+  color?: string;
+}
+
+export interface ListColumnOptions {
+  format?: string;
+  choices?: ListColumnChoice[];
+  [key: string]: unknown;
 }
 
 export interface ListColumnDefinition {
   key: string;
   name: string;
   type: string;
-  options?: ListColumnOption[];
+  options?: ListColumnOptions;
 }
 
 export interface SlackListColumn {
+  key: string;
   name: string;
   type: string;
+  options?: ListColumnOptions;
 }
 
 export interface ListDefinition {
@@ -32,14 +44,34 @@ const LIST_FILES: Record<string, string> = {
 
 let cachedLists: Map<string, ListDefinition> | null = null;
 
-function resolveOptionsRef(ref: string): ListColumnOption[] {
-  if (ref === "@domain/deliverable-statuses") {
-    return getDeliverableStatusChoices().map((choice) => ({
-      value: choice.value,
-      label: choice.label,
-    }));
+function normalizeInlineOptions(
+  options: Record<string, unknown>,
+  source: string,
+): ListColumnOptions {
+  const choicesRaw = options.choices;
+  if (!Array.isArray(choicesRaw)) {
+    throw new Error(`${source} options.choices must be an array`);
   }
-  throw new Error(`Unknown options_ref: ${ref}`);
+
+  const choices = choicesRaw.map((opt, optIndex) => {
+    if (!opt || typeof opt !== "object") {
+      throw new Error(`${source} options.choices[${optIndex}] must be an object`);
+    }
+    const row = opt as Record<string, unknown>;
+    const value = requireString(row, "value", `${source} choice`);
+    const label = requireString(row, "label", `${source} choice`);
+    const color = row.color;
+    return {
+      value,
+      label,
+      ...(typeof color === "string" ? { color } : {}),
+    };
+  });
+
+  return {
+    ...options,
+    choices,
+  } as ListColumnOptions;
 }
 
 function validateListDefinition(data: unknown, source: string): ListDefinition {
@@ -53,35 +85,25 @@ function validateListDefinition(data: unknown, source: string): ListDefinition {
     throw new Error(`${source} must contain a non-empty columns array`);
   }
 
-  const columns: ListColumnDefinition[] = columnsRaw.map((col, index) => {
-    if (!col || typeof col !== "object") {
-      throw new Error(`${source} columns[${index}] must be an object`);
-    }
-    const column = col as Record<string, unknown>;
-    const key = requireString(column, "key", `${source} columns[${index}]`);
-    const colName = requireString(column, "name", `${source} columns[${index}]`);
-    const type = requireString(column, "type", `${source} columns[${index}]`);
+  validateListColumns(columnsRaw, source);
 
-    let options: ListColumnOption[] | undefined;
+  const columns: ListColumnDefinition[] = columnsRaw.map((col, index) => {
+    const column = col as Record<string, unknown>;
+    const colSource = `${source} columns[${index}]`;
+    const key = requireString(column, "key", colSource);
+    const colName = requireString(column, "name", colSource);
+    const type = requireString(column, "type", colSource);
+
+    let options: ListColumnOptions | undefined;
     if (column.options_ref !== undefined) {
-      if (typeof column.options_ref !== "string") {
-        throw new Error(`${source} columns[${index}].options_ref must be a string`);
-      }
-      options = resolveOptionsRef(column.options_ref);
+      options = resolveListOptionsRef(column.options_ref as string);
     } else if (column.options !== undefined) {
-      if (!Array.isArray(column.options)) {
-        throw new Error(`${source} columns[${index}].options must be an array`);
+      const optionsObj = column.options as Record<string, unknown>;
+      if (type === "select" || type === "multi_select") {
+        options = normalizeInlineOptions(optionsObj, colSource);
+      } else {
+        options = optionsObj as ListColumnOptions;
       }
-      options = column.options.map((opt, optIndex) => {
-        if (!opt || typeof opt !== "object") {
-          throw new Error(`${source} columns[${index}].options[${optIndex}] must be an object`);
-        }
-        const option = opt as Record<string, unknown>;
-        return {
-          value: requireString(option, "value", `${source} option`),
-          label: requireString(option, "label", `${source} option`),
-        };
-      });
     }
 
     return { key, name: colName, type, options };
@@ -155,12 +177,19 @@ export function getListColumns(listName: string): ListColumnDefinition[] {
   return [...loadList(listName).columns];
 }
 
-/** Returns Slack API schema columns (name + type) for list creation. */
+/** Returns Slack API schema columns for list creation. */
 export function getSlackListSchema(listName: string): SlackListColumn[] {
-  return loadList(listName).columns.map((column) => ({
-    name: column.name,
-    type: column.type,
-  }));
+  return loadList(listName).columns.map((column) => {
+    const slackColumn: SlackListColumn = {
+      key: column.key,
+      name: column.name,
+      type: column.type,
+    };
+    if (column.options) {
+      slackColumn.options = column.options;
+    }
+    return slackColumn;
+  });
 }
 
 /** Returns the display name for a list definition. */
@@ -175,7 +204,7 @@ export const DELIVERABLES_COLUMNS = getSlackListSchema("deliverables");
 export const INCIDENTS_COLUMNS = getSlackListSchema("incidents");
 
 /** Resolved status options for Deliverables list — for tests and future behavior. */
-export function getDeliverablesStatusOptions(): ListColumnOption[] {
+export function getDeliverablesStatusOptions(): ListColumnChoice[] {
   const statusColumn = getListColumns("deliverables").find((c) => c.key === "status");
-  return statusColumn?.options ?? [];
+  return statusColumn?.options?.choices ?? [];
 }

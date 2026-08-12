@@ -1,0 +1,69 @@
+{
+  "$comment": "Slack Lists column types — https://docs.slack.dev/reference/methods/slackLists.create",
+  "surface": "list",
+  "version": "1",
+  "column_types": {
+    "text": {
+      "forbidden_properties": ["options", "options_ref"]
+    },
+    "rich_text": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "select": {
+      "requires_options_or_ref": true,
+      "forbidden_properties": []
+    },
+    "multi_select": {
+      "requires_options_or_ref": true,
+      "forbidden_properties": []
+    },
+    "user": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "assignee": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "date": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "due_date": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "link": {
+      "forbidden_properties": ["options", "options_ref"]
+    },
+    "checkbox": {
+      "forbidden_properties": ["options", "options_ref"]
+    },
+    "number": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "email": {
+      "forbidden_properties": ["options", "options_ref"]
+    },
+    "phone": {
+      "forbidden_properties": ["options", "options_ref"]
+    },
+    "channel": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "attachment": {
+      "forbidden_properties": ["options", "options_ref"]
+    },
+    "message": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "canvas": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "rating": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "vote": {
+      "forbidden_properties": ["options_ref"]
+    },
+    "completed": {
+      "forbidden_properties": ["options", "options_ref"]
+    }
+  }
+}

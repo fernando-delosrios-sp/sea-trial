@@ -1,5 +1,32 @@
 /** Re-exports declarative Slack UI content loaders. */
 export {
+  EXPECTED_LIST_COLUMN_TYPES,
+  EXPECTED_MESSAGE_BLOCK_TYPES,
+  EXPECTED_MODAL_INPUT_ELEMENTS,
+  getRegisteredDomainRef,
+  listRegisteredDomainRefs,
+  loadCanvasCatalog,
+  loadListCatalog,
+  loadMessageCatalog,
+  loadModalCatalog,
+  resetCapabilityCatalogCacheForTests,
+} from "./capability-catalog.ts";
+
+export {
+  resolveListOptionsRef,
+  resolveModalSelectOptionsRef,
+} from "./domain-ref-resolver.ts";
+
+export {
+  validateCanvasTemplateSource,
+  validateListColumns,
+  validateMessageBlocks,
+  validateModalBlocks,
+  validateModalDynamicOverlay,
+  validateModalRoot,
+} from "./capability-validator.ts";
+
+export {
   buildCreateTesEventModalView,
   buildOnboardingModalView,
   CREATE_TES_EVENT_MODAL_BLOCKS,
@@ -16,6 +43,7 @@ export {
   renderDashboardCanvas,
   renderInfrastructureCanvas,
   renderRequirementsCanvas,
+  renderSituationReportSeedCanvas,
   requirementsTemplate,
   resetCanvasCacheForTests,
 } from "./canvas-renderer.ts";
@@ -39,8 +67,9 @@ export {
   resetListCacheForTests,
 } from "./list-compiler.ts";
 export type {
+  ListColumnChoice,
   ListColumnDefinition,
-  ListColumnOption,
+  ListColumnOptions,
   ListDefinition,
   SlackListColumn,
 } from "./list-compiler.ts";
@@ -55,8 +84,11 @@ export {
 
 export {
   deriveComponents,
+  getCustomerDeliverableStatusMap,
   getDeliverableStatusChoices,
   getSupportedSuites,
+  mapToCustomerStatus,
+  parseCustomerDeliverableStatusesJson,
   parseDeliverableStatusesJson,
   parseSailpointSuitesJson,
   resetDomainCacheForTests,
@@ -88,5 +120,6 @@ export {
   serializeProvisionedContext,
 } from "./channel-provisioner.ts";
 export type { ChannelProvisionClient, ProvisionInputs } from "./channel-provisioner.ts";
+
 
 

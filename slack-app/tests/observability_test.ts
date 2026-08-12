@@ -23,6 +23,7 @@ const completeContext: TesEventContext = {
   deliverablesListId: "l1",
   incidentsListId: "l2",
   infrastructureCanvasId: "i1",
+  situationReportCanvasId: "sr1",
 };
 
 Deno.test("outgoingDomains includes files.slack.com for canvas banner uploads", () => {

@@ -1,0 +1,7 @@
+{
+  "$comment": "Canvas templates are Handlebars markdown — not Block Kit",
+  "surface": "canvas",
+  "version": "1",
+  "file_suffix": ".hbs.md",
+  "forbidden_patterns": ["<!-- tes-event-context -->"]
+}

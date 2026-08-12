@@ -1,8 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "List content — column types from schemas/content/capabilities/list.v1.json",
   "type": "object",
   "required": ["name", "columns", "seed", "behavior"],
   "properties": {
+    "$schema": { "type": "string" },
     "name": { "type": "string", "minLength": 1 },
     "columns": {
       "type": "array",
@@ -13,16 +15,46 @@
         "properties": {
           "key": { "type": "string", "minLength": 1 },
           "name": { "type": "string", "minLength": 1 },
-          "type": { "type": "string", "minLength": 1 },
+          "type": {
+            "enum": [
+              "text",
+              "rich_text",
+              "select",
+              "multi_select",
+              "user",
+              "assignee",
+              "date",
+              "due_date",
+              "link",
+              "checkbox",
+              "number",
+              "email",
+              "phone",
+              "channel",
+              "attachment",
+              "message",
+              "canvas",
+              "rating",
+              "vote",
+              "completed"
+            ]
+          },
           "options_ref": { "type": "string" },
           "options": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["value", "label"],
-              "properties": {
-                "value": { "type": "string" },
-                "label": { "type": "string" }
+            "type": "object",
+            "properties": {
+              "format": { "type": "string" },
+              "choices": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["value", "label"],
+                  "properties": {
+                    "value": { "type": "string" },
+                    "label": { "type": "string" },
+                    "color": { "type": "string" }
+                  }
+                }
               }
             }
           }

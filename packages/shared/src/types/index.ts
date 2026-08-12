@@ -31,6 +31,8 @@ export interface TesEventContext {
   deliverablesListId: string;
   incidentsListId: string;
   infrastructureCanvasId: string;
+  /** Customer-facing Situation Report canvas provisioned per TES event channel. */
+  situationReportCanvasId: string;
   /** Account name captured at creation time; pre-fills and can be overwritten during onboarding. */
   accountName?: string;
   salesforceOpportunityUrl?: string;

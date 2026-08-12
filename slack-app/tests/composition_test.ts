@@ -32,6 +32,7 @@ const baseContext: TesEventContext = {
   deliverablesListId: "list1",
   incidentsListId: "list2",
   infrastructureCanvasId: "infra1",
+  situationReportCanvasId: "sr1",
 };
 
 Deno.test("tes-event composition manifest loads and validates", () => {
@@ -39,7 +40,7 @@ Deno.test("tes-event composition manifest loads and validates", () => {
   const composition = loadComposition("tes-event");
   assertEquals(composition.channel_type, "tes-event");
   assertEquals(composition.version, "1.0.0");
-  assertEquals(composition.resources.length, 5);
+  assertEquals(composition.resources.length, 6);
   assertEquals(
     getContextFieldForSlot(composition, "dashboard"),
     "dashboardCanvasId",
@@ -123,6 +124,7 @@ Deno.test("navigation entries render pinned index links in order", () => {
   assertEquals(message.includes("<canvas:dash1|Dashboard>"), true);
   assertEquals(message.includes("<canvas:req1|Requirements>"), true);
   assertEquals(message.includes("<list:list1|Deliverables>"), true);
+  assertEquals(message.includes("<canvas:sr1|Situation Report>"), true);
 
   const dashboardPos = message.indexOf("Dashboard");
   const requirementsPos = message.indexOf("Requirements");
@@ -199,6 +201,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
       },
       items: {
         create: async () => ({ item: { id: "item1" } }),
+        list: async () => ({ items: [] }),
       },
     },
     chat: {
@@ -220,6 +223,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   assertEquals(context.requirementsCanvasId, "C-Requirements");
   assertEquals(context.deliverablesListId, "L-Deliverables");
   assertEquals(context.incidentsListId, "L-Incidents");
+  assertEquals(context.situationReportCanvasId, "C-Situation Report");
   assertEquals(createOrder.indexOf("canvas:Dashboard"), createOrder.length - 1);
   } finally {
     globalThis.fetch = originalFetch;

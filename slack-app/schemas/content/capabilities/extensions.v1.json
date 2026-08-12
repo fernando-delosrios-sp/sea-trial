@@ -1,0 +1,11 @@
+{
+  "surface": "extensions",
+  "version": "1",
+  "modal": {
+    "allowed_root_properties": ["contract", "dynamic"]
+  },
+  "list": {
+    "allowed_root_properties": ["seed", "behavior"],
+    "allowed_column_properties": ["options_ref"]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$comment": "Slack Block Kit blocks for messages — https://docs.slack.dev/reference/block-kit/blocks",
+  "surface": "message",
+  "version": "1",
+  "block_types": {
+    "section": {},
+    "divider": {},
+    "image": {},
+    "actions": {},
+    "context": {},
+    "input": {},
+    "file": {},
+    "header": {},
+    "video": {},
+    "rich_text": {}
+  }
+}

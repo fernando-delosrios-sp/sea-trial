@@ -27,9 +27,11 @@ Deno.test("Objects seeded — context includes all object ID fields", () => {
     dashboardCanvasId: "d1",
     requirementsCanvasId: "r1",
     infrastructureCanvasId: "i1",
+  situationReportCanvasId: "sr1",
     deliverablesListId: "l1",
     incidentsListId: "l2",
   };
   assertEquals(Object.values(context).every((v) => v.length > 0), true);
+  assertEquals("situationReportCanvasId" in context, true);
 });
 

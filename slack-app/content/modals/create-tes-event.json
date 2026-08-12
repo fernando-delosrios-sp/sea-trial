@@ -1,4 +1,5 @@
 {
+  "$schema": "../../schemas/content/modal.schema.json",
   "callback_id": "submit_create_tes_event",
   "title": { "type": "plain_text", "text": "Create TES Event" },
   "submit": { "type": "plain_text", "text": "Create" },
@@ -49,3 +50,4 @@
     ]
   }
 }
+

@@ -2,8 +2,11 @@ import { assertEquals, assertThrows } from "https://deno.land/std@0.224.0/assert
 import type { DeliverableStatus } from "@tes/shared/types/index.ts";
 import {
   deriveComponents,
+  getCustomerDeliverableStatusMap,
   getDeliverableStatusChoices,
   getSupportedSuites,
+  mapToCustomerStatus,
+  parseCustomerDeliverableStatusesJson,
   parseDeliverableStatusesJson,
   parseSailpointSuitesJson,
 } from "../lib/content/domain.ts";
@@ -97,4 +100,31 @@ Deno.test("status choices include Not started and Needs clarification", () => {
 Deno.test("accepted proposal default status is valid domain JSON value", () => {
   const values = getDeliverableStatusChoices().map((c) => c.value);
   assertEquals(values.includes("Not started"), true);
+});
+
+Deno.test("customer-deliverable-statuses maps all DeliverableStatus values", () => {
+  const mappings = getCustomerDeliverableStatusMap();
+  assertEquals(mappings.length, DELIVERABLE_STATUS_VALUES.length);
+  for (const status of DELIVERABLE_STATUS_VALUES) {
+    const mapped = mapToCustomerStatus(status);
+    assertEquals(typeof mapped.bucket, "string");
+    assertEquals(typeof mapped.label, "string");
+  }
+});
+
+Deno.test("Blocked internal status maps to Needs your input bucket", () => {
+  const mapped = mapToCustomerStatus("Blocked");
+  assertEquals(mapped.label, "Needs your input");
+  assertEquals(mapped.bucket, "needs_input");
+});
+
+Deno.test("invalid customer status map throws validation error", () => {
+  assertThrows(
+    () =>
+      parseCustomerDeliverableStatusesJson(
+        JSON.stringify({ mappings: [{ internal: "Blocked", bucket: "bad", label: "X" }] }),
+      ),
+    Error,
+    "known customer bucket",
+  );
 });

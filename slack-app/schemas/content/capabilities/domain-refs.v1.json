@@ -1,0 +1,19 @@
+{
+  "surface": "domain-refs",
+  "version": "1",
+  "refs": {
+    "@domain/deliverable-statuses": {
+      "source": "domain/deliverable-statuses.json",
+      "resolver": "deliverable-status-choices",
+      "select_format": "single_select"
+    },
+    "@domain/sailpoint-suites": {
+      "source": "domain/sailpoint-suites.json",
+      "resolver": "sailpoint-suite-names"
+    },
+    "@domain/customer-deliverable-statuses": {
+      "source": "domain/customer-deliverable-statuses.json",
+      "resolver": "customer-deliverable-status-map"
+    }
+  }
+}

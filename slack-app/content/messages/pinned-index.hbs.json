@@ -18,5 +18,17 @@
         "value": {{{json buttonValueJson}}}
       }
     ]
+  }{{else}},
+  {
+    "type": "actions",
+    "block_id": "pinned_index_publish_actions",
+    "elements": [
+      {
+        "type": "button",
+        "text": { "type": "plain_text", "text": "Publish situation report" },
+        "action_id": "publish_situation_report",
+        "value": {{{json publishButtonValueJson}}}
+      }
+    ]
   }{{/unless}}
 ]

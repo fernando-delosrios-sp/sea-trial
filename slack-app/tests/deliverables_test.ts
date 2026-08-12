@@ -2,6 +2,7 @@ import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import type { DeliverableProposal } from "@tes/shared/types/index.ts";
 import {
   buildDeliveryTemplateContent,
+  formatOpenQuestions,
   markPromotedInCanvas,
   proposalToRowInput,
 } from "../lib/deliverables.ts";
@@ -18,6 +19,7 @@ const sampleProposal: DeliverableProposal = {
   requirements: "Configure SSO integration",
   sourceDocRef: "req.txt",
   suggestedStatus: "Not started",
+  openQuestions: ["Which IdP?", "VPN required?"],
 };
 
 Deno.test("Accept creates list item — shouldWriteToList true for accept", () => {
@@ -38,6 +40,13 @@ Deno.test("Core fields populated on accept", () => {
   assertEquals(row.category, "SSO");
   assertEquals(row.status, "Not started");
   assertEquals(row.assigneeId, "U123");
+  assertEquals(row.openQuestions, "Which IdP?; VPN required?");
+});
+
+Deno.test("formatOpenQuestions joins proposal questions for list column", () => {
+  assertEquals(formatOpenQuestions(["A", "B"]), "A; B");
+  assertEquals(formatOpenQuestions(undefined), "");
+  assertEquals(formatOpenQuestions([]), "");
 });
 
 Deno.test("Candidate promoted on accept", () => {
@@ -66,6 +75,7 @@ Deno.test("processAcceptProposals builds rows and promotes candidates", () => {
   );
   assertEquals(result.rows.length, 1);
   assertEquals(result.rows[0].deliverable, "canvas:canvas-1");
+  assertEquals(result.rows[0].openQuestions, "Which IdP?; VPN required?");
   assertEquals(result.promotedTaskIds, ["TES-001"]);
 });
 

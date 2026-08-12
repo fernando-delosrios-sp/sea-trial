@@ -1,15 +1,54 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Modal content — element types from schemas/content/capabilities/modal.v1.json",
   "type": "object",
   "required": ["callback_id", "title", "submit", "blocks", "contract"],
   "properties": {
+    "$schema": { "type": "string" },
     "callback_id": { "type": "string", "minLength": 1 },
     "title": { "type": "object" },
     "submit": { "type": "object" },
     "blocks": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "required": ["type", "block_id", "element"],
+        "properties": {
+          "type": { "const": "input" },
+          "block_id": { "type": "string", "minLength": 1 },
+          "optional": { "type": "boolean" },
+          "label": { "type": "object" },
+          "element": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": {
+                "enum": [
+                  "plain_text_input",
+                  "rich_text_input",
+                  "static_select",
+                  "external_select",
+                  "multi_static_select",
+                  "users_select",
+                  "multi_users_select",
+                  "conversations_select",
+                  "channels_select",
+                  "radio_buttons",
+                  "checkboxes",
+                  "datepicker",
+                  "datetimepicker",
+                  "timepicker",
+                  "number_input",
+                  "email_text_input",
+                  "url_text_input",
+                  "file_input"
+                ]
+              }
+            }
+          }
+        }
+      }
     },
     "contract": {
       "type": "object",

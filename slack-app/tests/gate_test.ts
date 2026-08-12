@@ -12,6 +12,7 @@ const incompleteContext = {
   deliverablesListId: "l1",
   incidentsListId: "l2",
   infrastructureCanvasId: "i",
+  situationReportCanvasId: "sr1",
 };
 
 const completeContext = { ...incompleteContext, onboardingComplete: true };

@@ -1,0 +1,5 @@
+{
+  "$schema": "../../schemas/content/message-blocks.schema.json",
+  "template": "pinned-index.hbs.json",
+  "description": "Handlebars source renders a Block Kit blocks array validated against message-blocks.schema.json at runtime."
+}

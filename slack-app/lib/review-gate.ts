@@ -41,6 +41,7 @@ export interface ListRowFields {
   category: string;
   requirements: string;
   deliverable: string;
+  openQuestions: string;
 }
 
 /**
@@ -59,6 +60,7 @@ export function buildListRowFields(
     category: row.category,
     requirements: row.requirements,
     deliverable: `canvas:${deliveryCanvasId}`,
+    openQuestions: row.openQuestions ?? "",
   };
 }
 

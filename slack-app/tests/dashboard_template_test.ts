@@ -19,6 +19,7 @@ const baseContext: TesEventContext = {
   deliverablesListId: "list1",
   incidentsListId: "list2",
   infrastructureCanvasId: "infra1",
+  situationReportCanvasId: "sr1",
   accountName: "Acme Corp",
   salesforceOpportunityUrl: "https://acme.my.salesforce.com/0061",
   memberUserIds: ["U123", "U456"],
@@ -69,6 +70,7 @@ Deno.test("dashboardTemplate Project section falls back gracefully when creation
     deliverablesListId: "list1",
     incidentsListId: "list2",
     infrastructureCanvasId: "infra1",
+  situationReportCanvasId: "sr1",
   });
 
   assertStringIncludes(markdown, "## Project");
@@ -86,12 +88,17 @@ Deno.test("pinnedIndexBlocks includes a Complete onboarding button when onboardi
   assertEquals(actionsBlock.elements[0].text.text, "Complete onboarding");
 });
 
-Deno.test("pinnedIndexBlocks omits the Complete onboarding button once onboarding is complete", () => {
+Deno.test("pinnedIndexBlocks shows Publish situation report when onboarding is complete", () => {
   const blocks = pinnedIndexBlocks({ ...baseContext, onboardingComplete: true });
   const actionsBlock = blocks.find(
     (block) => (block as { type: string }).type === "actions",
-  );
+  ) as { elements: Array<{ action_id: string; text: { text: string } }> };
 
-  assertEquals(actionsBlock, undefined);
+  assertEquals(actionsBlock.elements.length, 1);
+  assertEquals(actionsBlock.elements[0].action_id, "publish_situation_report");
+  assertEquals(
+    actionsBlock.elements[0].text.text,
+    "Publish situation report",
+  );
 });
 

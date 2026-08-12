@@ -19,6 +19,7 @@ const completeContext: TesEventContext = {
   deliverablesListId: "l1",
   incidentsListId: "l2",
   infrastructureCanvasId: "i1",
+  situationReportCanvasId: "sr1",
 };
 
 const priorCanvas =

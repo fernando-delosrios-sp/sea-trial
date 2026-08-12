@@ -1,0 +1,12 @@
+{
+  "mappings": [
+    { "internal": "Not started", "bucket": "in_progress", "label": "In progress" },
+    { "internal": "In progress", "bucket": "in_progress", "label": "In progress" },
+    { "internal": "Blocked", "bucket": "needs_input", "label": "Needs your input" },
+    { "internal": "Needs clarification", "bucket": "needs_input", "label": "Needs your input" },
+    { "internal": "Validation required", "bucket": "in_review", "label": "In review" },
+    { "internal": "Accepted", "bucket": "complete", "label": "Complete" },
+    { "internal": "Not needed", "bucket": "out_of_scope", "label": "Out of scope" },
+    { "internal": "Not doable", "bucket": "out_of_scope", "label": "Out of scope" }
+  ]
+}

@@ -16,6 +16,7 @@ const baseContext: TesEventContext = {
   deliverablesListId: "list1",
   incidentsListId: "list2",
   infrastructureCanvasId: "infra1",
+  situationReportCanvasId: "sr1",
 };
 
 Deno.test("serializeEventContext round-trips via deserializeEventContext", () => {

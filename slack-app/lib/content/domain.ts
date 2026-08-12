@@ -16,6 +16,34 @@ interface DeliverableStatusesFile {
   choices: Array<{ value: string; label: string }>;
 }
 
+export interface CustomerStatusMapping {
+  internal: DeliverableStatus;
+  bucket: string;
+  label: string;
+}
+
+interface CustomerDeliverableStatusesFile {
+  mappings: Array<{ internal: string; bucket: string; label: string }>;
+}
+
+const CUSTOMER_BUCKETS = [
+  "in_progress",
+  "needs_input",
+  "in_review",
+  "complete",
+  "out_of_scope",
+] as const;
+
+export type CustomerStatusBucket = typeof CUSTOMER_BUCKETS[number];
+
+const BUCKET_DISPLAY: Record<CustomerStatusBucket, string> = {
+  in_progress: "In progress",
+  needs_input: "Needs your input",
+  in_review: "In review",
+  complete: "Complete",
+  out_of_scope: "Out of scope",
+};
+
 const CONTENT_DIR = join(
   dirname(fromFileUrl(import.meta.url)),
   "../../content/domain",
@@ -23,6 +51,7 @@ const CONTENT_DIR = join(
 
 let cachedSuites: Record<string, string[]> | null = null;
 let cachedStatusChoices: StatusChoice[] | null = null;
+let cachedCustomerStatusMappings: CustomerStatusMapping[] | null = null;
 
 function readJsonFile(path: string): unknown {
   const raw = Deno.readTextFileSync(path);
@@ -93,6 +122,46 @@ function validateDeliverableStatuses(data: unknown): DeliverableStatusesFile {
   return { choices: parsed };
 }
 
+function validateCustomerDeliverableStatuses(
+  data: unknown,
+): CustomerDeliverableStatusesFile {
+  if (!data || typeof data !== "object") {
+    throw new Error("customer-deliverable-statuses.json must be an object");
+  }
+  const mappings = (data as Record<string, unknown>).mappings;
+  if (!Array.isArray(mappings) || mappings.length === 0) {
+    throw new Error(
+      "customer-deliverable-statuses.json must contain a non-empty mappings array",
+    );
+  }
+
+  const parsed: Array<{ internal: string; bucket: string; label: string }> = [];
+  for (const [index, row] of mappings.entries()) {
+    if (!row || typeof row !== "object") {
+      throw new Error(`mappings[${index}] must be an object`);
+    }
+    const entry = row as Record<string, unknown>;
+    const internal = entry.internal;
+    const bucket = entry.bucket;
+    const label = entry.label;
+    if (typeof internal !== "string" || internal.trim() === "") {
+      throw new Error(`mappings[${index}].internal must be a non-empty string`);
+    }
+    if (typeof bucket !== "string" || bucket.trim() === "") {
+      throw new Error(`mappings[${index}].bucket must be a non-empty string`);
+    }
+    if (typeof label !== "string" || label.trim() === "") {
+      throw new Error(`mappings[${index}].label must be a non-empty string`);
+    }
+    if (!CUSTOMER_BUCKETS.includes(bucket as CustomerStatusBucket)) {
+      throw new Error(`mappings[${index}].bucket is not a known customer bucket`);
+    }
+    parsed.push({ internal, bucket, label });
+  }
+
+  return { mappings: parsed };
+}
+
 function loadSuites(): Record<string, string[]> {
   if (cachedSuites) return cachedSuites;
   const path = join(CONTENT_DIR, "sailpoint-suites.json");
@@ -112,10 +181,24 @@ function loadStatusChoices(): StatusChoice[] {
   return cachedStatusChoices;
 }
 
+function loadCustomerStatusMappings(): CustomerStatusMapping[] {
+  if (cachedCustomerStatusMappings) return cachedCustomerStatusMappings;
+  const path = join(CONTENT_DIR, "customer-deliverable-statuses.json");
+  const data = readJsonFile(path);
+  cachedCustomerStatusMappings = validateCustomerDeliverableStatuses(data)
+    .mappings.map((row) => ({
+      internal: row.internal as DeliverableStatus,
+      bucket: row.bucket,
+      label: row.label,
+    }));
+  return cachedCustomerStatusMappings;
+}
+
 /** Resets cached domain data — for tests only. */
 export function resetDomainCacheForTests(): void {
   cachedSuites = null;
   cachedStatusChoices = null;
+  cachedCustomerStatusMappings = null;
 }
 
 /** Parses and validates domain JSON from raw strings — for tests. */
@@ -129,6 +212,19 @@ export function parseDeliverableStatusesJson(raw: string): StatusChoice[] {
     value: c.value as DeliverableStatus,
     label: c.label,
   }));
+}
+
+/** Parses and validates customer status map JSON from raw strings — for tests. */
+export function parseCustomerDeliverableStatusesJson(
+  raw: string,
+): CustomerStatusMapping[] {
+  return validateCustomerDeliverableStatuses(JSON.parse(raw)).mappings.map(
+    (row) => ({
+      internal: row.internal as DeliverableStatus,
+      bucket: row.bucket,
+      label: row.label,
+    }),
+  );
 }
 
 /** Returns all supported SailPoint suite names from domain JSON. */
@@ -147,4 +243,29 @@ export function deriveComponents(sailpointSuite: string): string[] {
 /** Returns deliverable status select choices from domain JSON. */
 export function getDeliverableStatusChoices(): StatusChoice[] {
   return [...loadStatusChoices()];
+}
+
+/** Returns the full internal → customer status mapping from domain JSON. */
+export function getCustomerDeliverableStatusMap(): CustomerStatusMapping[] {
+  return [...loadCustomerStatusMappings()];
+}
+
+/** Maps an internal deliverable status to its customer-facing bucket label. */
+export function mapToCustomerStatus(
+  internalStatus: DeliverableStatus,
+): CustomerStatusMapping {
+  const mapping = loadCustomerStatusMappings().find(
+    (row) => row.internal === internalStatus,
+  );
+  if (!mapping) {
+    throw new Error(`No customer status mapping for "${internalStatus}"`);
+  }
+  return mapping;
+}
+
+/** Display names for customer status bucket metric rows. */
+export function getCustomerBucketDisplayName(
+  bucket: CustomerStatusBucket,
+): string {
+  return BUCKET_DISPLAY[bucket];
 }

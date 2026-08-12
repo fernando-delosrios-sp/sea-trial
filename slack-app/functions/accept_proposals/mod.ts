@@ -92,6 +92,7 @@ export default SlackFunction(
             { column_id: "category", value: row.category },
             { column_id: "requirements", value: row.requirements },
             { column_id: "deliverable", value: row.deliverable },
+            { column_id: "open_questions", value: row.openQuestions },
           ],
         });
 

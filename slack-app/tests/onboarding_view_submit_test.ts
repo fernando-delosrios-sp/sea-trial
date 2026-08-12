@@ -14,6 +14,7 @@ const baseContext: TesEventContext = {
   deliverablesListId: "list-1",
   incidentsListId: "list-2",
   infrastructureCanvasId: "infra-1",
+  situationReportCanvasId: "sr1",
   accountName: "Acme Corp",
 };
 

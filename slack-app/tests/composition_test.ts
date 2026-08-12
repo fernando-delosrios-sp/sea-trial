@@ -131,6 +131,30 @@ Deno.test("navigation entries render pinned index links in order", () => {
   assertEquals(requirementsPos < deliverablesPos, true);
 });
 
+Deno.test("navigation entry with unmapped slot throws", () => {
+  resetMessageCacheForTests();
+  const composition = loadComposition("tes-event");
+  const badComposition = {
+    ...composition,
+    navigation: {
+      ...composition.navigation,
+      entries: [
+        {
+          slot: "unknown_slot",
+          label: "Broken",
+          link_type: "canvas" as const,
+        },
+      ],
+    },
+  };
+
+  assertThrows(
+    () => renderPinnedIndexMessage(baseContext, badComposition),
+    Error,
+    'slot "unknown_slot" which is not mapped in runtime.context_slot_map',
+  );
+});
+
 Deno.test("channel provisioner creates resources in dependency order", async () => {
   resetCompositionCacheForTests();
   resetKindCacheForTests();

@@ -41,9 +41,14 @@ function getSlotId(
   context: TesEventContext,
   composition: CompositionManifest,
   slot: string,
+  linkLabel: string,
 ): string {
   const field = getContextFieldForSlot(composition, slot);
-  if (!field) return "";
+  if (!field) {
+    throw new Error(
+      `Navigation entry "${linkLabel}" references slot "${slot}" which is not mapped in runtime.context_slot_map — cannot build pinned index link`,
+    );
+  }
   const value = context[field];
   return typeof value === "string" ? value : "";
 }
@@ -53,7 +58,7 @@ function buildNavigationLinks(
   composition: CompositionManifest,
 ): string[] {
   return composition.navigation.entries.map((entry) => {
-    const id = getSlotId(context, composition, entry.slot);
+    const id = getSlotId(context, composition, entry.slot, entry.label);
     return `- <${entry.link_type}:${id}|${entry.label}>`;
   });
 }

@@ -120,6 +120,7 @@ Configuration is stored in GitHub Secrets and Variables. A manual workflow deplo
 | `LLM_BASE_URL` | OpenAI-compatible API base URL |
 | `LLM_MODEL` | Model name (e.g. `gpt-4o`) |
 | `RENDER_SERVICE_ID` | Render web service ID for agent-service |
+| `SLACK_TEAM_ID` | Slack workspace ID (T…) for pinned index navigation links and delivery canvas URLs |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Grafana Cloud OTLP base URL (e.g. `https://otlp-gateway-prod-eu-west-6.grafana.net/otlp`) |
 | `OTEL_LOGS_ENABLED` | Set to `true` to push structured logs from both services (`false` by default) |
 | `SLACK_TRIGGER_CHANNEL_IDS` | Optional comma-separated Slack channel IDs for channel-scoped triggers (see `slack-app/triggers.config.yaml`) |

@@ -10,7 +10,7 @@
     "@tes/shared/": "../packages/shared/src/",
     "@tes/observability/": "../packages/observability/dist/",
     "std/": "https://deno.land/std@0.224.0/",
-    "handlebars": "npm:handlebars@4.7.8"
+    "handlebars": "https://esm.sh/handlebars@4.7.8"
   },
   "compilerOptions": {
     "lib": ["deno.window"],

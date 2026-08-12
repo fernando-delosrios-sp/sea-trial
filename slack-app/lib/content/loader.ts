@@ -75,12 +75,14 @@ export type {
 } from "./list-compiler.ts";
 
 export {
+  buildObjectLinkUrl,
   pinnedIndexBlocks,
   pinnedIndexMessage,
   renderPinnedIndexBlocks,
   renderPinnedIndexMessage,
   resetMessageCacheForTests,
 } from "./message-renderer.ts";
+export type { RenderPinnedIndexOptions } from "./message-renderer.ts";
 
 export {
   deriveComponents,

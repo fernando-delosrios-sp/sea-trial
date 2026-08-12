@@ -27,6 +27,8 @@ import {
 import { getDeliverableStatusChoices } from "../lib/content/domain.ts";
 import type { TesEventContext } from "@tes/shared/types/index.ts";
 
+const navOptions = { teamId: "T01234567" };
+
 const baseContext: TesEventContext = {
   channelId: "C123",
   projectName: "Acme",
@@ -106,13 +108,13 @@ Deno.test("requirements canvas renders from declarative template", () => {
 });
 
 Deno.test("pinned index blocks conditional onboarding button", () => {
-  const incomplete = pinnedIndexBlocks(baseContext);
+  const incomplete = pinnedIndexBlocks(baseContext, navOptions);
   assertEquals(
     incomplete.some((b) => (b as { type: string }).type === "actions"),
     true,
   );
 
-  const complete = pinnedIndexBlocks({ ...baseContext, onboardingComplete: true });
+  const complete = pinnedIndexBlocks({ ...baseContext, onboardingComplete: true }, navOptions);
   const publishActions = complete.find(
     (b) => (b as { type: string }).type === "actions",
   ) as { elements: Array<{ action_id: string }> } | undefined;

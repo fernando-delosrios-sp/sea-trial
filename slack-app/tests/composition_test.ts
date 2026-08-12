@@ -20,7 +20,11 @@ import { provisionChannel } from "../lib/content/channel-provisioner.ts";
 import {
   renderPinnedIndexMessage,
   resetMessageCacheForTests,
+  buildObjectLinkUrl,
 } from "../lib/content/message-renderer.ts";
+
+const navTeamId = "T01234567";
+const navOptions = { teamId: navTeamId };
 
 const baseContext: TesEventContext = {
   channelId: "C123",
@@ -118,13 +122,41 @@ Deno.test("invalid composition JSON missing runtime throws", () => {
 Deno.test("navigation entries render pinned index links in order", () => {
   resetMessageCacheForTests();
   const composition = loadComposition("tes-event");
-  const message = renderPinnedIndexMessage(baseContext, composition);
+  const message = renderPinnedIndexMessage(baseContext, composition, navOptions);
 
   assertEquals(message.includes("TES Event Channel Index"), true);
-  assertEquals(message.includes("<canvas:dash1|Dashboard>"), true);
-  assertEquals(message.includes("<canvas:req1|Requirements>"), true);
-  assertEquals(message.includes("<list:list1|Deliverables>"), true);
-  assertEquals(message.includes("<canvas:sr1|Situation Report>"), true);
+  assertEquals(
+    message.includes(
+      formatMrkdwn(buildObjectLinkUrl(navTeamId, "canvas", "dash1"), "Dashboard"),
+    ),
+    true,
+  );
+  assertEquals(
+    message.includes(
+      formatMrkdwn(
+        buildObjectLinkUrl(navTeamId, "canvas", "req1"),
+        "Requirements",
+      ),
+    ),
+    true,
+  );
+  assertEquals(
+    message.includes(
+      formatMrkdwn(buildObjectLinkUrl(navTeamId, "list", "list1"), "Deliverables"),
+    ),
+    true,
+  );
+  assertEquals(
+    message.includes(
+      formatMrkdwn(
+        buildObjectLinkUrl(navTeamId, "canvas", "sr1"),
+        "Situation Report",
+      ),
+    ),
+    true,
+  );
+  assertEquals(message.includes("<canvas:"), false);
+  assertEquals(message.includes("<list:"), false);
 
   const dashboardPos = message.indexOf("Dashboard");
   const requirementsPos = message.indexOf("Requirements");
@@ -132,6 +164,10 @@ Deno.test("navigation entries render pinned index links in order", () => {
   assertEquals(dashboardPos < requirementsPos, true);
   assertEquals(requirementsPos < deliverablesPos, true);
 });
+
+function formatMrkdwn(url: string, label: string): string {
+  return `<${url}|${label}>`;
+}
 
 Deno.test("navigation entry with unmapped slot throws", () => {
   resetMessageCacheForTests();
@@ -151,7 +187,7 @@ Deno.test("navigation entry with unmapped slot throws", () => {
   };
 
   assertThrows(
-    () => renderPinnedIndexMessage(baseContext, badComposition),
+    () => renderPinnedIndexMessage(baseContext, badComposition, navOptions),
     Error,
     'slot "unknown_slot" which is not mapped in runtime.context_slot_map',
   );
@@ -167,6 +203,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   globalThis.fetch = async () => new Response(null, { status: 200 });
 
   try {
+  Deno.env.set("SLACK_TEAM_ID", navTeamId);
   const client = {
     files: {
       getUploadURLExternal: async () => ({
@@ -226,6 +263,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   assertEquals(context.situationReportCanvasId, "C-Situation Report");
   assertEquals(createOrder.indexOf("canvas:Dashboard"), createOrder.length - 1);
   } finally {
+    Deno.env.delete("SLACK_TEAM_ID");
     globalThis.fetch = originalFetch;
   }
 });

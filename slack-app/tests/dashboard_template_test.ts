@@ -9,6 +9,8 @@ import {
 import { pinnedIndexBlocks } from "../lib/content/message-renderer.ts";
 import type { TesEventContext } from "@tes/shared/types/index.ts";
 
+const navOptions = { teamId: "T01234567" };
+
 const baseContext: TesEventContext = {
   channelId: "C123",
   projectName: "Acme",
@@ -78,7 +80,7 @@ Deno.test("dashboardTemplate Project section falls back gracefully when creation
 });
 
 Deno.test("pinnedIndexBlocks includes a Complete onboarding button when onboarding is incomplete", () => {
-  const blocks = pinnedIndexBlocks(baseContext);
+  const blocks = pinnedIndexBlocks(baseContext, navOptions);
   const actionsBlock = blocks.find(
     (block) => (block as { type: string }).type === "actions",
   ) as { elements: Array<{ action_id: string; text: { text: string } }> };
@@ -89,7 +91,7 @@ Deno.test("pinnedIndexBlocks includes a Complete onboarding button when onboardi
 });
 
 Deno.test("pinnedIndexBlocks shows Publish situation report when onboarding is complete", () => {
-  const blocks = pinnedIndexBlocks({ ...baseContext, onboardingComplete: true });
+  const blocks = pinnedIndexBlocks({ ...baseContext, onboardingComplete: true }, navOptions);
   const actionsBlock = blocks.find(
     (block) => (block as { type: string }).type === "actions",
   ) as { elements: Array<{ action_id: string; text: { text: string } }> };

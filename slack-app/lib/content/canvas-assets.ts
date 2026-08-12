@@ -1,6 +1,7 @@
 import { basename } from "std/path/basename.ts";
 import type { OnboardingForm, TesEventContext } from "@tes/shared/types/index.ts";
 import { renderDashboardCanvas } from "./canvas-renderer.ts";
+import { readEmbeddedAssetBytes } from "./embedded-assets.generated.ts";
 import { resolveCanvasAssetPath } from "./paths.ts";
 
 export const DASHBOARD_CANVAS_PATH = "canvases/dashboard.md";
@@ -110,9 +111,9 @@ async function uploadCanvasAsset(
   assetRef: string,
   canvasRelativePath: string,
 ): Promise<string> {
-  const absolutePath = resolveCanvasAssetPath(assetRef, canvasRelativePath);
-  const bytes = await Deno.readFile(absolutePath);
-  const filename = basename(absolutePath);
+  const assetPath = resolveCanvasAssetPath(assetRef, canvasRelativePath);
+  const bytes = readEmbeddedAssetBytes(assetPath);
+  const filename = basename(decodeURIComponent(assetRef));
 
   const uploadMeta = await client.files.getUploadURLExternal({
     filename,
@@ -130,7 +131,7 @@ async function uploadCanvasAsset(
     headers: {
       "Content-Type": "application/octet-stream",
     },
-    body: bytes,
+    body: new Blob([new Uint8Array(bytes)]),
   });
 
   if (!uploadResponse.ok) {

@@ -146,6 +146,7 @@ jobs:
         working-directory: slack-app
         run: |
           set -euo pipefail
+          deno task embed-content
           deno cache --config deno.jsonc manifest.ts
           for f in functions/*/mod.ts; do
             deno cache --config deno.jsonc "$f"

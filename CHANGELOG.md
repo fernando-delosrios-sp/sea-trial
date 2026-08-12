@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-12 — Hosted Slack Content
+
+### Fixed
+
+- **Create TES Event shortcut** — Embed declarative UI content and banner assets at build time so hosted Slack functions no longer fail on filesystem reads
+
+---
+
 ## 2026-08-12 — Delivery Template Canvas
 
 ### Added

@@ -27,7 +27,9 @@ jobs:
 
       - name: Run slack-app tests
         working-directory: slack-app
-        run: deno task test
+        run: |
+          deno task embed-content
+          deno task test
 
       - name: Validate deploy workflow contract
         run: bash scripts/validate-deploy-workflow.sh

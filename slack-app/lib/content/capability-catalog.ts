@@ -1,11 +1,4 @@
-import { join } from "std/path/join.ts";
-import { dirname } from "std/path/dirname.ts";
-import { fromFileUrl } from "std/path/from_file_url.ts";
-
-const SCHEMA_ROOT = join(
-  dirname(fromFileUrl(import.meta.url)),
-  "../../schemas/content/capabilities",
-);
+import { readEmbeddedContentJson } from "./embedded-content.generated.ts";
 
 export interface ElementCapability {
   forbidden_properties?: string[];
@@ -71,8 +64,7 @@ let cachedExtensions: ExtensionsCatalog | null = null;
 let cachedDomainRefs: DomainRefsCatalog | null = null;
 
 function readCatalog<T>(filename: string): T {
-  const path = join(SCHEMA_ROOT, filename);
-  return JSON.parse(Deno.readTextFileSync(path)) as T;
+  return readEmbeddedContentJson(`schemas/capabilities/${filename}`) as T;
 }
 
 export function loadModalCatalog(): ModalCatalog {

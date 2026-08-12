@@ -1,7 +1,5 @@
 import type { DeliverableStatus } from "@tes/shared/types/index.ts";
-import { join } from "std/path/join.ts";
-import { fromFileUrl } from "std/path/from_file_url.ts";
-import { dirname } from "std/path/dirname.ts";
+import { readContentJson } from "./paths.ts";
 
 export interface StatusChoice {
   value: DeliverableStatus;
@@ -44,19 +42,9 @@ const BUCKET_DISPLAY: Record<CustomerStatusBucket, string> = {
   out_of_scope: "Out of scope",
 };
 
-const CONTENT_DIR = join(
-  dirname(fromFileUrl(import.meta.url)),
-  "../../content/domain",
-);
-
 let cachedSuites: Record<string, string[]> | null = null;
 let cachedStatusChoices: StatusChoice[] | null = null;
 let cachedCustomerStatusMappings: CustomerStatusMapping[] | null = null;
-
-function readJsonFile(path: string): unknown {
-  const raw = Deno.readTextFileSync(path);
-  return JSON.parse(raw);
-}
 
 function validateSailpointSuites(data: unknown): SailpointSuitesFile {
   if (!data || typeof data !== "object") {
@@ -164,16 +152,14 @@ function validateCustomerDeliverableStatuses(
 
 function loadSuites(): Record<string, string[]> {
   if (cachedSuites) return cachedSuites;
-  const path = join(CONTENT_DIR, "sailpoint-suites.json");
-  const data = readJsonFile(path);
+  const data = readContentJson("domain/sailpoint-suites.json");
   cachedSuites = validateSailpointSuites(data).suites;
   return cachedSuites;
 }
 
 function loadStatusChoices(): StatusChoice[] {
   if (cachedStatusChoices) return cachedStatusChoices;
-  const path = join(CONTENT_DIR, "deliverable-statuses.json");
-  const data = readJsonFile(path);
+  const data = readContentJson("domain/deliverable-statuses.json");
   cachedStatusChoices = validateDeliverableStatuses(data).choices.map((c) => ({
     value: c.value as DeliverableStatus,
     label: c.label,
@@ -183,8 +169,7 @@ function loadStatusChoices(): StatusChoice[] {
 
 function loadCustomerStatusMappings(): CustomerStatusMapping[] {
   if (cachedCustomerStatusMappings) return cachedCustomerStatusMappings;
-  const path = join(CONTENT_DIR, "customer-deliverable-statuses.json");
-  const data = readJsonFile(path);
+  const data = readContentJson("domain/customer-deliverable-statuses.json");
   cachedCustomerStatusMappings = validateCustomerDeliverableStatuses(data)
     .mappings.map((row) => ({
       internal: row.internal as DeliverableStatus,

@@ -8,6 +8,7 @@ local/
 node_modules/
 dist/
 .deno/
+slack-app/lib/content/embedded-*.generated.ts
 
 # Worktrees
 .worktrees/

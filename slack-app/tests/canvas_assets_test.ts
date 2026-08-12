@@ -8,10 +8,7 @@ import {
   DASHBOARD_CANVAS_PATH,
   findCanvasImageRefs,
 } from "../lib/content/canvas-assets.ts";
-import {
-  ASSETS_ROOT,
-  resolveCanvasAssetPath,
-} from "../lib/content/paths.ts";
+import { resolveCanvasAssetPath } from "../lib/content/paths.ts";
 
 Deno.test("findCanvasImageRefs ignores http(s) URLs", () => {
   const refs = findCanvasImageRefs(
@@ -42,10 +39,7 @@ Deno.test("resolveCanvasAssetPath resolves repo-relative banner paths", () => {
     DASHBOARD_CANVAS_PATH,
   );
 
-  assertEquals(
-    resolved.endsWith(`${ASSETS_ROOT}/Sales Engineer banner.png`),
-    true,
-  );
+  assertEquals(resolved, "assets/Sales Engineer banner.png");
 });
 
 Deno.test("resolveCanvasAssetPath decodes URL-encoded asset refs", () => {
@@ -54,10 +48,7 @@ Deno.test("resolveCanvasAssetPath decodes URL-encoded asset refs", () => {
     DASHBOARD_CANVAS_PATH,
   );
 
-  assertEquals(
-    resolved.endsWith(`${ASSETS_ROOT}/Sales Engineer banner.png`),
-    true,
-  );
+  assertEquals(resolved, "assets/Sales Engineer banner.png");
 });
 
 Deno.test("assertCanvasAssetRefsResolved throws when uploads were attempted but refs remain", () => {

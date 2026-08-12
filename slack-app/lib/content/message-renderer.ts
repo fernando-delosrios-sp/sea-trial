@@ -40,6 +40,38 @@ function resolveComposition(
   return composition ?? loadComposition("tes-event");
 }
 
+export interface RenderPinnedIndexOptions {
+  /** Slack workspace ID (T…). Falls back to SLACK_TEAM_ID when omitted. */
+  teamId?: string;
+}
+
+function resolveNavigationTeamId(options?: RenderPinnedIndexOptions): string {
+  const teamId = options?.teamId?.trim() ||
+    Deno.env.get("SLACK_TEAM_ID")?.trim();
+  if (!teamId) {
+    throw new Error(
+      "Navigation links require a Slack team ID — set SLACK_TEAM_ID or pass teamId in render options",
+    );
+  }
+  return teamId;
+}
+
+/** Builds a Slack mrkdwn URL for a canvas or list object. */
+export function buildObjectLinkUrl(
+  teamId: string,
+  linkType: "canvas" | "list",
+  objectId: string,
+): string {
+  if (linkType === "canvas") {
+    return `https://app.slack.com/docs/${teamId}/${objectId}`;
+  }
+  return `https://app.slack.com/lists/${teamId}/${objectId}`;
+}
+
+function formatMrkdwnLink(url: string, label: string): string {
+  return `<${url}|${label}>`;
+}
+
 function getSlotId(
   context: TesEventContext,
   composition: CompositionManifest,
@@ -59,19 +91,23 @@ function getSlotId(
 function buildNavigationLinks(
   context: TesEventContext,
   composition: CompositionManifest,
+  teamId: string,
 ): string[] {
   return composition.navigation.entries.map((entry) => {
     const id = getSlotId(context, composition, entry.slot, entry.label);
-    return `- <${entry.link_type}:${id}|${entry.label}>`;
+    const url = buildObjectLinkUrl(teamId, entry.link_type, id);
+    return `- ${formatMrkdwnLink(url, entry.label)}`;
   });
 }
 
 function buildIndexMessageText(
   context: TesEventContext,
   composition?: CompositionManifest,
+  options?: RenderPinnedIndexOptions,
 ): string {
   const manifest = resolveComposition(composition);
-  const links = buildNavigationLinks(context, manifest);
+  const teamId = resolveNavigationTeamId(options);
+  const links = buildNavigationLinks(context, manifest, teamId);
 
   return [
     `📋 *${manifest.navigation.title}*`,
@@ -88,18 +124,20 @@ function buildIndexMessageText(
 export function renderPinnedIndexMessage(
   context: TesEventContext,
   composition?: CompositionManifest,
+  options?: RenderPinnedIndexOptions,
 ): string {
-  return buildIndexMessageText(context, composition);
+  return buildIndexMessageText(context, composition, options);
 }
 
 /** Renders pinned index Block Kit blocks from declarative template. */
 export function renderPinnedIndexBlocks(
   context: TesEventContext,
   composition?: CompositionManifest,
+  options?: RenderPinnedIndexOptions,
 ): Record<string, unknown>[] {
   const template = loadPinnedIndexTemplate();
   const rendered = template({
-    messageText: buildIndexMessageText(context, composition),
+    messageText: buildIndexMessageText(context, composition, options),
     onboardingComplete: context.onboardingComplete,
     buttonValueJson: {
       dashboard_canvas_id: context.dashboardCanvasId,
@@ -116,14 +154,18 @@ export function renderPinnedIndexBlocks(
 }
 
 /** Backward-compatible alias. */
-export function pinnedIndexMessage(context: TesEventContext): string {
-  return renderPinnedIndexMessage(context);
+export function pinnedIndexMessage(
+  context: TesEventContext,
+  options?: RenderPinnedIndexOptions,
+): string {
+  return renderPinnedIndexMessage(context, undefined, options);
 }
 
 /** Backward-compatible alias. */
 export function pinnedIndexBlocks(
   context: TesEventContext,
+  options?: RenderPinnedIndexOptions,
 ): Record<string, unknown>[] {
-  return renderPinnedIndexBlocks(context);
+  return renderPinnedIndexBlocks(context, undefined, options);
 }
 

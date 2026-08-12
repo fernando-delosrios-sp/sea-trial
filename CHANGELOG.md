@@ -13,6 +13,7 @@
 
 - **Pinned index** — Shows publish button when onboarding is complete; copy mentions situation report publishing
 - **Channel composition** — `tes-event.json` provisions Situation Report canvas before Dashboard
+- **Pinned index navigation links** — Render clickable Slack canvas/list URLs using `SLACK_TEAM_ID` instead of pseudo link syntax
 
 ---
 

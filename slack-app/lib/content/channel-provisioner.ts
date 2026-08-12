@@ -29,6 +29,16 @@ import {
 } from "./message-renderer.ts";
 import { isKindProvisionable } from "./kind-registry.ts";
 
+function resolveProvisionTeamId(): string {
+  const teamId = Deno.env.get("SLACK_TEAM_ID")?.trim();
+  if (!teamId) {
+    throw new Error(
+      "SLACK_TEAM_ID is required to build pinned index navigation links",
+    );
+  }
+  return teamId;
+}
+
 export interface ProvisionInputs {
   channel_id: string;
   project_name: string;
@@ -122,10 +132,11 @@ async function provisionChrome(
   if (!isKindProvisionable(entry.kind)) return;
 
   if (entry.kind === "message" && entry.ref === "pinned-index") {
+    const navOptions = { teamId: resolveProvisionTeamId() };
     const indexMessage = await client.chat.postMessage({
       channel: channelId,
-      text: renderPinnedIndexMessage(context, composition),
-      blocks: renderPinnedIndexBlocks(context, composition),
+      text: renderPinnedIndexMessage(context, composition, navOptions),
+      blocks: renderPinnedIndexBlocks(context, composition, navOptions),
     });
 
     if (entry.pin && indexMessage.ts) {

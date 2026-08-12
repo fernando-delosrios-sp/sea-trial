@@ -1,6 +1,7 @@
 import type { DeliverableStatus, TesEventContext } from "@tes/shared/types/index.ts";
 import { readCanvasMarkdown, replaceCanvasContent } from "./canvas.ts";
 import { deserializeEventContext } from "./event-context.ts";
+import { parseCanvasDeliverableRef } from "./delivery-canvas.ts";
 import {
   fetchDeliverablesListRows,
   type SlackListReadClient,
@@ -49,6 +50,27 @@ function toSituationReportRows(
   }));
 }
 
+async function enrichRowsWithDeliveryCanvas(
+  client: PublishSituationReportClient,
+  rows: SituationReportRow[],
+): Promise<SituationReportRow[]> {
+  const enriched: SituationReportRow[] = [];
+  for (const row of rows) {
+    const canvasId = parseCanvasDeliverableRef(row.deliverableUrl);
+    if (!canvasId) {
+      enriched.push(row);
+      continue;
+    }
+    try {
+      const markdown = await readCanvasMarkdown(client, canvasId);
+      enriched.push({ ...row, deliveryCanvasMarkdown: markdown });
+    } catch {
+      enriched.push(row);
+    }
+  }
+  return enriched;
+}
+
 /**
  * Publishes the Situation Report canvas from the current Deliverables List.
  */
@@ -81,7 +103,8 @@ export async function runPublishSituationReport(
     client,
     context.deliverablesListId,
   );
-  const reportRows = toSituationReportRows(listRows);
+  let reportRows = toSituationReportRows(listRows);
+  reportRows = await enrichRowsWithDeliveryCanvas(client, reportRows);
 
   let previousMarkdown: string | undefined;
   try {

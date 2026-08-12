@@ -197,6 +197,11 @@ export function getListName(listName: string): string {
   return loadList(listName).name;
 }
 
+/** Returns declarative field_change behavior rules for a list. */
+export function getListFieldChangeRules(listName: string): unknown[] {
+  return [...loadList(listName).behavior.field_change];
+}
+
 /** Deliverables list columns — backward-compatible export. */
 export const DELIVERABLES_COLUMNS = getSlackListSchema("deliverables");
 

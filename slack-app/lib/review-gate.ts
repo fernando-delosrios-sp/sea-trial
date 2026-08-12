@@ -1,6 +1,5 @@
 import type { DeliverableProposal } from "@tes/shared/types/index.ts";
 import {
-  buildDeliveryTemplateContent,
   markPromotedInCanvas,
   proposalToRowInput,
   type DeliverableRowInput,
@@ -50,7 +49,6 @@ export interface ListRowFields {
 export function buildListRowFields(
   row: DeliverableRowInput,
   userId: string,
-  deliveryCanvasId: string,
 ): ListRowFields {
   return {
     taskId: row.taskId,
@@ -59,45 +57,36 @@ export function buildListRowFields(
     situation: row.situation,
     category: row.category,
     requirements: row.requirements,
-    deliverable: `canvas:${deliveryCanvasId}`,
+    deliverable: "",
     openQuestions: row.openQuestions ?? "",
   };
 }
 
 export interface AcceptProcessingResult {
   rows: ListRowFields[];
-  deliveryContents: string[];
   promotedTaskIds: string[];
   updatedCanvasMarkdown: string;
 }
 
 /**
- * Pure accept-path processing: rows, delivery templates, canvas promotion.
+ * Pure accept-path processing: rows and canvas promotion (no delivery canvas).
  */
 export function processAcceptProposals(
   proposals: DeliverableProposal[],
   requirementsCanvasMarkdown: string,
   userId: string,
-  deliveryCanvasIds: string[],
 ): AcceptProcessingResult {
   const rows: ListRowFields[] = [];
-  const deliveryContents: string[] = [];
   const promotedTaskIds: string[] = [];
 
-  proposals.forEach((proposal, index) => {
+  for (const proposal of proposals) {
     const row = proposalToRowInput(proposal, userId);
-    const deliveryContent = buildDeliveryTemplateContent(
-      proposal,
-      requirementsCanvasMarkdown.slice(0, 500),
-    );
-    deliveryContents.push(deliveryContent);
-    rows.push(buildListRowFields(row, userId, deliveryCanvasIds[index] ?? ""));
+    rows.push(buildListRowFields(row, userId));
     promotedTaskIds.push(proposal.taskId);
-  });
+  }
 
   return {
     rows,
-    deliveryContents,
     promotedTaskIds,
     updatedCanvasMarkdown: markPromotedInCanvas(
       requirementsCanvasMarkdown,
@@ -112,7 +101,7 @@ export function processAcceptProposals(
 export function reviewActionMessage(action: ReviewAction, count: number): string {
   switch (action) {
     case "accept_proposals":
-      return `✅ Accepted ${count} deliverable(s) and created delivery canvases.`;
+      return `✅ Accepted ${count} deliverable(s). Delivery canvas will be created when status reaches Validation required.`;
     case "reject_proposals":
       return "Proposals rejected. No deliverables were added to the list.";
     case "edit_proposals":

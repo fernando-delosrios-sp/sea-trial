@@ -10,6 +10,10 @@ import {
   validateCanvasTemplateSource,
 } from "./content/capability-validator.ts";
 
+import {
+  extractDeliveryExcerpt,
+} from "./delivery-canvas.ts";
+
 export interface SituationReportRow {
   taskId: string;
   internalStatus: DeliverableStatus;
@@ -17,6 +21,7 @@ export interface SituationReportRow {
   category: string;
   deliverableUrl?: string;
   openQuestions?: string;
+  deliveryCanvasMarkdown?: string;
 }
 
 export interface ChangelogRow {
@@ -28,8 +33,8 @@ export interface ChangelogRow {
 const NOT_SET = "_Not set_";
 const EMPTY_STATE =
   "_No publish yet. Use **Publish situation report** on the pinned index when ready._";
-const DELIVERY_EXCERPT_PLACEHOLDER =
-  "_Pending delivery canvas structure_";
+
+export { extractDeliveryExcerpt };
 
 let cachedTemplate: Handlebars.TemplateDelegate | null = null;
 
@@ -103,12 +108,13 @@ function formatDeliverableLink(url?: string): string {
 
 function buildItemBlock(row: SituationReportRow): string {
   const customerStatus = mapToCustomerStatus(row.internalStatus).label;
+  const deliveryExcerpt = extractDeliveryExcerpt(row.deliveryCanvasMarkdown);
   const lines = [
     `#### ${row.taskId} — ${customerStatus}`,
     `- **Situation:** ${row.situation || NOT_SET}`,
     `- **Deliverable:** ${formatDeliverableLink(row.deliverableUrl)}`,
     `- **Open questions:** ${row.openQuestions?.trim() || NOT_SET}`,
-    `- **Delivery excerpt:** ${DELIVERY_EXCERPT_PLACEHOLDER}`,
+    `- **Delivery excerpt:** ${deliveryExcerpt}`,
   ];
   return lines.join("\n");
 }

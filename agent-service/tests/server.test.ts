@@ -313,6 +313,53 @@ describe("POST /agents/requirements/process", () => {
   });
 });
 
+describe("POST /agents/delivery/consolidate", () => {
+  it("returns consolidated canvas markdown", async () => {
+    const server = createAppServer();
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("No port");
+
+    const response = await fetch(
+      `http://127.0.0.1:${address.port}/agents/delivery/consolidate`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          context: {
+            channelId: "C1",
+            projectName: "Test",
+            onboardingComplete: true,
+            derivedComponents: ["IdentityNow"],
+            dashboardCanvasId: "d1",
+            requirementsCanvasId: "r1",
+            deliverablesListId: "l1",
+            incidentsListId: "l2",
+            infrastructureCanvasId: "i1",
+          },
+          row: {
+            taskId: "TES-001",
+            status: "Validation required",
+            situation: "Testing",
+            category: "SSO",
+            requirements: "Configure SSO integration",
+          },
+        }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.draftVersion).toBe(1);
+    expect(body.canvasMarkdown).toContain("TES-001");
+    expect(body.canvasMarkdown).toContain("Agent draft — pending review");
+
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
+    });
+  });
+});
+
 describe("createAppServer", () => {
   it("responds to GET /health", async () => {
     const server = createAppServer();

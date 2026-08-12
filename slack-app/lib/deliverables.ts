@@ -69,30 +69,3 @@ export function markPromotedInCanvas(
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-
-/**
- * Builds delivery template canvas content from proposal and requirements excerpt.
- */
-export function buildDeliveryTemplateContent(
-  proposal: DeliverableProposal,
-  requirementsExcerpt: string,
-): string {
-  return [
-    `# Delivery Template: ${proposal.taskId}`,
-    "",
-    "## Category",
-    proposal.category,
-    "",
-    "## Requirements",
-    proposal.requirements,
-    "",
-    "## Source Reference",
-    proposal.sourceDocRef,
-    "",
-    "## Requirements Canvas Excerpt",
-    requirementsExcerpt,
-    "",
-    "## Status",
-    proposal.suggestedStatus,
-  ].join("\n");
-}

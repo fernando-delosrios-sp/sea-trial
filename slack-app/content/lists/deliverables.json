@@ -20,7 +20,7 @@
     },
     {
       "key": "situation",
-      "name": "Situation",
+      "name": "Situation notes",
       "type": "text"
     },
     {
@@ -53,6 +53,12 @@
     "items": []
   },
   "behavior": {
-    "field_change": []
+    "field_change": [
+      {
+        "column": "status",
+        "value": "Validation required",
+        "function": "on_validation_required"
+      }
+    ]
   }
 }

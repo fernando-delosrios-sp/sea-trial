@@ -1,6 +1,6 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
 import type { DeliverableProposal } from "@tes/shared/types/index.ts";
-import { createCanvas, replaceCanvasContent } from "../../lib/canvas.ts";
+import { replaceCanvasContent } from "../../lib/canvas.ts";
 import {
   processAcceptProposals,
   resolveReviewAction,
@@ -62,26 +62,13 @@ export default SlackFunction(
         return { outputs: { accepted_count: 0 } };
       }
 
-      const deliveryCanvasIds: string[] = [];
-
-      for (const proposal of proposals) {
-        const deliveryCanvasId = await createCanvas(client, {
-          channelId: inputs.channel_id,
-          title: `Delivery: ${proposal.taskId}`,
-          content: `Delivery template for ${proposal.taskId}`,
-        });
-        deliveryCanvasIds.push(deliveryCanvasId);
-      }
-
       const result = processAcceptProposals(
         proposals,
         inputs.requirements_canvas_content,
         inputs.user_id,
-        deliveryCanvasIds,
       );
 
-      for (let i = 0; i < result.rows.length; i++) {
-        const row = result.rows[i];
+      for (const row of result.rows) {
         await client.slackLists.items.create({
           list_id: inputs.deliverables_list_id,
           initial_fields: [
@@ -95,12 +82,6 @@ export default SlackFunction(
             { column_id: "open_questions", value: row.openQuestions },
           ],
         });
-
-        await replaceCanvasContent(
-          client,
-          deliveryCanvasIds[i],
-          result.deliveryContents[i],
-        );
       }
 
       await replaceCanvasContent(
@@ -123,4 +104,3 @@ export default SlackFunction(
     });
   },
 );
-

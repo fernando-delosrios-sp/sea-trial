@@ -6,11 +6,13 @@ import {
   readCorrelationId,
 } from "@tes-event-process/observability";
 import type { ProcessRequirementsRequest } from "@tes-event-process/shared";
+import type { DeliveryConsolidationRequest } from "@tes-event-process/shared";
 import {
   runRequirementsAgent,
   validateLlmConfig,
 } from "./agents/requirements/graph.js";
 import { runRequirementsGraph } from "./agents/requirements/langgraph.js";
+import { runDeliveryGraph } from "./agents/delivery/graph.js";
 import { createRequestLogger } from "./observability/logger.js";
 import { requestContext } from "./observability/request-context.js";
 
@@ -114,6 +116,40 @@ async function handleRoute(
           errorClass: error instanceof Error ? error.name : "Error",
           message,
         }, "ERROR");
+        sendJson(res, 500, { error: message });
+      } finally {
+        await logger.flush();
+      }
+    });
+    return;
+  }
+
+  if (method === "POST" && url === "/agents/delivery/consolidate") {
+    const correlationId = readCorrelationId(req.headers["x-correlation-id"]) ??
+      createCorrelationId();
+    const logger = createRequestLogger(correlationId);
+
+    await requestContext.run({ correlationId, logger }, async () => {
+      try {
+        const raw = await readBody(req);
+        const request = JSON.parse(raw) as DeliveryConsolidationRequest;
+
+        logger.emit("delivery.consolidation.received", {
+          taskId: request.row.taskId,
+          channelId: request.context.channelId,
+        });
+
+        const response = runDeliveryGraph(request);
+
+        logger.emit("delivery.consolidation.completed", {
+          taskId: request.row.taskId,
+          draftVersion: response.draftVersion,
+        });
+
+        sendJson(res, 200, response);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        logger.emit("delivery.consolidation.failed", { message }, "ERROR");
         sendJson(res, 500, { error: message });
       } finally {
         await logger.flush();

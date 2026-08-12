@@ -1,6 +1,8 @@
 export type {
   DeliverableProposal,
   DeliverableStatus,
+  DeliveryConsolidationRequest,
+  DeliveryConsolidationResponse,
   DocumentInput,
   FilePayload,
   OnboardingForm,

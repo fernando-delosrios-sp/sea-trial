@@ -7,6 +7,10 @@ import OpenCreateTesEventFunction from "./functions/open_create_tes_event/mod.ts
 import InvokeAgentFunction from "./functions/invoke_agent/mod.ts";
 import AcceptProposalsFunction from "./functions/accept_proposals/mod.ts";
 import PublishSituationReportFunction from "./functions/publish_situation_report/mod.ts";
+import OnValidationRequiredFunction from "./functions/on_validation_required/mod.ts";
+import UpdateDeliverableStatusFunction from "./functions/update_deliverable_status/mod.ts";
+import ConsolidateDeliveryFunction from "./functions/consolidate_delivery/mod.ts";
+import MarkDeliveryReviewedFunction from "./functions/mark_delivery_reviewed/mod.ts";
 import HandleThreadReplyFunction from "./functions/handle_thread_reply/mod.ts";
 import CreateTesEventWorkflow from "./workflows/create_tes_event.ts";
 import { buildOutgoingDomains } from "./lib/outgoing-domains.ts";
@@ -28,6 +32,10 @@ export default Manifest({
     InvokeAgentFunction,
     AcceptProposalsFunction,
     PublishSituationReportFunction,
+    OnValidationRequiredFunction,
+    UpdateDeliverableStatusFunction,
+    ConsolidateDeliveryFunction,
+    MarkDeliveryReviewedFunction,
     HandleThreadReplyFunction,
   ],
   workflows: [CreateTesEventWorkflow],

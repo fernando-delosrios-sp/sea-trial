@@ -51,7 +51,10 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 ## Review gate
 
 - [ ] Accept → Deliverables list row created with core fields
-- [ ] Accept → Delivery Template Canvas created and linked
+- [ ] Accept → Deliverables List row created (no delivery canvas yet)
+- [ ] Status → Validation required via **update_deliverable_status** → Delivery Template Canvas created and linked
+- [ ] Consolidate draft → invokes `consolidate_delivery` (canvas metadata lists function)
+- [ ] Mark reviewed → clears review flag via `mark_delivery_reviewed`
 - [ ] Accept → Requirements canvas candidates marked promoted
 - [ ] Reject → no list write
 - [ ] No button click → list unchanged

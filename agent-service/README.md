@@ -16,6 +16,37 @@ npm run dev
 
 Returns `{ "status": "ok" }`.
 
+### POST /agents/delivery/consolidate
+
+Consolidates a Delivery Template Canvas draft from a Deliverables List row and optional existing canvas markdown.
+
+**Request body:**
+
+```json
+{
+  "context": { "...TesEventContext" },
+  "row": {
+    "taskId": "TES-001",
+    "assigneeId": "U123",
+    "status": "Validation required",
+    "situation": "Testing",
+    "category": "SSO",
+    "requirements": "Configure SSO integration",
+    "openQuestions": "Which IdP?"
+  },
+  "canvasMarkdown": "optional existing canvas markdown"
+}
+```
+
+**Response:**
+
+```json
+{
+  "canvasMarkdown": "# Delivery: TES-001\n...",
+  "draftVersion": 1
+}
+```
+
 ### POST /agents/requirements/process
 
 Processes requirement documents and returns deliverable proposals.

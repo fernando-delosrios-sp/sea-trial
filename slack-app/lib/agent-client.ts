@@ -1,5 +1,7 @@
 import type {
   DeliverableProposal,
+  DeliveryConsolidationRequest,
+  DeliveryConsolidationResponse,
   FilePayload,
   ProcessRequirementsRequest,
   ProcessRequirementsResponse,
@@ -110,6 +112,39 @@ export async function callRequirementsAgent(
   }
 
   return await response.json() as ProcessRequirementsResponse;
+}
+
+/**
+ * Calls the agent-service Delivery consolidation endpoint.
+ */
+export async function callDeliveryAgent(
+  agentServiceUrl: string,
+  request: DeliveryConsolidationRequest,
+  correlationId?: string,
+): Promise<DeliveryConsolidationResponse> {
+  const url = `${agentServiceUrl.replace(/\/$/, "")}/agents/delivery/consolidate`;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (correlationId) {
+    headers[CORRELATION_ID_HEADER] = correlationId;
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Delivery agent error (${response.status}): ${errorText}`,
+    );
+  }
+
+  return await response.json() as DeliveryConsolidationResponse;
 }
 
 /**

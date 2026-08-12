@@ -1,7 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import type { DeliverableProposal } from "@tes/shared/types/index.ts";
 import {
-  buildDeliveryTemplateContent,
   formatOpenQuestions,
   markPromotedInCanvas,
   proposalToRowInput,
@@ -55,10 +54,16 @@ Deno.test("Candidate promoted on accept", () => {
   assertEquals(updated.includes("promoted"), true);
 });
 
-Deno.test("Canvas created on accept — delivery template content", () => {
-  const content = buildDeliveryTemplateContent(sampleProposal, "excerpt");
-  assertEquals(content.includes("TES-001"), true);
-  assertEquals(content.includes("Configure SSO"), true);
+Deno.test("Accept creates row without deliverable link", () => {
+  const result = processAcceptProposals(
+    [sampleProposal],
+    "**TES-001** [candidate]: SSO",
+    "U123",
+  );
+  assertEquals(result.rows.length, 1);
+  assertEquals(result.rows[0].deliverable, "");
+  assertEquals(result.rows[0].openQuestions, "Which IdP?; VPN required?");
+  assertEquals(result.promotedTaskIds, ["TES-001"]);
 });
 
 Deno.test("No canvas for empty rows — reject produces zero rows", () => {
@@ -66,19 +71,11 @@ Deno.test("No canvas for empty rows — reject produces zero rows", () => {
   assertEquals(reviewActionMessage("reject_proposals", 0).includes("No deliverables"), true);
 });
 
-Deno.test("processAcceptProposals builds rows and promotes candidates", () => {
-  const result = processAcceptProposals(
-    [sampleProposal],
-    "**TES-001** [candidate]: SSO",
-    "U123",
-    ["canvas-1"],
-  );
-  assertEquals(result.rows.length, 1);
-  assertEquals(result.rows[0].deliverable, "canvas:canvas-1");
-  assertEquals(result.rows[0].openQuestions, "Which IdP?; VPN required?");
-  assertEquals(result.promotedTaskIds, ["TES-001"]);
-});
-
 Deno.test("edit_proposals does not write to list", () => {
   assertEquals(shouldWriteToList(resolveReviewAction("edit_proposals")), false);
+});
+
+Deno.test("accept message mentions Validation required", () => {
+  const message = reviewActionMessage("accept_proposals", 1);
+  assertEquals(message.includes("Validation required"), true);
 });

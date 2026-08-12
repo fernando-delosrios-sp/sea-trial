@@ -93,3 +93,23 @@ export interface ProcessRequirementsResponse {
   clarificationQuestions?: string[];
 }
 
+export interface DeliveryConsolidationRequest {
+  context: TesEventContext;
+  row: {
+    taskId: string;
+    assigneeId?: string;
+    assigneeDisplay?: string;
+    status: DeliverableStatus | string;
+    situation: string;
+    category: string;
+    requirements: string;
+    openQuestions?: string;
+  };
+  canvasMarkdown?: string;
+}
+
+export interface DeliveryConsolidationResponse {
+  canvasMarkdown: string;
+  draftVersion: number;
+}
+

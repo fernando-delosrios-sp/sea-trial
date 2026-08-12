@@ -58,6 +58,15 @@ Or use domain vocabulary via TES extension (mutually exclusive with inline `opti
 
 Registered domain refs: `@domain/deliverable-statuses`, `@domain/customer-deliverable-statuses`, `@domain/sailpoint-suites` (modal dynamic overlay only).
 
+## Delivery Template Canvas
+
+Per-deliverable delivery documentation created when a list row reaches **Validation required** (not on Accept).
+
+- **Template:** `canvases/delivery.hbs.md` — customer sections (business value, visual proof, components, technologies, customer summary) and internal sections (artefacts, configuration, notes)
+- **Agent:** Delivery agent consolidates draft content via `POST /agents/delivery/consolidate`; review flag cleared manually via **Mark reviewed**
+- **Canvas actions:** **Consolidate draft** and **Mark reviewed** links in canvas metadata
+- **Situation Report excerpt:** Pulled from `## Customer summary` when review flag is cleared (500 char soft cap)
+
 ## Situation Report canvas
 
 Customer-facing periodic snapshot of Deliverables List state.
@@ -65,7 +74,8 @@ Customer-facing periodic snapshot of Deliverables List state.
 - **Template:** `canvases/situation-report.hbs.md` — executive summary, category-grouped current situation, changelog table
 - **Customer status map:** `domain/customer-deliverable-statuses.json` collapses eight internal statuses into five customer buckets
 - **Publish:** After onboarding, use **Publish situation report** on the pinned index; prior snapshot rotates into the changelog with generation date preserved
-- **Delivery excerpt:** Placeholder per item until Delivery Template Canvas structure is defined
+- **Status updates:** Use `update_deliverable_status` for app-initiated status changes; declarative `field_change` in `deliverables.json` dispatches `on_validation_required` when status becomes Validation required
+- **Delivery excerpt:** Sourced from linked Delivery Template Canvas `## Customer summary` when reviewed; fallback copy when pending
 
 ## Canvas rules
 

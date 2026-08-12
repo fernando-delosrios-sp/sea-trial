@@ -7,6 +7,12 @@ import {
   projectCustomerFields,
   resetSituationReportCacheForTests,
 } from "../lib/situation-report.ts";
+import {
+  clearDeliveryReviewFlag,
+  consolidateDeliveryCanvasLocally,
+  EXCERPT_PENDING,
+  EXCERPT_REVIEW_PENDING,
+} from "../lib/delivery-canvas.ts";
 
 const baseContext: TesEventContext = {
   channelId: "C123",
@@ -78,16 +84,69 @@ Deno.test("Blocked maps to Needs your input via projectCustomerFields", () => {
   assertEquals(projected.task_id, "TES-001");
 });
 
-Deno.test("delivery excerpt placeholder at MVP", () => {
+Deno.test("delivery excerpt pending when canvas markdown missing", () => {
   resetSituationReportCacheForTests();
   const markdown = buildSituationReportMarkdown(baseContext, sampleRows, {
     generatedAt: "2026-08-12",
   });
   assertEquals(
-    markdown.includes("**Delivery excerpt:** _Pending delivery canvas structure_"),
+    markdown.includes(`**Delivery excerpt:** ${EXCERPT_PENDING}`),
     true,
   );
-  assertEquals(markdown.includes("https://example.com/delivery"), true);
+});
+
+Deno.test("delivery excerpt from reviewed customer summary", () => {
+  resetSituationReportCacheForTests();
+  const deliveryMarkdown = clearDeliveryReviewFlag(
+    consolidateDeliveryCanvasLocally(
+      {
+        taskId: "TES-001",
+        status: "Validation required",
+        situation: "Waiting on customer VPN details",
+        category: "Connectors",
+        requirements: "Configure connector for Acme VPN",
+      },
+      baseContext,
+    ),
+  );
+
+  const rowsWithCanvas = [{
+    ...sampleRows[0],
+    deliveryCanvasMarkdown: deliveryMarkdown,
+  }];
+
+  const markdown = buildSituationReportMarkdown(baseContext, rowsWithCanvas, {
+    generatedAt: "2026-08-12",
+  });
+  assertEquals(markdown.includes("Configure connector"), true);
+  assertEquals(markdown.includes(EXCERPT_REVIEW_PENDING), false);
+});
+
+Deno.test("delivery excerpt review pending when flag set", () => {
+  resetSituationReportCacheForTests();
+  const deliveryMarkdown = consolidateDeliveryCanvasLocally(
+    {
+      taskId: "TES-001",
+      status: "Validation required",
+      situation: "Waiting",
+      category: "Connectors",
+      requirements: "Configure connector",
+    },
+    baseContext,
+  );
+
+  const rowsWithCanvas = [{
+    ...sampleRows[0],
+    deliveryCanvasMarkdown: deliveryMarkdown,
+  }];
+
+  const markdown = buildSituationReportMarkdown(baseContext, rowsWithCanvas, {
+    generatedAt: "2026-08-12",
+  });
+  assertEquals(
+    markdown.includes(`**Delivery excerpt:** ${EXCERPT_REVIEW_PENDING}`),
+    true,
+  );
 });
 
 Deno.test("items grouped under category headings", () => {

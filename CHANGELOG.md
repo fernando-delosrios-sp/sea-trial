@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-08-12 — Delivery Template Canvas
+
+### Added
+
+- **Delivery canvas template** — `delivery.hbs.md` with customer-facing sections (business value, visual proof, components, technologies, customer summary) and internal sections (artefacts, configuration)
+- **Delivery agent** — `POST /agents/delivery/consolidate` drafts and re-consolidates canvas content from list row + existing canvas
+- **Validation required trigger** — `on_validation_required` function creates canvas and first draft when list status reaches Validation required
+- **Canvas actions** — `consolidate_delivery` and `mark_delivery_reviewed` functions for manual re-run and review clearance
+- **Situation Report excerpt** — Reads reviewed `## Customer summary` from linked delivery canvas (500 char soft cap)
+
+### Changed
+
+- **Accept flow** — Deliverables List rows created on Accept without delivery canvas; Deliverable link populated at Validation required
+- **Review gate message** — Accept confirmation references deferred canvas creation
+
+---
+
 ## 2026-08-12 — Customer Situation Report
 
 ### Added

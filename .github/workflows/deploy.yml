@@ -154,6 +154,7 @@ jobs:
           OTEL_SERVICE_NAME: tes-slack-app
         run: |
           set -euo pipefail
+          APP_ID="$(deno run -q --allow-read scripts/read-app-id.ts)"
           # .env supplies manifest build-time values (outgoingDomains)
           cat > .env <<EOF
           AGENT_SERVICE_URL=$AGENT_SERVICE_URL
@@ -165,13 +166,13 @@ jobs:
           SLACK_BOT_TOKEN=
           SLACK_APP_TOKEN=
           EOF
-          slack env set AGENT_SERVICE_URL "$AGENT_SERVICE_URL" --token "$SLACK_SERVICE_TOKEN"
-          slack env set SLACK_TEAM_ID "$SLACK_TEAM_ID" --token "$SLACK_SERVICE_TOKEN"
-          slack env set OTEL_LOGS_ENABLED "${OTEL_LOGS_ENABLED:-false}" --token "$SLACK_SERVICE_TOKEN"
-          slack env set OTEL_EXPORTER_OTLP_ENDPOINT "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" --token "$SLACK_SERVICE_TOKEN"
-          slack env set OTEL_EXPORTER_OTLP_HEADERS "${OTEL_EXPORTER_OTLP_HEADERS:-}" --token "$SLACK_SERVICE_TOKEN"
-          slack env set OTEL_SERVICE_NAME "${OTEL_SERVICE_NAME:-tes-slack-app}" --token "$SLACK_SERVICE_TOKEN"
-          slack deploy -s --token "$SLACK_SERVICE_TOKEN"
+          slack env set AGENT_SERVICE_URL "$AGENT_SERVICE_URL" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
+          slack env set SLACK_TEAM_ID "$SLACK_TEAM_ID" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
+          slack env set OTEL_LOGS_ENABLED "${OTEL_LOGS_ENABLED:-false}" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
+          slack env set OTEL_EXPORTER_OTLP_ENDPOINT "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
+          slack env set OTEL_EXPORTER_OTLP_HEADERS "${OTEL_EXPORTER_OTLP_HEADERS:-}" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
+          slack env set OTEL_SERVICE_NAME "${OTEL_SERVICE_NAME:-tes-slack-app}" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
+          slack deploy -s --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN"
 
       - name: Provision Slack triggers
         working-directory: slack-app

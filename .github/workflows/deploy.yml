@@ -142,6 +142,15 @@ jobs:
       - name: Install Slack CLI
         run: curl -fsSL https://downloads.slack-edge.com/slack-cli/install.sh | bash
 
+      - name: Warm Deno cache for slack deploy
+        working-directory: slack-app
+        run: |
+          set -euo pipefail
+          deno cache --config deno.jsonc manifest.ts
+          for f in functions/*/mod.ts; do
+            deno cache --config deno.jsonc "$f"
+          done
+
       - name: Deploy slack-app
         working-directory: slack-app
         env:

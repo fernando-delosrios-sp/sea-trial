@@ -51,7 +51,14 @@
     }
   ],
   "seed": {
-    "items": []
+    "items": [
+      {
+        "task_id": "__seed__",
+        "status": "Not started",
+        "situation": "No deliverables yet — add items after onboarding",
+        "category": "Uncategorized"
+      }
+    ]
   },
   "behavior": {
     "field_change": [

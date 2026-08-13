@@ -13,16 +13,16 @@
   },
   "resources": [
     {
-      "slot": "requirements",
+      "slot": "dashboard",
       "kind": "canvas",
-      "ref": "requirements",
-      "title": "Requirements"
+      "ref": "dashboard",
+      "title": "Dashboard"
     },
     {
-      "slot": "infrastructure",
+      "slot": "situation_report",
       "kind": "canvas",
-      "ref": "infrastructure",
-      "title": "Infrastructure"
+      "ref": "situation-report",
+      "title": "Situation Report"
     },
     {
       "slot": "deliverables",
@@ -35,23 +35,17 @@
       "ref": "incidents"
     },
     {
-      "slot": "situation_report",
+      "slot": "infrastructure",
       "kind": "canvas",
-      "ref": "situation-report",
-      "title": "Situation Report"
+      "ref": "infrastructure",
+      "title": "Infrastructure"
     },
     {
-      "slot": "dashboard",
+      "slot": "requirements",
       "kind": "canvas",
-      "ref": "dashboard",
-      "title": "Dashboard",
-      "depends_on": [
-        "requirements",
-        "infrastructure",
-        "deliverables",
-        "incidents",
-        "situation_report"
-      ]
+      "ref": "requirements",
+      "title": "Requirements",
+      "channel_tab": false
     }
   ],
   "chrome": [
@@ -83,15 +77,19 @@
     "title": "TES Event Channel Index",
     "entries": [
       { "slot": "dashboard", "label": "Dashboard", "link_type": "canvas" },
-      { "slot": "requirements", "label": "Requirements", "link_type": "canvas" },
-      { "slot": "infrastructure", "label": "Infrastructure", "link_type": "canvas" },
-      { "slot": "deliverables", "label": "Deliverables", "link_type": "list" },
-      { "slot": "incidents", "label": "Incidents", "link_type": "list" },
       {
         "slot": "situation_report",
         "label": "Situation Report",
         "link_type": "canvas"
-      }
+      },
+      { "slot": "deliverables", "label": "Deliverables", "link_type": "list" },
+      { "slot": "incidents", "label": "Incidents", "link_type": "list" },
+      {
+        "slot": "infrastructure",
+        "label": "Infrastructure",
+        "link_type": "canvas"
+      },
+      { "slot": "requirements", "label": "Requirements", "link_type": "canvas" }
     ]
   },
   "dynamic_resources": [

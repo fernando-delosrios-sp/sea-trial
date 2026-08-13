@@ -1,4 +1,4 @@
-import type { ParsedDocument } from "@tes-event-process/shared";
+import type { ParsedDocument } from "@sea-trial/shared";
 import { parseDocx } from "./docx.js";
 import { IMAGE_ONLY_ERROR, parsePdf } from "./pdf.js";
 import { parseText } from "./text.js";

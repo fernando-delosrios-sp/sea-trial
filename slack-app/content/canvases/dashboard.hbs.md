@@ -6,6 +6,11 @@
 - **Members:** {{membersDisplay}}
 - **Notes:** {{notesDisplay}}
 - **Status:** {{statusDisplay}}
+{{#if showOnboardingLink}}
+
+## Onboarding
+⏳ **[Complete onboarding]({{onboardingLink}})** — fill in opportunity details to unlock the Requirements Agent.
+{{/if}}
 {{#if showOpportunityDetails}}
 
 ## Opportunity Details

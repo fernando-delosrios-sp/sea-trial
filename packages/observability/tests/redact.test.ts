@@ -38,7 +38,7 @@ describe("createCorrelationId", () => {
 describe("buildOtlpLogsPayload", () => {
   it("excludes forbidden fields from exported attributes", () => {
     const payload = buildOtlpLogsPayload({
-      serviceName: "tes-agent-service",
+      serviceName: "sea-trial-agent-service",
       records: [{
         eventName: "documents.parsed",
         correlationId: "corr-1",

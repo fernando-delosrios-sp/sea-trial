@@ -1,10 +1,10 @@
-import type { DeliverableStatus, TesEventContext } from "@tes/shared/types/index.ts";
+import type { DeliverableStatus, TesEventContext } from "@sea-trial/shared/types/index.ts";
 import {
   getCustomerBucketDisplayName,
   mapToCustomerStatus,
   type CustomerStatusBucket,
 } from "./content/domain.ts";
-import { TEMPLATES_BY_PATH } from "./content/embedded-templates.generated.ts";
+import { loadValidatedCanvasTemplate } from "./content/template-loader.ts";
 
 import {
   extractDeliveryExcerpt,
@@ -35,11 +35,7 @@ export { extractDeliveryExcerpt };
 let cachedTemplate: ReturnType<typeof loadTemplate> | null = null;
 
 function loadTemplate() {
-  const template = TEMPLATES_BY_PATH["canvases/situation-report.hbs.md"];
-  if (!template) {
-    throw new Error("Missing precompiled template canvases/situation-report.hbs.md");
-  }
-  return template;
+  return loadValidatedCanvasTemplate("canvases/situation-report.hbs.md");
 }
 
 /** Resets cached template — for tests only. */

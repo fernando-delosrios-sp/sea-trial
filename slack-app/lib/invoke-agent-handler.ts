@@ -3,7 +3,7 @@ import type {
   ProcessRequirementsRequest,
   ProcessRequirementsResponse,
   TesEventContext,
-} from "@tes/shared/types/index.ts";
+} from "@sea-trial/shared/types/index.ts";
 import {
   buildInvokeAgentRequest,
   buildProposalBlocks,

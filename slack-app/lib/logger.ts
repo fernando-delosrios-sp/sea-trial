@@ -5,7 +5,7 @@ import {
   otlpLogsUrl,
   parseOtlpHeaders,
   redactAttributes,
-} from "@tes/observability/index.js";
+} from "@sea-trial/observability/index.js";
 
 type LogEventName =
   | "invoke.started"
@@ -112,7 +112,7 @@ async function pushOtlpLogs(
   };
 
   const payload = buildOtlpLogsPayload({
-    serviceName: env.OTEL_SERVICE_NAME ?? "tes-slack-app",
+    serviceName: env.OTEL_SERVICE_NAME ?? "sea-trial-slack-app",
     resourceAttributes: parseResourceAttributes(env.OTEL_RESOURCE_ATTRIBUTES),
     records: records.map((record) => ({
       eventName: record.eventName,

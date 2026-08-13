@@ -1,7 +1,7 @@
 import type {
   DeliveryConsolidationRequest,
   TesEventContext,
-} from "@tes/shared/types/index.ts";
+} from "@sea-trial/shared/types/index.ts";
 import {
   callDeliveryAgent,
   resolveAgentServiceUrl,

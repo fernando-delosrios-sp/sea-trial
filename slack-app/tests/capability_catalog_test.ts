@@ -19,6 +19,7 @@ import {
   validateModalBlocks,
   validateModalDynamicOverlay,
 } from "../lib/content/capability-validator.ts";
+import { readContentText } from "../lib/content/paths.ts";
 import {
   buildCreateTesEventModalView,
   parseModalJson,
@@ -251,6 +252,20 @@ Deno.test("canvas forbidden metadata rejected in author template", () => {
   );
 
   validateCanvasTemplateSource("# Title\n", "canvases/ok.hbs.md");
+});
+
+const BUNDLED_CANVAS_TEMPLATE_PATHS = [
+  "canvases/dashboard.hbs.md",
+  "canvases/requirements.hbs.md",
+  "canvases/infrastructure.hbs.md",
+  "canvases/situation-report.hbs.md",
+  "canvases/delivery.hbs.md",
+] as const;
+
+Deno.test("bundled canvas templates pass forbidden-pattern validation", () => {
+  for (const path of BUNDLED_CANVAS_TEMPLATE_PATHS) {
+    validateCanvasTemplateSource(readContentText(path), path);
+  }
 });
 
 Deno.test("deliverables slack schema includes status options choices", () => {

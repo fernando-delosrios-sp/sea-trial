@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ProcessRequirementsRequest } from "@tes-event-process/shared";
+import type { ProcessRequirementsRequest } from "@sea-trial/shared";
 import {
   analyzeRequirements,
   loadContext,

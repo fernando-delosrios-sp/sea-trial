@@ -1,4 +1,4 @@
-import type { DeliverableProposal } from "@tes/shared/types/index.ts";
+import type { DeliverableProposal } from "@sea-trial/shared/types/index.ts";
 import {
   markPromotedInCanvas,
   proposalToRowInput,

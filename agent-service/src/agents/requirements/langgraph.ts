@@ -5,7 +5,7 @@ import type {
   ProcessRequirementsRequest,
   ProcessRequirementsResponse,
   TesEventContext,
-} from "@tes-event-process/shared";
+} from "@sea-trial/shared";
 import { getLlmConfig } from "../../config/llm.js";
 import { getRequestContext } from "../../observability/request-context.js";
 import {

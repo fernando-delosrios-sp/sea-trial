@@ -1,5 +1,5 @@
 export interface CreateCanvasParams {
-  channelId: string;
+  channelId?: string;
   title: string;
   content: string;
 }
@@ -22,7 +22,7 @@ export interface SlackCanvasCreateResponse {
 export interface SlackCanvasClient {
   canvases: {
     create: (params: {
-      channel_id: string;
+      channel_id?: string;
       title: string;
       document_content: { type: string; markdown: string };
     }) => Promise<SlackCanvasCreateResponse>;
@@ -84,7 +84,7 @@ export async function createCanvas(
   params: CreateCanvasParams,
 ): Promise<string> {
   const response = await client.canvases.create({
-    channel_id: params.channelId,
+    ...(params.channelId ? { channel_id: params.channelId } : {}),
     title: params.title,
     document_content: { type: "markdown", markdown: params.content },
   });

@@ -2,7 +2,7 @@
 
 ## Summary
 
-TES Event Process is a TypeScript monorepo deploying two runtime components: `agent-service` (Node.js 20+ LangGraph API on Render free tier) and `slack-app` (Deno Slack SDK on Slack-managed infrastructure). The agent-service exposes a POST endpoint for document parsing and requirements analysis. slack-app acts as the Slack adapter, forwarding file payloads to agent-service and managing canvases/lists as the source of truth. No external database — all state lives in Slack.
+Sea Trial is a TypeScript monorepo deploying two runtime components: `agent-service` (Node.js 20+ LangGraph API on Render free tier) and `slack-app` (Deno Slack SDK on Slack-managed infrastructure). The agent-service exposes a POST endpoint for document parsing and requirements analysis. slack-app acts as the Slack adapter, forwarding file payloads to agent-service and managing canvases/lists as the source of truth. No external database — all state lives in Slack.
 
 ## Diagram
 

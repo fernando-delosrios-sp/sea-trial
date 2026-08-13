@@ -16,7 +16,7 @@ All configuration stored in GitHub Secrets (tokens, keys) and Variables (URLs, I
 
 ### Pre-deploy
 1. Confirm `.deploy-mate/development/.env` has all required values (15 vars)
-2. Verify Render service is healthy: `curl -fsS https://tes-agent-service.onrender.com/health`
+2. Verify Render service is healthy: `curl -fsS https://sea-trial-agent-service.onrender.com/health`
 3. Verify Slack app is installed to dev workspace
 
 ### Deploy via GitHub Actions
@@ -34,7 +34,7 @@ Optional GitHub Variable for channel-scoped triggers:
 
 ### Post-deploy validation
 1. Run [smoke test checklist](docs/smoke-test-checklist.md)
-2. Verify agent-service health: `GET https://tes-agent-service.onrender.com/health`
+2. Verify agent-service health: `GET https://sea-trial-agent-service.onrender.com/health`
 3. Test Slack app interaction in dev workspace
 4. If OTEL enabled, verify logs in Grafana Explore
 
@@ -59,7 +59,7 @@ Names only — values in `.deploy-mate/development/.env`:
 - `OTEL_EXPORTER_OTLP_ENDPOINT` — Grafana OTLP URL (when logging enabled)
 - `OTEL_EXPORTER_OTLP_HEADERS` — Grafana auth header (when logging enabled)
 - `OTEL_LOGS_ENABLED` — Toggle for log export
-- `OTEL_SERVICE_NAME` — `tes-agent-service`
+- `OTEL_SERVICE_NAME` — `sea-trial-agent-service`
 - `PORT` — Local dev only (Render sets automatically)
 - `OTEL_RESOURCE_ATTRIBUTES` — Resource tags (local dev)
 
@@ -86,7 +86,7 @@ Names only — values in `.deploy-mate/development/.env`:
 ### Observability
 - When `OTEL_LOGS_ENABLED=true`, both services push to Grafana Cloud
 - Correlation via `X-Correlation-Id` header from slack-app to agent-service
-- Grafana Explore queries: `{service_name="tes-slack-app"}` and `{service_name="tes-agent-service"}`
+- Grafana Explore queries: `{service_name="sea-trial-slack-app"}` and `{service_name="sea-trial-agent-service"}`
 
 ### DNS
 - Render provides `*.onrender.com` subdomain — no custom DNS for development

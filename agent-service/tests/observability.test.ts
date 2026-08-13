@@ -2,8 +2,8 @@ import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { buildOtlpLogsPayload } from "@tes-event-process/observability";
-import { redactAttributes } from "@tes-event-process/observability";
+import { buildOtlpLogsPayload } from "@sea-trial/observability";
+import { redactAttributes } from "@sea-trial/observability";
 import {
   createRequestLogger,
   resetLoggerTestHooks,
@@ -15,7 +15,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 describe("observability redaction", () => {
   it("excludes forbidden fields from exported OTLP payload", () => {
     const payload = buildOtlpLogsPayload({
-      serviceName: "tes-agent-service",
+      serviceName: "sea-trial-agent-service",
       records: [{
         eventName: "documents.parsed",
         correlationId: "corr-1",
@@ -49,7 +49,7 @@ describe("agent-service OTLP export", () => {
     process.env.OTEL_EXPORTER_OTLP_ENDPOINT =
       "https://otlp-gateway-prod-eu-west-6.grafana.net/otlp";
     process.env.OTEL_EXPORTER_OTLP_HEADERS = "Authorization=Basic%20test";
-    process.env.OTEL_SERVICE_NAME = "tes-agent-service";
+    process.env.OTEL_SERVICE_NAME = "sea-trial-agent-service";
   });
 
   afterEach(() => {
@@ -60,7 +60,7 @@ describe("agent-service OTLP export", () => {
     resetLoggerTestHooks();
   });
 
-  it("flush pushes OTLP payload with service.name tes-agent-service", async () => {
+  it("flush pushes OTLP payload with service.name sea-trial-agent-service", async () => {
     let capturedUrl = "";
     let capturedBody = "";
 
@@ -77,7 +77,7 @@ describe("agent-service OTLP export", () => {
     expect(capturedUrl).toBe(
       "https://otlp-gateway-prod-eu-west-6.grafana.net/otlp/v1/logs",
     );
-    expect(capturedBody).toContain("tes-agent-service");
+    expect(capturedBody).toContain("sea-trial-agent-service");
     expect(capturedBody).toContain("request.received");
     expect(capturedBody).toContain("corr-agent-otlp");
   });

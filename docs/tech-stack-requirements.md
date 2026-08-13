@@ -84,7 +84,7 @@ Deployed values are set by GitHub Actions (see [README](../README.md#deploy-via-
 | `OTEL_LOGS_ENABLED` | No | Set to `true` to push logs (`false` default locally) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | When logging enabled | Grafana Cloud OTLP base URL |
 | `OTEL_EXPORTER_OTLP_HEADERS` | When logging enabled | Authorization header (`Authorization=Basic%20...`) |
-| `OTEL_SERVICE_NAME` | No | `tes-agent-service` or `tes-slack-app` |
+| `OTEL_SERVICE_NAME` | No | `sea-trial-agent-service` or `sea-trial-slack-app` |
 | `OTEL_RESOURCE_ATTRIBUTES` | No | Optional resource tags (e.g. `deployment.environment=prod`) |
 
 **Redaction policy:** Logs MUST NOT contain file bytes, canvas markdown, LLM prompts/responses, or API tokens. Only metadata (correlation ID, channel ID, file counts, parse status, durations) is exported.

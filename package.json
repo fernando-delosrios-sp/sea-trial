@@ -1,14 +1,14 @@
 {
-  "name": "tes-event-process",
+  "name": "sea-trial",
   "private": true,
   "workspaces": [
     "agent-service",
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @tes-event-process/shared && npm run build -w @tes-event-process/observability && npm run build -w @tes-event-process/agent-service",
+    "build": "npm run build -w @sea-trial/shared && npm run build -w @sea-trial/observability && npm run build -w @sea-trial/agent-service",
     "test": "npm run test --workspaces --if-present && bash scripts/validate-deploy-workflow.sh",
-    "dev:agent": "npm run dev -w @tes-event-process/agent-service"
+    "dev:agent": "npm run dev -w @sea-trial/agent-service"
   },
   "engines": {
     "node": ">=20"

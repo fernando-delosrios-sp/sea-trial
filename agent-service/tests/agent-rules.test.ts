@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import type { ProcessRequirementsRequest, TesEventContext } from "@tes-event-process/shared";
+import type { ProcessRequirementsRequest, TesEventContext } from "@sea-trial/shared";
 import { NO_EXTRACTABLE_TEXT_ERROR } from "../src/parsers/index.js";
 import {
   analyzeRequirements,

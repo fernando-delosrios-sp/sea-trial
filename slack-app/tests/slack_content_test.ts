@@ -25,7 +25,7 @@ import {
   resetMessageCacheForTests,
 } from "../lib/content/message-renderer.ts";
 import { getDeliverableStatusChoices } from "../lib/content/domain.ts";
-import type { TesEventContext } from "@tes/shared/types/index.ts";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 
 const navOptions = { teamId: "T01234567" };
 

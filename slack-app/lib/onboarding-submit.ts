@@ -1,4 +1,4 @@
-import type { OnboardingForm, TesEventContext } from "@tes/shared/types/index.ts";
+import type { OnboardingForm, TesEventContext } from "@sea-trial/shared/types/index.ts";
 import { applyOnboarding } from "./event-context.ts";
 import { deriveComponents } from "./suite-components.ts";
 import { dashboardTemplate } from "./content/canvas-renderer.ts";

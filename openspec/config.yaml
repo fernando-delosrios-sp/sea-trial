@@ -1,7 +1,7 @@
 schema: superpowers-bridge
 
 context: |
-  Project: TES Event Process — Slack-native TES event delivery platform (MVP).
+  Project: Sea Trial — Slack-native TES event delivery platform (MVP).
 
   Goal: Streamline TES event delivery in Slack with channel provisioning, onboarding,
   and a Requirements Agent that processes documents into a Requirements Canvas and

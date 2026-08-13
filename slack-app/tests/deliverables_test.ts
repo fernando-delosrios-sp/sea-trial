@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import type { DeliverableProposal } from "@tes/shared/types/index.ts";
+import type { DeliverableProposal } from "@sea-trial/shared/types/index.ts";
 import {
   formatOpenQuestions,
   markPromotedInCanvas,

@@ -4,9 +4,9 @@ import { fileURLToPath } from "node:url";
 import {
   createCorrelationId,
   readCorrelationId,
-} from "@tes-event-process/observability";
-import type { ProcessRequirementsRequest } from "@tes-event-process/shared";
-import type { DeliveryConsolidationRequest } from "@tes-event-process/shared";
+} from "@sea-trial/observability";
+import type { ProcessRequirementsRequest } from "@sea-trial/shared";
+import type { DeliveryConsolidationRequest } from "@sea-trial/shared";
 import {
   runRequirementsAgent,
   validateLlmConfig,

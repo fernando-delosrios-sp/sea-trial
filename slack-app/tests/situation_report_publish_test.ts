@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import type { DeliverableStatus, TesEventContext } from "@tes/shared/types/index.ts";
+import type { DeliverableStatus, TesEventContext } from "@sea-trial/shared/types/index.ts";
 import {
   buildSituationReportMarkdown,
   parseChangelogRows,

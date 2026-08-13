@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DeliveryConsolidationRequest } from "@tes-event-process/shared";
+import type { DeliveryConsolidationRequest } from "@sea-trial/shared";
 import { runDeliveryConsolidation } from "../src/agents/delivery/consolidate.js";
 
 const baseRequest: DeliveryConsolidationRequest = {

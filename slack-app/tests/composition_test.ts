@@ -2,7 +2,7 @@ import {
   assertEquals,
   assertThrows,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import type { TesEventContext } from "@tes/shared/types/index.ts";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import {
   applySlotIds,
   getContextFieldForSlot,
@@ -51,14 +51,17 @@ Deno.test("tes-event composition manifest loads and validates", () => {
   );
 });
 
-Deno.test("composition provisioning order respects depends_on", () => {
+Deno.test("composition provisioning order follows manifest resource order", () => {
   const composition = loadComposition("tes-event");
   const ordered = resolveProvisioningOrder(composition.resources);
   const slots = ordered.map((entry) => entry.slot);
 
-  assertEquals(slots.indexOf("dashboard"), slots.length - 1);
-  assertEquals(slots.indexOf("requirements") < slots.indexOf("dashboard"), true);
-  assertEquals(slots.indexOf("deliverables") < slots.indexOf("dashboard"), true);
+  assertEquals(slots[0], "dashboard");
+  assertEquals(slots.indexOf("situation_report"), 1);
+  assertEquals(slots.indexOf("deliverables"), 2);
+  assertEquals(slots.indexOf("incidents"), 3);
+  assertEquals(slots.indexOf("infrastructure"), 4);
+  assertEquals(slots.indexOf("requirements"), slots.length - 1);
 });
 
 Deno.test("composition rejects cyclic depends_on", () => {
@@ -159,10 +162,10 @@ Deno.test("navigation entries render pinned index links in order", () => {
   assertEquals(message.includes("<list:"), false);
 
   const dashboardPos = message.indexOf("Dashboard");
-  const requirementsPos = message.indexOf("Requirements");
+  const situationPos = message.indexOf("Situation Report");
   const deliverablesPos = message.indexOf("Deliverables");
-  assertEquals(dashboardPos < requirementsPos, true);
-  assertEquals(requirementsPos < deliverablesPos, true);
+  assertEquals(dashboardPos < situationPos, true);
+  assertEquals(situationPos < deliverablesPos, true);
 });
 
 function formatMrkdwn(url: string, label: string): string {
@@ -199,6 +202,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   resetMessageCacheForTests();
 
   const createOrder: string[] = [];
+  const listItemCreates: string[] = [];
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(null, { status: 200 });
 
@@ -211,19 +215,30 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
         upload_url: "https://upload.example.test",
         file_id: `F-${crypto.randomUUID()}`,
       }),
-      completeUploadExternal: async () => ({
-        ok: true,
-        files: [{
-          permalink: "https://example.slack.com/files/U1/F1/banner.png",
-        }],
-      }),
+      completeUploadExternal: async (params: {
+        files: Array<{ id: string; title: string }>;
+        channel_id?: string;
+      }) => {
+        assertEquals("channel_id" in params, false);
+        return {
+          ok: true,
+          files: [{
+            permalink: "https://example.slack.com/files/U1/F1/banner.png",
+          }],
+        };
+      },
       info: async () => ({ ok: true, file: { permalink: "unused" } }),
     },
     canvases: {
       create: async (params: {
         title: string;
+        channel_id?: string;
       }) => {
-        createOrder.push(`canvas:${params.title}`);
+        createOrder.push(
+          params.channel_id
+            ? `canvas:${params.title}`
+            : `canvas-standalone:${params.title}`,
+        );
         return { canvas_id: `C-${params.title}` };
       },
       edit: async () => ({}),
@@ -232,7 +247,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
       },
     },
     slackLists: {
-      create: async (params: { name: string }) => {
+      create: async (params: { name: string; channel_id?: string }) => {
         createOrder.push(`list:${params.name}`);
         return { list_id: `L-${params.name}` };
       },
@@ -240,7 +255,10 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
         set: async () => ({ ok: true }),
       },
       items: {
-        create: async () => ({ item: { id: "item1" } }),
+        create: async (params: { list_id: string }) => {
+          listItemCreates.push(params.list_id);
+          return { item: { id: "item1" } };
+        },
         list: async () => ({ items: [] }),
       },
     },
@@ -264,7 +282,13 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   assertEquals(context.deliverablesListId, "L-Deliverables");
   assertEquals(context.incidentsListId, "L-Incidents");
   assertEquals(context.situationReportCanvasId, "C-Situation Report");
-  assertEquals(createOrder.indexOf("canvas:Dashboard"), createOrder.length - 1);
+  assertEquals(createOrder.indexOf("canvas:Dashboard"), 0);
+  assertEquals(createOrder.indexOf("canvas:Situation Report"), 1);
+  assertEquals(createOrder.indexOf("list:Deliverables"), 2);
+  assertEquals(createOrder.indexOf("list:Incidents"), 3);
+  assertEquals(createOrder.indexOf("canvas:Infrastructure"), 4);
+  assertEquals(createOrder.indexOf("canvas-standalone:Requirements"), 5);
+  assertEquals(listItemCreates.length, 2);
   } finally {
     Deno.env.delete("SLACK_TEAM_ID");
     globalThis.fetch = originalFetch;

@@ -1,11 +1,18 @@
-import type { OnboardingForm, TesEventContext } from "@tes/shared/types/index.ts";
+import type { OnboardingForm, TesEventContext } from "@sea-trial/shared/types/index.ts";
 import { serializeEventContext } from "../event-context.ts";
 import { applyCanvasAssetUrls } from "./canvas-assets.ts";
 import { readContentText } from "./paths.ts";
-import { TEMPLATES_BY_PATH } from "./embedded-templates.generated.ts";
+import { loadValidatedCanvasTemplate } from "./template-loader.ts";
 import { buildSituationReportSeedMarkdown } from "../situation-report.ts";
 
 const NOT_SET = "_Not set_";
+
+export interface DashboardRenderOptions {
+  /** Slack-hosted image URLs keyed by the local path used in canvas markdown. */
+  assetUrls?: Record<string, string>;
+  /** Link for opening onboarding (trigger URL or pinned index deep link). */
+  onboardingLink?: string;
+}
 
 let cachedDefaultDashboard: string | null = null;
 
@@ -17,11 +24,7 @@ function loadDefaultDashboardContent(): string {
 }
 
 function loadTemplate(relativePath: string) {
-  const template = TEMPLATES_BY_PATH[relativePath];
-  if (!template) {
-    throw new Error(`Unknown canvas template "${relativePath}"`);
-  }
-  return template;
+  return loadValidatedCanvasTemplate(relativePath);
 }
 
 /** Resets cached canvas content — for tests only. */
@@ -38,6 +41,7 @@ function formatMembers(context: TesEventContext): string {
 function buildDashboardViewModel(
   context: TesEventContext,
   form?: OnboardingForm,
+  options?: DashboardRenderOptions,
 ): Record<string, unknown> {
   const details = form ?? context.onboarding;
 
@@ -61,12 +65,10 @@ function buildDashboardViewModel(
     opportunityNotes: details?.notes ?? "",
     hasDerivedComponents: context.derivedComponents.length > 0,
     derivedComponents: context.derivedComponents,
+    showOnboardingLink: !context.onboardingComplete &&
+      Boolean(options?.onboardingLink),
+    onboardingLink: options?.onboardingLink ?? "",
   };
-}
-
-export interface DashboardRenderOptions {
-  /** Slack-hosted image URLs keyed by the local path used in canvas markdown. */
-  assetUrls?: Record<string, string>;
 }
 
 /** Renders the Dashboard canvas markdown with metadata injected by code. */
@@ -77,7 +79,9 @@ export function renderDashboardCanvas(
 ): string {
   const defaultContent = loadDefaultDashboardContent().trim();
   const template = loadTemplate("canvases/dashboard.hbs.md");
-  const dynamicContent = template(buildDashboardViewModel(context, form)).trim();
+  const dynamicContent = template(
+    buildDashboardViewModel(context, form, options),
+  ).trim();
   let body = [defaultContent, dynamicContent].filter(Boolean).join("\n\n");
   if (options?.assetUrls && Object.keys(options.assetUrls).length > 0) {
     body = applyCanvasAssetUrls(body, options.assetUrls);

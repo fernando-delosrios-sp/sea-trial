@@ -1,4 +1,4 @@
-import type { TesEventContext } from "@tes/shared/types/index.ts";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import { toSlackListSelectValue } from "./content/slack-list-schema.ts";
 import { getListFieldChangeRules } from "./content/list-compiler.ts";
 import {

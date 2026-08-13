@@ -1,5 +1,5 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
-import type { TesEventContext } from "@tes/shared/types/index.ts";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import { deserializeEventContext } from "../../lib/event-context.ts";
 import {
   consolidateDeliveryCanvas,

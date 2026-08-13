@@ -1,6 +1,6 @@
-# TES Event Process
+# Sea Trial
 
-TypeScript monorepo for the TES Slack event delivery platform.
+TypeScript monorepo for the Sea Trial Slack platform — TES event delivery in Slack.
 
 | Package | Runtime | Purpose |
 |---------|---------|---------|
@@ -116,7 +116,7 @@ Configuration is stored in GitHub Secrets and Variables. A manual workflow deplo
 
 | Variable | Purpose |
 |----------|---------|
-| `AGENT_SERVICE_URL` | Public HTTPS URL of agent-service (e.g. `https://tes-agent.onrender.com`) |
+| `AGENT_SERVICE_URL` | Public HTTPS URL of agent-service (e.g. `https://sea-trial-agent-service.onrender.com`) |
 | `LLM_BASE_URL` | OpenAI-compatible API base URL |
 | `LLM_MODEL` | Model name (e.g. `gpt-4o`) |
 | `RENDER_SERVICE_ID` | Render web service ID for agent-service |
@@ -144,8 +144,8 @@ When `OTEL_LOGS_ENABLED=true`, both services push structured logs to Grafana Clo
 Example Grafana Explore queries:
 
 ```
-{service_name="tes-slack-app"} | correlationId="<id-from-log>"
-{service_name="tes-agent-service"} | correlationId="<id-from-log>"
+{service_name="sea-trial-slack-app"} | correlationId="<id-from-log>"
+{service_name="sea-trial-agent-service"} | correlationId="<id-from-log>"
 ```
 
 Logs include metadata only (file counts, parse outcomes, durations) — never document content, canvas markdown, or LLM prompts. Rotate Grafana credentials via GitHub Secrets; never commit tokens.

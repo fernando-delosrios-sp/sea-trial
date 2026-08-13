@@ -19,7 +19,15 @@
     { "key": "reporter", "name": "Reporter", "type": "user", "options": { "format": "single_entity" } },
     { "key": "description", "name": "Description", "type": "text" }
   ],
-  "seed": { "items": [] },
+  "seed": {
+    "items": [
+      {
+        "title": "__seed__",
+        "status": "Open",
+        "description": "No incidents reported yet"
+      }
+    ]
+  },
   "behavior": {
     "field_change": []
   }

@@ -1,6 +1,9 @@
 import { basename } from "std/path/basename.ts";
-import type { OnboardingForm, TesEventContext } from "@tes/shared/types/index.ts";
-import { renderDashboardCanvas } from "./canvas-renderer.ts";
+import type { OnboardingForm, TesEventContext } from "@sea-trial/shared/types/index.ts";
+import {
+  renderDashboardCanvas,
+  type DashboardRenderOptions,
+} from "./canvas-renderer.ts";
 import { readEmbeddedAssetBytes } from "./embedded-assets.generated.ts";
 import { resolveCanvasAssetPath } from "./paths.ts";
 
@@ -29,7 +32,6 @@ export interface CanvasAssetUploadClient {
     }>;
     completeUploadExternal: (params: {
       files: Array<{ id: string; title: string }>;
-      channel_id?: string;
     }) => Promise<{
       ok?: boolean;
       files?: SlackUploadedFile[];
@@ -107,7 +109,6 @@ function canvasImageUrl(
 
 async function uploadCanvasAsset(
   client: CanvasAssetUploadClient,
-  channelId: string,
   assetRef: string,
   canvasRelativePath: string,
 ): Promise<string> {
@@ -140,9 +141,9 @@ async function uploadCanvasAsset(
     );
   }
 
+  // Omit channel_id so files stay private and do not appear in the channel timeline.
   const completed = await client.files.completeUploadExternal({
     files: [{ id: uploadMeta.file_id, title: filename }],
-    channel_id: channelId,
   });
 
   if (!completed.ok) {
@@ -175,7 +176,6 @@ function canUploadCanvasAssets(
 /** Uploads referenced local assets and returns a ref-to-URL map. */
 export async function resolveCanvasAssetUrls(
   client: CanvasAssetUploadClient | undefined,
-  channelId: string,
   markdown: string,
   canvasRelativePath = DASHBOARD_CANVAS_PATH,
 ): Promise<Record<string, string>> {
@@ -192,7 +192,6 @@ export async function resolveCanvasAssetUrls(
   for (const ref of refs) {
     urlByPath[ref] = await uploadCanvasAsset(
       client,
-      channelId,
       ref,
       canvasRelativePath,
     );
@@ -200,19 +199,19 @@ export async function resolveCanvasAssetUrls(
   return urlByPath;
 }
 
-/** Renders dashboard markdown with Slack-hosted image URLs when a client is available. */
+/** Uploads referenced local assets and returns a ref-to-URL map. */
 export async function renderDashboardCanvasForSlack(
   client: CanvasAssetUploadClient | undefined,
   channelId: string,
   context: TesEventContext,
   form?: OnboardingForm,
+  options?: DashboardRenderOptions,
 ): Promise<string> {
-  const markdown = renderDashboardCanvas(context, form);
+  const markdown = renderDashboardCanvas(context, form, options);
   const refs = findCanvasImageRefs(markdown);
   const uploadAttempted = refs.length > 0 && canUploadCanvasAssets(client);
   const assetUrls = await resolveCanvasAssetUrls(
     client,
-    channelId,
     markdown,
   );
   const resolved = applyCanvasAssetUrls(markdown, assetUrls);

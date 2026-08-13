@@ -1,4 +1,4 @@
-import type { DeliverableStatus, TesEventContext } from "@tes/shared/types/index.ts";
+import type { DeliverableStatus, TesEventContext } from "@sea-trial/shared/types/index.ts";
 
 export const REVIEW_BANNER_TEXT = "Agent draft — pending review";
 export const SECTION_AGENT_MARKER =

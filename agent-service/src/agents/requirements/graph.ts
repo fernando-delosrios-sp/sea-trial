@@ -4,7 +4,7 @@ import type {
   ProcessRequirementsRequest,
   ProcessRequirementsResponse,
   TesEventContext,
-} from "@tes-event-process/shared";
+} from "@sea-trial/shared";
 import { parseDocument } from "../../parsers/index.js";
 import { getLlmConfig } from "../../config/llm.js";
 import { runSemanticAnalysis } from "./semantic-analyzer.js";

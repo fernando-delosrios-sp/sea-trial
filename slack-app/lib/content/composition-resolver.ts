@@ -1,4 +1,4 @@
-import type { TesEventContext } from "@tes/shared/types/index.ts";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import { readContentJson } from "./paths.ts";
 
 export interface ProvisionEntry {
@@ -9,6 +9,7 @@ export interface ProvisionEntry {
   depends_on?: string[];
   pin?: boolean;
   created_by?: string;
+  channel_tab?: boolean;
 }
 
 export interface NavigationEntry {
@@ -96,8 +97,11 @@ function requireProvisionEntries(
     const created_by = typeof row.created_by === "string"
       ? row.created_by
       : undefined;
+    const channel_tab = typeof row.channel_tab === "boolean"
+      ? row.channel_tab
+      : undefined;
 
-    return { slot, kind, ref, title, depends_on, pin, created_by };
+    return { slot, kind, ref, title, depends_on, pin, created_by, channel_tab };
   });
 }
 

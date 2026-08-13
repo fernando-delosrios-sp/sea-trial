@@ -6,9 +6,9 @@ import type {
   ProcessRequirementsRequest,
   ProcessRequirementsResponse,
   TesEventContext,
-} from "@tes/shared/types/index.ts";
-import type { DocumentInput } from "@tes/shared/types/index.ts";
-import { CORRELATION_ID_HEADER } from "@tes/observability/index.js";
+} from "@sea-trial/shared/types/index.ts";
+import type { DocumentInput } from "@sea-trial/shared/types/index.ts";
+import { CORRELATION_ID_HEADER } from "@sea-trial/observability/index.js";
 
 export function encodeFilePayload(content: Uint8Array): string {
   let binary = "";

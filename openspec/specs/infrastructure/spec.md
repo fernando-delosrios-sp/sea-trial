@@ -1,6 +1,6 @@
 # Infrastructure
 
-Tech stack, external services, subscriptions, and deployment targets for the TES Slack Process platform.
+Tech stack, external services, subscriptions, and deployment targets for the Sea Trial platform.
 
 ## Purpose
 
@@ -12,7 +12,7 @@ The project SHALL use a TypeScript monorepo with distinct runtimes per component
 
 #### Scenario: Component runtimes
 
-- **GIVEN** the tes-event-process repository
+- **GIVEN** the sea-trial repository
 - **WHEN** services are deployed
 - **THEN** `slack-app/` SHALL run on Deno via the Deno Slack SDK on Slack-managed infrastructure
 - **AND** `agent-service/` SHALL run on Node.js 20+ as an external HTTP service
@@ -67,7 +67,7 @@ The project SHALL document a canonical inventory of GitHub Secrets and Variables
 
 #### Scenario: Secrets not committed to repository
 
-- **GIVEN** the tes-event-process repository
+- **GIVEN** the sea-trial repository
 - **WHEN** configuration values are stored
 - **THEN** secret values SHALL exist only in GitHub Secrets or local gitignored `.env` files
 - **AND** SHALL NOT be committed to version control

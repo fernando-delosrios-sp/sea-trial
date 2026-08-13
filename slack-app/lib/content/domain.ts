@@ -1,4 +1,4 @@
-import type { DeliverableStatus } from "@tes/shared/types/index.ts";
+import type { DeliverableStatus } from "@sea-trial/shared/types/index.ts";
 import { readContentJson } from "./paths.ts";
 
 export interface StatusChoice {

@@ -5,6 +5,7 @@
 import Handlebars from "handlebars";
 import { encodeBase64 } from "std/encoding/base64.ts";
 import { join } from "std/path/join.ts";
+import { validateCanvasTemplateSource } from "../lib/content/capability-validator.ts";
 
 const ROOT = new URL("../", import.meta.url).pathname;
 const OUT_CONTENT = join(ROOT, "lib/content/embedded-content.generated.ts");
@@ -111,6 +112,9 @@ const templateMapEntries: string[] = [];
 for (const { file, export: exportName } of TEMPLATE_FILES) {
   const absolute = join(ROOT, file);
   const source = await Deno.readTextFile(absolute);
+  if (file.endsWith(".hbs.md")) {
+    validateCanvasTemplateSource(source, toContentKey(file));
+  }
   const precompiled = Handlebars.precompile(source, {
     strict: false,
     noEscape: true,

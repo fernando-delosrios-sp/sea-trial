@@ -5,7 +5,7 @@ import {
   parseOtlpHeaders,
   redactAttributes,
   type LogEventName,
-} from "@tes-event-process/observability";
+} from "@sea-trial/observability";
 
 export interface EmittedLog {
   eventName: LogEventName | string;
@@ -86,7 +86,7 @@ async function pushOtlpLogs(records: EmittedLog[]): Promise<void> {
   };
 
   const payload = buildOtlpLogsPayload({
-    serviceName: process.env.OTEL_SERVICE_NAME ?? "tes-agent-service",
+    serviceName: process.env.OTEL_SERVICE_NAME ?? "sea-trial-agent-service",
     resourceAttributes: parseResourceAttributes(
       process.env.OTEL_RESOURCE_ATTRIBUTES,
     ),

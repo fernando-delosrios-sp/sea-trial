@@ -1,4 +1,4 @@
-import type { DeliveryConsolidationRequest } from "@tes-event-process/shared";
+import type { DeliveryConsolidationRequest } from "@sea-trial/shared";
 import { runDeliveryConsolidation } from "./consolidate.js";
 
 export function runDeliveryGraph(

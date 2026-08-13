@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Shared domain vocabulary for TES Event Process. All specs, design docs, code identifiers,
+Shared domain vocabulary for Sea Trial. All specs, design docs, code identifiers,
 and user-facing copy MUST align with the terms defined here.
 ## Requirements
 ### Requirement: Glossary maintenance
@@ -145,6 +145,12 @@ The glossary SHALL update **Delivery Template Canvas** to reflect Validation-req
 ---
 
 ## Term entries
+
+### Term: Sea Trial
+**Context**: global
+**Definition**: The Slack-native platform (repository `sea-trial`, npm scope `@sea-trial/*`) that provisions TES Event Channels, runs onboarding, and hosts the Requirements Agent.
+**Aliases**: sea-trial
+**Notes**: Slack app display name is "Sea Trial". Domain concepts (TES Event Channel, TesEventContext) refer to the business process, not the platform name.
 
 ### Term: TES Event Channel
 **Context**: event-channel

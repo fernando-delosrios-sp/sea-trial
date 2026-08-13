@@ -48,6 +48,8 @@ export {
   resetCanvasCacheForTests,
 } from "./canvas-renderer.ts";
 
+export { loadValidatedCanvasTemplate } from "./template-loader.ts";
+
 export {
   applyCanvasAssetUrls,
   findCanvasImageRefs,

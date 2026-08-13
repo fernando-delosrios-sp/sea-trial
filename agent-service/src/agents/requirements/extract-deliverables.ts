@@ -1,4 +1,4 @@
-import type { DeliverableProposal } from "@tes-event-process/shared";
+import type { DeliverableProposal } from "@sea-trial/shared";
 
 /**
  * Extracts explicit deliverables from parsed text without merging distinct items.

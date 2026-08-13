@@ -5,9 +5,10 @@ import {
   type SlackListClient,
 } from "../lib/lists.ts";
 
-Deno.test("createDeliverablesList uses slackLists.create without channel_id", async () => {
+Deno.test("createDeliverablesList attaches list to channel and seeds placeholder row", async () => {
   const createParams: Array<Record<string, unknown>> = [];
   const accessParams: Array<Record<string, unknown>> = [];
+  const seededLists: string[] = [];
 
   const client: SlackListClient = {
     slackLists: {
@@ -22,7 +23,10 @@ Deno.test("createDeliverablesList uses slackLists.create without channel_id", as
         },
       },
       items: {
-        create: async () => ({ item: { id: "item1" } }),
+        create: async (params) => {
+          seededLists.push(params.list_id);
+          return { item: { id: "item1" } };
+        },
         list: async () => ({ items: [] }),
       },
     },
@@ -32,7 +36,7 @@ Deno.test("createDeliverablesList uses slackLists.create without channel_id", as
 
   assertEquals(listId, "F-deliverables");
   assertEquals(createParams.length, 1);
-  assertEquals("channel_id" in createParams[0], false);
+  assertEquals(createParams[0].channel_id, "C123");
   assertEquals(createParams[0].name, "Deliverables");
   assertEquals(Array.isArray(createParams[0].schema), true);
   assertEquals(accessParams, [{
@@ -40,14 +44,20 @@ Deno.test("createDeliverablesList uses slackLists.create without channel_id", as
     access_level: "write",
     channel_ids: ["C123"],
   }]);
+  assertEquals(seededLists, ["F-deliverables"]);
 });
 
-Deno.test("createIncidentsList grants channel write access after create", async () => {
+Deno.test("createIncidentsList attaches list to channel and seeds placeholder row", async () => {
+  const createParams: Array<Record<string, unknown>> = [];
   const accessParams: Array<Record<string, unknown>> = [];
+  const seededLists: string[] = [];
 
   const client: SlackListClient = {
     slackLists: {
-      create: async () => ({ ok: true, list_id: "F-incidents" }),
+      create: async (params) => {
+        createParams.push({ ...params });
+        return { ok: true, list_id: "F-incidents" };
+      },
       access: {
         set: async (params) => {
           accessParams.push({ ...params });
@@ -55,7 +65,10 @@ Deno.test("createIncidentsList grants channel write access after create", async 
         },
       },
       items: {
-        create: async () => ({ item: { id: "item1" } }),
+        create: async (params) => {
+          seededLists.push(params.list_id);
+          return { item: { id: "item1" } };
+        },
         list: async () => ({ items: [] }),
       },
     },
@@ -63,5 +76,7 @@ Deno.test("createIncidentsList grants channel write access after create", async 
 
   const listId = await createIncidentsList(client, "C456");
   assertEquals(listId, "F-incidents");
+  assertEquals(createParams[0]?.channel_id, "C456");
   assertEquals(accessParams[0]?.channel_ids, ["C456"]);
+  assertEquals(seededLists, ["F-incidents"]);
 });

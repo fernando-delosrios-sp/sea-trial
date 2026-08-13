@@ -105,7 +105,8 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "pin": { "type": "boolean" },
-        "created_by": { "type": "string" }
+        "created_by": { "type": "string" },
+        "channel_tab": { "type": "boolean" }
       },
       "additionalProperties": false
     }

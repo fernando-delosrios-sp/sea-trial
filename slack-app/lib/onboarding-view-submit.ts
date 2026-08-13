@@ -1,4 +1,4 @@
-import type { OnboardingForm } from "@tes/shared/types/index.ts";
+import type { OnboardingForm } from "@sea-trial/shared/types/index.ts";
 import { deserializeEventContext } from "./event-context.ts";
 import { processOnboardingSubmit } from "./onboarding-submit.ts";
 import { readCanvasMarkdown, replaceCanvasContent, type CanvasSectionsClient } from "./canvas.ts";

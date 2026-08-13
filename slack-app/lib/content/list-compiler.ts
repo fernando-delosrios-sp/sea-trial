@@ -217,6 +217,25 @@ export function getListFieldChangeRules(listName: string): unknown[] {
   return [...loadList(listName).behavior.field_change];
 }
 
+/** Returns seed row field maps for list provisioning (column key → value). */
+export function getListSeedItems(listName: string): Array<Record<string, string>> {
+  const items = loadList(listName).seed.items;
+  return items
+    .filter((item): item is Record<string, unknown> =>
+      Boolean(item) && typeof item === "object" && !Array.isArray(item)
+    )
+    .map((item) => {
+      const row: Record<string, string> = {};
+      for (const [key, value] of Object.entries(item)) {
+        if (typeof value === "string") {
+          row[key] = value;
+        }
+      }
+      return row;
+    })
+    .filter((row) => Object.keys(row).length > 0);
+}
+
 /** Deliverables list columns — backward-compatible export. */
 export const DELIVERABLES_COLUMNS = getSlackListSchema("deliverables");
 

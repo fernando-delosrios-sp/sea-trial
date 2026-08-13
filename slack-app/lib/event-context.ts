@@ -1,4 +1,4 @@
-import type { OnboardingForm, TesEventContext } from "@tes/shared/types/index.ts";
+import type { OnboardingForm, TesEventContext } from "@sea-trial/shared/types/index.ts";
 
 export const METADATA_MARKER = "<!-- tes-event-context -->";
 

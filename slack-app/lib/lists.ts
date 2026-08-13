@@ -1,5 +1,6 @@
 import {
   getListName,
+  getListSeedItems,
   getSlackListSchema,
 } from "./content/list-compiler.ts";
 import {
@@ -42,6 +43,7 @@ export interface SlackListReadClient {
 export interface SlackListClient extends SlackListReadClient {
   slackLists: SlackListReadClient["slackLists"] & {
     create: (params: {
+      channel_id: string;
       name: string;
       schema: SlackListSchemaColumn[];
     }) => Promise<SlackListCreateResponse>;
@@ -113,13 +115,43 @@ function formatListCreateFailure(
   );
 }
 
+const LIST_SEED_ROW_PREFIX = "__seed__";
+
+function isSeedListRow(primaryValue: string): boolean {
+  return primaryValue.startsWith(LIST_SEED_ROW_PREFIX);
+}
+
+async function seedListItems(
+  client: SlackListClient,
+  listId: string,
+  listName: string,
+  items: Array<Record<string, string>>,
+): Promise<void> {
+  for (const item of items) {
+    const initial_fields = Object.entries(item).map(([column_id, value]) => ({
+      column_id,
+      value,
+    }));
+
+    await client.slackLists.items.create({
+      list_id: listId,
+      initial_fields,
+    });
+  }
+}
+
 async function createListInChannel(
   client: SlackListClient,
   channelId: string,
-  listName: string,
-  schema: SlackListSchemaColumn[],
+  listRef: string,
 ): Promise<string> {
-  const response = await client.slackLists.create({ name: listName, schema });
+  const listName = getListName(listRef);
+  const schema = getSlackListSchema(listRef);
+  const response = await client.slackLists.create({
+    channel_id: channelId,
+    name: listName,
+    schema,
+  });
 
   const listId = response.list_id ?? response.list?.id;
   if (!listId) {
@@ -136,6 +168,11 @@ async function createListInChannel(
   if (accessResponse.error || accessResponse.ok === false) {
     const detail = accessResponse.error ? `: ${accessResponse.error}` : "";
     throw new Error(`Failed to grant ${listName} list access to channel${detail}`);
+  }
+
+  const seedItems = getListSeedItems(listRef);
+  if (seedItems.length > 0) {
+    await seedListItems(client, listId, listName, seedItems);
   }
 
   return listId;
@@ -170,7 +207,9 @@ export async function fetchDeliverablesListRows(
       deliverableUrl: byColumn.get("deliverable") || undefined,
       openQuestions: byColumn.get("open_questions") || undefined,
     };
-  }).filter((row) => row.taskId.length > 0);
+  }).filter((row) =>
+    row.taskId.length > 0 && !isSeedListRow(row.taskId)
+  );
 }
 
 /**
@@ -180,12 +219,7 @@ export async function createDeliverablesList(
   client: SlackListClient,
   channelId: string,
 ): Promise<string> {
-  return await createListInChannel(
-    client,
-    channelId,
-    getListName("deliverables"),
-    getSlackListSchema("deliverables"),
-  );
+  return await createListInChannel(client, channelId, "deliverables");
 }
 
 /**
@@ -195,10 +229,5 @@ export async function createIncidentsList(
   client: SlackListClient,
   channelId: string,
 ): Promise<string> {
-  return await createListInChannel(
-    client,
-    channelId,
-    getListName("incidents"),
-    getSlackListSchema("incidents"),
-  );
+  return await createListInChannel(client, channelId, "incidents");
 }

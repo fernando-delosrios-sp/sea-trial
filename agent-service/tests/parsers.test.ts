@@ -3,7 +3,7 @@ import { join } from "node:path";
 import JSZip from "jszip";
 import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
-import type { FilePayload, ParsedDocument } from "@tes-event-process/shared";
+import type { FilePayload, ParsedDocument } from "@sea-trial/shared";
 import {
   NO_EXTRACTABLE_TEXT_ERROR,
   parseDocument,

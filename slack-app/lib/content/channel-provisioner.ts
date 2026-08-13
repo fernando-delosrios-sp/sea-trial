@@ -1,6 +1,6 @@
-import type { TesEventContext } from "@tes/shared/types/index.ts";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import type { SlackCanvasClient } from "../canvas.ts";
-import { createCanvas } from "../canvas.ts";
+import { createCanvas, replaceCanvasContent } from "../canvas.ts";
 import type { SlackListClient } from "../lists.ts";
 import {
   createDeliverablesList,
@@ -19,6 +19,7 @@ import {
   type CanvasAssetUploadClient,
 } from "./canvas-assets.ts";
 import {
+  renderDashboardCanvas,
   renderInfrastructureCanvas,
   renderRequirementsCanvas,
   renderSituationReportSeedCanvas,
@@ -28,6 +29,7 @@ import {
   renderPinnedIndexMessage,
 } from "./message-renderer.ts";
 import { isKindProvisionable } from "./kind-registry.ts";
+import { buildOnboardingCanvasLink } from "../onboarding-canvas-link.ts";
 
 function resolveProvisionTeamId(): string {
   const teamId = Deno.env.get("SLACK_TEAM_ID")?.trim();
@@ -62,11 +64,16 @@ export interface ChannelProvisionClient
   };
 }
 
+function shouldAttachChannelTab(entry: ProvisionEntry): boolean {
+  return entry.channel_tab !== false;
+}
+
 async function provisionResource(
   client: ChannelProvisionClient,
   entry: ProvisionEntry,
   channelId: string,
   context: TesEventContext,
+  options?: { skipDashboardAssets?: boolean },
 ): Promise<string> {
   if (!isKindProvisionable(entry.kind)) {
     throw new Error(
@@ -81,9 +88,10 @@ async function provisionResource(
         entry.ref,
         channelId,
         context,
+        options,
       );
       return await createCanvas(client, {
-        channelId,
+        ...(shouldAttachChannelTab(entry) ? { channelId } : {}),
         title: entry.title ?? entry.ref,
         content,
       });
@@ -107,6 +115,7 @@ async function renderCanvasContent(
   ref: string,
   channelId: string,
   context: TesEventContext,
+  options?: { skipDashboardAssets?: boolean },
 ): Promise<string> {
   switch (ref) {
     case "requirements":
@@ -116,6 +125,9 @@ async function renderCanvasContent(
     case "situation-report":
       return renderSituationReportSeedCanvas(context);
     case "dashboard":
+      if (options?.skipDashboardAssets) {
+        return renderDashboardCanvas(context);
+      }
       return await renderDashboardCanvasForSlack(client, channelId, context);
     default:
       throw new Error(`Unknown canvas ref "${ref}"`);
@@ -128,8 +140,8 @@ async function provisionChrome(
   channelId: string,
   context: TesEventContext,
   composition: CompositionManifest,
-): Promise<void> {
-  if (!isKindProvisionable(entry.kind)) return;
+): Promise<string | undefined> {
+  if (!isKindProvisionable(entry.kind)) return undefined;
 
   if (entry.kind === "message" && entry.ref === "pinned-index") {
     const navOptions = { teamId: resolveProvisionTeamId() };
@@ -142,7 +154,31 @@ async function provisionChrome(
     if (entry.pin && indexMessage.ts) {
       await client.pins.add({ channel: channelId, timestamp: indexMessage.ts });
     }
+
+    return indexMessage.ts;
   }
+
+  return undefined;
+}
+
+async function finalizeDashboardCanvas(
+  client: ChannelProvisionClient,
+  channelId: string,
+  context: TesEventContext,
+  pinnedMessageTs?: string,
+): Promise<void> {
+  if (!context.dashboardCanvasId) return;
+
+  const onboardingLink = buildOnboardingCanvasLink(channelId, pinnedMessageTs);
+  const content = await renderDashboardCanvasForSlack(
+    client,
+    channelId,
+    context,
+    undefined,
+    onboardingLink ? { onboardingLink } : undefined,
+  );
+
+  await replaceCanvasContent(client, context.dashboardCanvasId, content);
 }
 
 /**
@@ -184,20 +220,29 @@ export async function provisionChannel(
       entry,
       inputs.channel_id,
       context,
+      entry.ref === "dashboard" ? { skipDashboardAssets: true } : undefined,
     );
     slotIds[entry.slot] = slackId;
     context = applySlotIds(context, composition, slotIds);
   }
 
+  let pinnedMessageTs: string | undefined;
   for (const chromeEntry of composition.chrome ?? []) {
-    await provisionChrome(
+    pinnedMessageTs = await provisionChrome(
       client,
       chromeEntry,
       inputs.channel_id,
       context,
       composition,
-    );
+    ) ?? pinnedMessageTs;
   }
+
+  await finalizeDashboardCanvas(
+    client,
+    inputs.channel_id,
+    context,
+    pinnedMessageTs,
+  );
 
   return context;
 }
@@ -206,4 +251,3 @@ export async function provisionChannel(
 export function serializeProvisionedContext(context: TesEventContext): string {
   return serializeEventContext(context);
 }
-

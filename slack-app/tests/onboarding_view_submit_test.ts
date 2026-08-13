@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { METADATA_MARKER, serializeEventContext } from "../lib/event-context.ts";
-import type { TesEventContext } from "@tes/shared/types/index.ts";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import { readCanvasMarkdown } from "../lib/canvas.ts";
 import { loadDashboardContentForButton } from "../lib/onboarding-view-submit.ts";
 

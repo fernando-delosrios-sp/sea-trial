@@ -34,7 +34,7 @@ No scaffolded resources needed — all platform resources already exist for deve
 - MCP: not configured in Cursor session (`GetMcpTools` → no render server)
 - CLI: `render` not installed (`which render` → not found)
 - Auth: `RENDER_API_KEY` in `.env`
-- Verified: `curl -H "Authorization: Bearer $RENDER_API_KEY" https://api.render.com/v1/services?limit=5` → HTTP 200, 1 service (`tes-agent-service`)
+- Verified: `curl -H "Authorization: Bearer $RENDER_API_KEY" https://api.render.com/v1/services?limit=5` → HTTP 200, 1 service (`sea-trial-agent-service`)
 - Collection fallback: manual / Render dashboard / REST API curl
 
 ### slack CLI
@@ -60,7 +60,7 @@ No scaffolded resources needed — all platform resources already exist for deve
 | `OTEL_LOGS_ENABLED` | config | no (default: `false`) | Grafana Cloud | done | done |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | config | when logging | Grafana Cloud | done | done |
 | `OTEL_EXPORTER_OTLP_HEADERS` | secret | when logging | Grafana Cloud | done | done |
-| `OTEL_SERVICE_NAME` | config | no (default: `tes-agent-service`) | agent-service | done | done |
+| `OTEL_SERVICE_NAME` | config | no (default: `sea-trial-agent-service`) | agent-service | done | done |
 | `OTEL_RESOURCE_ATTRIBUTES` | config | no | agent-service | done | done |
 | `AGENT_SERVICE_URL` | config | yes | Render | done | done |
 | `SLACK_BOT_TOKEN` | secret | yes | Slack | done | done |
@@ -420,8 +420,8 @@ curl -s -o /dev/null -w "%{http_code}" -X POST "$OTEL_EXPORTER_OTLP_ENDPOINT/v1/
 | Field | Value |
 |-------|-------|
 | Class | config |
-| Required | no (default: `tes-agent-service` or `tes-slack-app`) |
-| Consumed by | `agent-service` (`tes-agent-service`), `slack-app` (`tes-slack-app`) — cite `agent-service/.env.example:13`, `slack-app/.env.example:9` |
+| Required | no (default: `sea-trial-agent-service` or `sea-trial-slack-app`) |
+| Consumed by | `agent-service` (`sea-trial-agent-service`), `slack-app` (`sea-trial-slack-app`) — cite `agent-service/.env.example:13`, `slack-app/.env.example:9` |
 | Purpose | Service name label for Grafana Cloud log correlation |
 | Collection method | manual |
 | Tool | — |
@@ -431,7 +431,7 @@ curl -s -o /dev/null -w "%{http_code}" -X POST "$OTEL_EXPORTER_OTLP_ENDPOINT/v1/
 #### How to obtain
 
 1. Open project README → observability section for naming convention
-2. Use `tes-agent-service` for agent-service, `tes-slack-app` for slack-app
+2. Use `sea-trial-agent-service` for agent-service, `sea-trial-slack-app` for slack-app
 3. **Copy:** the service name string
 4. **Scope:** must match between env var and Grafana Explore queries
 5. No external account needed
@@ -440,7 +440,7 @@ curl -s -o /dev/null -w "%{http_code}" -X POST "$OTEL_EXPORTER_OTLP_ENDPOINT/v1/
 
 - **Shape:** lowercase string with hyphens
 - **Constraints:** no spaces or special chars
-- **Verify:** query in Grafana Explore: `{service_name="tes-agent-service"}`
+- **Verify:** query in Grafana Explore: `{service_name="sea-trial-agent-service"}`
 
 #### Deploy mapping
 
@@ -524,8 +524,8 @@ curl -s -o /dev/null -w "%{http_code}" -X POST "$OTEL_EXPORTER_OTLP_ENDPOINT/v1/
 #### How to obtain
 
 1. Open Render dashboard → `https://dashboard.render.com/`
-2. Navigate to your `tes-agent-service` web service
-3. **Copy:** the service URL (format: `https://tes-agent-service.onrender.com`)
+2. Navigate to your `sea-trial-agent-service` web service
+3. **Copy:** the service URL (format: `https://sea-trial-agent-service.onrender.com`)
 4. **Scope:** development environment URL — differs from production
 5. For local dev, use `http://localhost:3000`
 
@@ -769,10 +769,10 @@ curl -fsS -H "Authorization: Bearer $RENDER_API_KEY" https://api.render.com/v1/s
 #### How to obtain
 
 1. Open Render dashboard → `https://dashboard.render.com/`
-2. Navigate to your `tes-agent-service` → **Settings → Deploy Hooks**
+2. Navigate to your `sea-trial-agent-service` → **Settings → Deploy Hooks**
 3. Click **Add Deploy Hook** → name it (e.g. `ci-deploy`)
 4. **Copy:** the full URL (format: `https://api.render.com/deploy/srv-…?key=…`)
-5. **Scope:** specific to the `tes-agent-service` Render service
+5. **Scope:** specific to the `sea-trial-agent-service` Render service
 
 #### Format & validation
 
@@ -818,9 +818,9 @@ curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
 #### How to obtain
 
 1. Open Render dashboard → `https://dashboard.render.com/`
-2. Navigate to your `tes-agent-service` web service
+2. Navigate to your `sea-trial-agent-service` web service
 3. **Copy:** the service ID from the URL or settings page (format: `srv-<alphanumeric>`)
-4. **Scope:** specific to the `tes-agent-service` Render service
+4. **Scope:** specific to the `sea-trial-agent-service` Render service
 5. Also visible in `deploy.yml` as an example value
 
 #### Format & validation

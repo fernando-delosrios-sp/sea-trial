@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: tes-agent-service
+    name: sea-trial-agent-service
     runtime: node
     rootDir: .
     buildCommand: npm install && npm run build
-    startCommand: npm run start -w @tes-event-process/agent-service
+    startCommand: npm run start -w @sea-trial/agent-service
     healthCheckPath: /health
     envVars:
       - key: LLM_API_KEY

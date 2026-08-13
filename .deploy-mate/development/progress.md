@@ -1,7 +1,7 @@
 # deploy-mate progress — development
 
 Started: 2026-08-05 (re-run)
-Status: verify passed (automated) — manual Slack smoke pending; 2026-08-07
+Status: verify passed (automated) — manual Slack smoke pending; 2026-08-13
 
 ## Phase checklist
 - [x] Recon — environment selected (development, re-run)
@@ -15,7 +15,7 @@ Status: verify passed (automated) — manual Slack smoke pending; 2026-08-07
 - [x] Forge — deployment artifacts
 - [x] Inject CI — GitHub Secrets/Variables — done 2026-08-05
 - [x] Deploy — local 2026-08-07: Sea Trial slack deploy ✓, trigger provision ✓ (`Create TES Event` Ft0BNUSJTDEG)
-- [x] Verify — automated checks passed 2026-08-07; manual smoke checklist pending
+- [x] Verify — automated checks passed 2026-08-13; manual smoke checklist pending
 
 ## Arm-ready audit (2026-08-05)
 | Source / target | Tool | Status |
@@ -52,6 +52,20 @@ Verify: `gh secret list` → 4 secrets; `gh variable list` → 5 variables.
 |-----|-----|---------|
 | 31169954231 | [Actions](https://github.com/fernando-delosrios-sp/tes-event-process/actions/runs/31169954231) | **partial** — agent-service ✓, slack-app ✗ (invalid_interactivity_pointer) |
 | local | `slack deploy -s` + `provision-triggers.sh` | **success** — Sea Trial (`A0BNHB84NCT`), trigger `Ft0BNUSJTDEG` updated |
+
+## Verify (2026-08-13)
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| agent-service `/health` | ✓ pass | `200` — `{"status":"ok"}` |
+| Render service status | ✓ pass | `tes-agent-service` — `not_suspended` |
+| `SLACK_SERVICE_TOKEN` auth | ✓ pass | `auth.test` ok, workspace `TEX1209CG`, user `UEYQ9MH7Z` |
+| Slack trigger installed | ✓ pass | **Create TES Event** `Ft0BNUSJTDEG` — updated 2026-08-12 |
+| CI Deploy (2026-08-12) | ✓ pass | run `31581271798` — success on `main` |
+| OTEL logs (disabled) | — skip | `OTEL_LOGS_ENABLED=false` |
+| Manual Slack smoke | ⏳ pending | [smoke-test-checklist.md](docs/smoke-test-checklist.md) |
+
+**Outcome:** automated verify **passed**; manual smoke checklist not yet executed in Slack.
 
 ## Verify (2026-08-07)
 
@@ -142,4 +156,19 @@ Results:
 | `deployment.md` | Deploy strategy + rollback | 2026-08-05 |
 | `.env` | Collected env values (chmod 600) | 2026-08-05 |
 
+## Re-run delta (2026-08-13) — Sea Trial rename
+
+| Item | Status |
+|------|--------|
+| npm packages `@sea-trial/*` | done (local) |
+| Deno imports `@sea-trial/` | done (local) |
+| `render.yaml` → `sea-trial-agent-service` | done (local) |
+| OTEL defaults → `sea-trial-*` | done (local) |
+| Legacy `slack-app/tes-event-process/` | deleted |
+| Active docs + OpenSpec | done (local) |
+| GitHub repo rename → `sea-trial` | **pending** (manual) |
+| Render dashboard service rename | **pending** (manual — production still `tes-agent-service` as of 2026-08-13) |
+| Grafana saved queries | **pending** (update after OTEL redeploy) |
+
+**Note:** Historical Action run URLs and harvest evidence above retain pre-rename identifiers where they reflect deployed state at that time.
 

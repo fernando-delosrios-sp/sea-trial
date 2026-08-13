@@ -6,7 +6,7 @@ import {
   setLogSinkForTests,
   type EmittedLog,
 } from "../src/observability/logger.js";
-import { CORRELATION_ID_HEADER } from "@tes-event-process/observability";
+import { CORRELATION_ID_HEADER } from "@sea-trial/observability";
 
 describe("POST /agents/requirements/process", () => {
   beforeEach(() => {

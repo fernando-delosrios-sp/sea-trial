@@ -81,7 +81,7 @@ jobs:
           OTEL_EXPORTER_OTLP_ENDPOINT: ${{ vars.OTEL_EXPORTER_OTLP_ENDPOINT }}
           OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
           OTEL_LOGS_ENABLED: ${{ vars.OTEL_LOGS_ENABLED }}
-          OTEL_SERVICE_NAME: tes-agent-service
+          OTEL_SERVICE_NAME: sea-trial-agent-service
         run: |
           set -euo pipefail
           payload="$(jq -n \
@@ -91,7 +91,7 @@ jobs:
             --arg otlpEndpoint "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" \
             --arg otlpHeaders "${OTEL_EXPORTER_OTLP_HEADERS:-}" \
             --arg otlpEnabled "${OTEL_LOGS_ENABLED:-false}" \
-            --arg otlpServiceName "${OTEL_SERVICE_NAME:-tes-agent-service}" \
+            --arg otlpServiceName "${OTEL_SERVICE_NAME:-sea-trial-agent-service}" \
             '[
               {"key":"LLM_API_KEY","value":$apiKey},
               {"key":"LLM_BASE_URL","value":$baseUrl},
@@ -161,7 +161,7 @@ jobs:
           node-version: "20"
 
       - name: Build workspace packages for slack-app
-        run: npm ci && npm run build -w @tes-event-process/shared && npm run build -w @tes-event-process/observability
+        run: npm ci && npm run build -w @sea-trial/shared && npm run build -w @sea-trial/observability
 
       - uses: denoland/setup-deno@v2
         with:
@@ -189,7 +189,7 @@ jobs:
           OTEL_EXPORTER_OTLP_ENDPOINT: ${{ vars.OTEL_EXPORTER_OTLP_ENDPOINT }}
           OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
           OTEL_LOGS_ENABLED: ${{ vars.OTEL_LOGS_ENABLED }}
-          OTEL_SERVICE_NAME: tes-slack-app
+          OTEL_SERVICE_NAME: sea-trial-slack-app
         run: |
           set -euo pipefail
           APP_ID="$(deno run -q --allow-read scripts/read-app-id.ts)"
@@ -200,7 +200,7 @@ jobs:
           OTEL_LOGS_ENABLED=${OTEL_LOGS_ENABLED:-false}
           OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
           OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS:-}
-          OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-tes-slack-app}
+          OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-sea-trial-slack-app}
           SLACK_BOT_TOKEN=
           SLACK_APP_TOKEN=
           EOF
@@ -209,7 +209,7 @@ jobs:
           slack env set OTEL_LOGS_ENABLED "${OTEL_LOGS_ENABLED:-false}" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
           slack env set OTEL_EXPORTER_OTLP_ENDPOINT "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
           slack env set OTEL_EXPORTER_OTLP_HEADERS "${OTEL_EXPORTER_OTLP_HEADERS:-}" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
-          slack env set OTEL_SERVICE_NAME "${OTEL_SERVICE_NAME:-tes-slack-app}" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
+          slack env set OTEL_SERVICE_NAME "${OTEL_SERVICE_NAME:-sea-trial-slack-app}" --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN" -s
           slack deploy -s --app "$APP_ID" --token "$SLACK_SERVICE_TOKEN"
 
       - name: Provision Slack triggers

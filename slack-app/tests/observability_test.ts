@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import type { TesEventContext } from "@tes/shared/types/index.ts";
-import { CORRELATION_ID_HEADER, createCorrelationId } from "@tes/observability/index.js";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
+import { CORRELATION_ID_HEADER, createCorrelationId } from "@sea-trial/observability/index.js";
 import {
   buildInvokeAgentRequest,
   callRequirementsAgent,
@@ -91,7 +91,7 @@ Deno.test("logger flush pushes OTLP payload when enabled", async () => {
     OTEL_LOGS_ENABLED: "true",
     OTEL_EXPORTER_OTLP_ENDPOINT: "https://otlp-gateway-prod-eu-west-6.grafana.net/otlp",
     OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Basic%20test",
-    OTEL_SERVICE_NAME: "tes-slack-app",
+    OTEL_SERVICE_NAME: "sea-trial-slack-app",
   }, createCorrelationId());
 
   logger.emit("invoke.started", { fileCount: 1 });

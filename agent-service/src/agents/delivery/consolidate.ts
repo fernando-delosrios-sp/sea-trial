@@ -1,7 +1,7 @@
 import type {
   DeliveryConsolidationRequest,
   DeliveryConsolidationResponse,
-} from "@tes-event-process/shared";
+} from "@sea-trial/shared";
 
 export interface DeliveryConsolidationSections {
   businessValue: string;

@@ -1,4 +1,4 @@
-import type { DeliverableProposal } from "@tes-event-process/shared";
+import type { DeliverableProposal } from "@sea-trial/shared";
 import type { LlmConfig } from "../../config/llm.js";
 import { extractDeliverables } from "./extract-deliverables.js";
 

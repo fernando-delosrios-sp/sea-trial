@@ -14,7 +14,7 @@ The platform SHALL push structured application logs to Grafana Cloud via OTLP HT
 - **AND** `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` are configured
 - **WHEN** a log event is emitted during request processing
 - **THEN** agent-service SHALL export the log record to the OTLP logs endpoint
-- **AND** the record SHALL include `service.name` identifying `tes-agent-service`
+- **AND** the record SHALL include `service.name` identifying `sea-trial-agent-service`
 
 #### Scenario: Logging enabled on slack-app
 
@@ -22,7 +22,7 @@ The platform SHALL push structured application logs to Grafana Cloud via OTLP HT
 - **AND** OTLP environment variables are configured at deploy time
 - **WHEN** a Slack function emits a log event
 - **THEN** slack-app SHALL export the log record to the OTLP logs endpoint before the function returns
-- **AND** the record SHALL include `service.name` identifying `tes-slack-app`
+- **AND** the record SHALL include `service.name` identifying `sea-trial-slack-app`
 
 #### Scenario: Logging disabled
 

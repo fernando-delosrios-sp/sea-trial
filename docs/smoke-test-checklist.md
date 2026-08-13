@@ -1,4 +1,4 @@
-# TES Event Process — Smoke Test Checklist
+# Sea Trial — Smoke Test Checklist
 
 Run in Slack dev tenant after deploying slack-app and agent-service.
 

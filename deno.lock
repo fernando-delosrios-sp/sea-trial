@@ -136,8 +136,8 @@
           "dependencies": [
             "npm:@langchain/core@^1.2.4",
             "npm:@langchain/langgraph@^1.4.9",
-            "npm:@tes-event-process/observability@*",
-            "npm:@tes-event-process/shared@*",
+            "npm:@sea-trial/observability@*",
+            "npm:@sea-trial/shared@*",
             "npm:@types/node@^22.13.4",
             "npm:@types/pdf-parse@^1.1.5",
             "npm:jszip@^3.10.1",

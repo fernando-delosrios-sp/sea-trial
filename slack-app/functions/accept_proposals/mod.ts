@@ -1,6 +1,6 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
 import { toSlackListSelectValue } from "../../lib/content/slack-list-schema.ts";
-import type { DeliverableProposal } from "@tes/shared/types/index.ts";
+import type { DeliverableProposal } from "@sea-trial/shared/types/index.ts";
 import { replaceCanvasContent } from "../../lib/canvas.ts";
 import {
   processAcceptProposals,

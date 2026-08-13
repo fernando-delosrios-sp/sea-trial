@@ -1,4 +1,4 @@
-import type { DeliverableProposal, DeliverableStatus } from "@tes/shared/types/index.ts";
+import type { DeliverableProposal, DeliverableStatus } from "@sea-trial/shared/types/index.ts";
 
 export interface DeliverableRowInput {
   taskId: string;

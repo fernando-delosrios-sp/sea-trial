@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-08-13 — Sea Trial rename
+
+### Changed
+
+- **Project identity** — Rename monorepo from `tes-event-process` to `sea-trial` (`@sea-trial/*` npm packages, `@sea-trial/` Deno imports)
+- **Observability** — OTLP service names default to `sea-trial-agent-service` and `sea-trial-slack-app`
+- **Render blueprint** — `render.yaml` service name `sea-trial-agent-service`
+- **Documentation** — README, OpenSpec, and smoke-test checklist updated to Sea Trial
+
+### Fixed
+
+- **Canvas template security** — Validate forbidden patterns when embedding and loading precompiled Handlebars canvas templates
+
+### Removed
+
+- **Legacy Bolt template** — Deleted unused `slack-app/tes-event-process/` scaffold
+
+---
+
 ## 2026-08-13 — Slack Lists API
 
 ### Fixed

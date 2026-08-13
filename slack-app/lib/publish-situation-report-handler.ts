@@ -1,4 +1,4 @@
-import type { DeliverableStatus, TesEventContext } from "@tes/shared/types/index.ts";
+import type { DeliverableStatus, TesEventContext } from "@sea-trial/shared/types/index.ts";
 import { readCanvasMarkdown, replaceCanvasContent } from "./canvas.ts";
 import { deserializeEventContext } from "./event-context.ts";
 import { parseCanvasDeliverableRef } from "./delivery-canvas.ts";

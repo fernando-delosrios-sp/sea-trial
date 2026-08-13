@@ -63,7 +63,7 @@ export function buildOtlpLogsPayload(options: {
         attributes: toOtlpAttributes(resourceAttributes),
       },
       scopeLogs: [{
-        scope: { name: "tes-event-process" },
+        scope: { name: "sea-trial" },
         logRecords,
       }],
     }],

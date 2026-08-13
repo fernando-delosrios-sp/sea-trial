@@ -7,7 +7,7 @@ import {
   renderDashboardCanvas,
 } from "../lib/content/canvas-renderer.ts";
 import { pinnedIndexBlocks } from "../lib/content/message-renderer.ts";
-import type { TesEventContext } from "@tes/shared/types/index.ts";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 
 const navOptions = { teamId: "T01234567" };
 
@@ -77,6 +77,28 @@ Deno.test("dashboardTemplate Project section falls back gracefully when creation
 
   assertStringIncludes(markdown, "## Project");
   assertStringIncludes(markdown, "_Not set_");
+});
+
+Deno.test("renderDashboardCanvas includes onboarding link when provided", () => {
+  const markdown = renderDashboardCanvas(baseContext, undefined, {
+    onboardingLink: "https://app.slack.com/shortcuts/onboarding",
+  });
+
+  assertStringIncludes(markdown, "Complete onboarding");
+  assertStringIncludes(
+    markdown,
+    "https://app.slack.com/shortcuts/onboarding",
+  );
+});
+
+Deno.test("renderDashboardCanvas hides onboarding link when onboarding is complete", () => {
+  const markdown = renderDashboardCanvas(
+    { ...baseContext, onboardingComplete: true },
+    undefined,
+    { onboardingLink: "https://app.slack.com/shortcuts/onboarding" },
+  );
+
+  assertEquals(markdown.includes("Complete onboarding"), false);
 });
 
 Deno.test("pinnedIndexBlocks includes a Complete onboarding button when onboarding is incomplete", () => {

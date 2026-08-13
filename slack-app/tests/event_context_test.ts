@@ -4,7 +4,7 @@ import {
   deserializeEventContext,
   serializeEventContext,
 } from "../lib/event-context.ts";
-import type { TesEventContext } from "@tes/shared/types/index.ts";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 
 const baseContext: TesEventContext = {
   channelId: "C123",

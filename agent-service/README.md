@@ -132,7 +132,7 @@ When `OTEL_LOGS_ENABLED=true`, the service pushes structured logs to Grafana Clo
 | `OTEL_LOGS_ENABLED` | No | Kill switch (`false` by default) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | When enabled | Grafana Cloud OTLP base URL |
 | `OTEL_EXPORTER_OTLP_HEADERS` | When enabled | Authorization header |
-| `OTEL_SERVICE_NAME` | No | Default: `tes-agent-service` |
+| `OTEL_SERVICE_NAME` | No | Default: `sea-trial-agent-service` |
 
 Log events: `request.received`, `documents.parsed`, `agent.completed`, `request.failed`. Reads `X-Correlation-Id` from slack-app requests.
 

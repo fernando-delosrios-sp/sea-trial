@@ -1,5 +1,10 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
-import { buildInviteUserIds, validateChannelName } from "../../lib/channel.ts";
+import {
+  buildInviteUserIds,
+  findPublicChannelByName,
+  unarchiveChannelIfNeeded,
+  validateChannelName,
+} from "../../lib/channel.ts";
 
 export const ProvisionChannelFunction = DefineFunction({
   callback_id: "provision_channel",
@@ -45,11 +50,27 @@ export default SlackFunction(
       is_private: false,
     });
 
-    if (!createResult.ok || !createResult.channel?.id) {
-      return { error: createResult.error ?? "Failed to create channel" };
-    }
+    let channelId = createResult.channel?.id;
 
-    const channelId = createResult.channel.id;
+    if (!createResult.ok || !channelId) {
+      if (createResult.error !== "name_taken") {
+        return { error: createResult.error ?? "Failed to create channel" };
+      }
+
+      const existing = await findPublicChannelByName(
+        client,
+        validation.channelName,
+      );
+      if (!existing?.id) {
+        return {
+          error:
+            `Channel #${validation.channelName} already exists but could not be found — try a different project name`,
+        };
+      }
+
+      await unarchiveChannelIfNeeded(client, existing);
+      channelId = existing.id;
+    }
 
     const inviteUserIds = buildInviteUserIds(
       inputs.member_user_ids,

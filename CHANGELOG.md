@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-13 — List channel attachment
+
+### Fixed
+
+- **List channel attachment** — Attach Deliverables and Incidents lists to TES event channels via channel bookmarks (Slack has no public list-tab API); slugify select values when seeding list rows
+
+---
+
 ## 2026-08-13 — Sea Trial rename
 
 ### Changed

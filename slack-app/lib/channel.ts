@@ -93,3 +93,83 @@ export function buildInviteUserIds(
   return result;
 }
 
+export interface SlackChannelSummary {
+  id?: string;
+  name?: string;
+  is_archived?: boolean;
+}
+
+export interface SlackChannelListClient {
+  conversations: {
+    list: (params: {
+      types?: string;
+      exclude_archived?: boolean;
+      limit?: number;
+      cursor?: string;
+    }) => Promise<{
+      ok?: boolean;
+      channels?: SlackChannelSummary[];
+      response_metadata?: { next_cursor?: string };
+      error?: string;
+    }>;
+    unarchive?: (params: { channel: string }) => Promise<{
+      ok?: boolean;
+      error?: string;
+    }>;
+  };
+}
+
+/** Finds a public channel by exact name, including archived channels. */
+export async function findPublicChannelByName(
+  client: SlackChannelListClient,
+  channelName: string,
+): Promise<SlackChannelSummary | undefined> {
+  let cursor: string | undefined;
+
+  do {
+    const response = await client.conversations.list({
+      types: "public_channel",
+      exclude_archived: false,
+      limit: 200,
+      ...(cursor ? { cursor } : {}),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to list channels${response.error ? `: ${response.error}` : ""}`,
+      );
+    }
+
+    const match = response.channels?.find((channel) =>
+      channel.name === channelName
+    );
+    if (match?.id) return match;
+
+    cursor = response.response_metadata?.next_cursor || undefined;
+  } while (cursor);
+
+  return undefined;
+}
+
+/** Unarchives a channel when the Slack API supports it. */
+export async function unarchiveChannelIfNeeded(
+  client: SlackChannelListClient,
+  channel: SlackChannelSummary,
+): Promise<void> {
+  if (!channel.is_archived || !channel.id) return;
+
+  const unarchive = client.conversations.unarchive;
+  if (typeof unarchive !== "function") {
+    throw new Error(
+      `Channel #${channel.name} is archived — unarchive it in Slack or choose a different project name`,
+    );
+  }
+
+  const response = await unarchive({ channel: channel.id });
+  if (!response.ok) {
+    throw new Error(
+      `Failed to unarchive #${channel.name}${response.error ? `: ${response.error}` : ""}`,
+    );
+  }
+}
+

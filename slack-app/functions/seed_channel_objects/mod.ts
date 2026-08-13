@@ -32,7 +32,7 @@ export const SeedChannelObjectsFunction = DefineFunction({
 
 export default SlackFunction(
   SeedChannelObjectsFunction,
-  async ({ inputs, client }) => {
+  async ({ inputs, client, env }) => {
     const context = await provisionChannel(client, {
       channel_id: inputs.channel_id,
       project_name: inputs.project_name,
@@ -40,6 +40,7 @@ export default SlackFunction(
       salesforce_opportunity_url: inputs.salesforce_opportunity_url,
       member_user_ids: inputs.member_user_ids,
       context_notes: inputs.context_notes,
+      env: env as Record<string, string | undefined>,
     });
 
     return {

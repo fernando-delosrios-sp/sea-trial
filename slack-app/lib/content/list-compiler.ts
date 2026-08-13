@@ -212,6 +212,16 @@ export function getListName(listName: string): string {
   return loadList(listName).name;
 }
 
+/** Prefixes a list name with the TES account name for workspace-scoped lists. */
+export function formatScopedListName(
+  listRef: string,
+  accountName?: string,
+): string {
+  const baseName = getListName(listRef);
+  const trimmed = accountName?.trim();
+  return trimmed ? `${trimmed} ${baseName}` : baseName;
+}
+
 /** Returns declarative field_change behavior rules for a list. */
 export function getListFieldChangeRules(listName: string): unknown[] {
   return [...loadList(listName).behavior.field_change];

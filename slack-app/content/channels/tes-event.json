@@ -25,16 +25,6 @@
       "title": "Situation Report"
     },
     {
-      "slot": "deliverables",
-      "kind": "list",
-      "ref": "deliverables"
-    },
-    {
-      "slot": "incidents",
-      "kind": "list",
-      "ref": "incidents"
-    },
-    {
       "slot": "infrastructure",
       "kind": "canvas",
       "ref": "infrastructure",
@@ -46,6 +36,16 @@
       "ref": "requirements",
       "title": "Requirements",
       "channel_tab": false
+    },
+    {
+      "slot": "deliverables",
+      "kind": "list",
+      "ref": "deliverables"
+    },
+    {
+      "slot": "incidents",
+      "kind": "list",
+      "ref": "incidents"
     }
   ],
   "chrome": [
@@ -82,14 +82,14 @@
         "label": "Situation Report",
         "link_type": "canvas"
       },
-      { "slot": "deliverables", "label": "Deliverables", "link_type": "list" },
-      { "slot": "incidents", "label": "Incidents", "link_type": "list" },
       {
         "slot": "infrastructure",
         "label": "Infrastructure",
         "link_type": "canvas"
       },
-      { "slot": "requirements", "label": "Requirements", "link_type": "canvas" }
+      { "slot": "requirements", "label": "Requirements", "link_type": "canvas" },
+      { "slot": "deliverables", "label": "Deliverables", "link_type": "list" },
+      { "slot": "incidents", "label": "Incidents", "link_type": "list" }
     ]
   },
   "dynamic_resources": [

@@ -1,5 +1,5 @@
 /**
- * Probes slackLists.create and list channel attachment.
+ * Probes slackLists.create and native list channel tab attachment.
  *
  * Usage:
  *   SLACK_BOT_TOKEN=xoxb-... deno run --allow-read --allow-env --allow-net scripts/diagnose-list-create.ts
@@ -41,7 +41,8 @@ function tabSummary(channel: Record<string, unknown> | undefined): string {
       const type = typeof row.type === "string" ? row.type : "?";
       const label = typeof row.label === "string" ? row.label : "?";
       const id = typeof row.id === "string" ? row.id : "?";
-      return `${type}:${label}:${id}`;
+      const fileId = ((row.data as Record<string, unknown> | undefined)?.file_id);
+      return `${type}:${label}:${id}:${fileId ?? "?"}`;
     })
     .join(", ");
 }
@@ -65,8 +66,20 @@ async function probeListCreate(
   return listId;
 }
 
+async function probeApi(
+  label: string,
+  method: string,
+  body: Record<string, string>,
+): Promise<boolean> {
+  const result = await call(method, body);
+  console.log(
+    `${label} (${method}): ok=${result.ok} error=${result.error ?? "-"}`,
+  );
+  return result.ok === true;
+}
+
 const schema = getSlackListSchema("deliverables");
-const tests: Array<{ name: string; schema: unknown[] | null; channel_id?: string }> = [
+const tests: Array<{ name: string; schema: unknown[] | null }> = [
   { name: "minimal", schema: null },
   {
     name: "primary_only",
@@ -87,64 +100,60 @@ for (const test of tests) {
 }
 
 if (channelId) {
-  console.log("\n=== Channel attachment probes ===");
+  console.log("\n=== Native list channel tab probes ===");
   await printChannelTabs("baseline");
 
-  const createBody: Record<string, string> = {
-    name: `diag channel attach ${crypto.randomUUID().slice(0, 8)}`,
+  const tabCreateBody: Record<string, string> = {
+    channel_id: channelId,
+    name: `diag tab create ${crypto.randomUUID().slice(0, 8)}`,
     schema: JSON.stringify(schema.slice(0, 3)),
   };
-
-  const withoutChannelId = await probeListCreate(
-    "create_without_channel_id",
-    createBody,
+  const inlineTabOk = await probeApi(
+    "conversations.lists.create (inline)",
+    "conversations.lists.create",
+    tabCreateBody,
   );
-  if (withoutChannelId) {
+  if (inlineTabOk) {
+    await printChannelTabs("after conversations.lists.create inline");
+  }
+
+  const standaloneBody: Record<string, string> = {
+    name: `diag attach ${crypto.randomUUID().slice(0, 8)}`,
+    schema: JSON.stringify(schema.slice(0, 3)),
+  };
+  const listId = await probeListCreate("standalone create", standaloneBody);
+  if (listId) {
     await call("slackLists.access.set", {
-      list_id: withoutChannelId,
+      list_id: listId,
       access_level: "write",
       channel_ids: channelId,
     });
-    console.log(`access.set (write) for ${withoutChannelId} → channel ${channelId}`);
-    await printChannelTabs("after create + access.set (no channel_id on create)");
+
+    for (const method of [
+      "conversations.lists.create",
+      "slackLists.attach",
+      "conversations.tabs.add",
+    ]) {
+      const body: Record<string, string> = {
+        channel_id: channelId,
+        list_id: listId,
+      };
+      if (method === "conversations.tabs.add") {
+        body.type = "list";
+        body.entity_id = listId;
+        delete body.list_id;
+      }
+      const ok = await probeApi(`attach via ${method}`, method, body);
+      if (ok) {
+        await printChannelTabs(`after ${method}`);
+        break;
+      }
+    }
   }
 
-  const withChannelBody = {
-    ...createBody,
-    name: `diag channel_id param ${crypto.randomUUID().slice(0, 8)}`,
-    channel_id: channelId,
-  };
-  const withChannelId = await probeListCreate(
-    "create_with_channel_id",
-    withChannelBody,
-  );
-  if (withChannelId) {
-    await printChannelTabs("after create with channel_id param");
-  }
-
-  const bookmarkListId = await probeListCreate(
-    "bookmark_probe_list",
-    {
-      name: `diag bookmark ${crypto.randomUUID().slice(0, 8)}`,
-      schema: JSON.stringify(schema.slice(0, 3)),
-    },
-  );
-  if (bookmarkListId) {
-    const teamInfo = await call("auth.test", {});
-    const teamId = typeof teamInfo.team_id === "string" ? teamInfo.team_id : "";
-    const bookmark = await call("bookmarks.add", {
-      channel_id: channelId,
-      title: "Diag Deliverables",
-      type: "link",
-      link: `https://app.slack.com/lists/${teamId}/${bookmarkListId}`,
-    });
-    console.log(
-      `bookmarks.add: ok=${bookmark.ok} error=${bookmark.error ?? "-"}`,
-    );
-    await printChannelTabs("after bookmarks.add");
-  }
+  console.log("\nNote: lists should appear as type:list tabs in conversations.info, not bookmarks.");
 } else {
-  console.log("\nSet CHANNEL_ID to probe list channel tabs and bookmarks.add.");
+  console.log("\nSet CHANNEL_ID to probe native list channel tabs.");
 }
 
 console.log(`\nDeliverables list name: ${getListName("deliverables")}`);

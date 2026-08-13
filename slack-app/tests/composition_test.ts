@@ -58,10 +58,10 @@ Deno.test("composition provisioning order follows manifest resource order", () =
 
   assertEquals(slots[0], "dashboard");
   assertEquals(slots.indexOf("situation_report"), 1);
-  assertEquals(slots.indexOf("deliverables"), 2);
-  assertEquals(slots.indexOf("incidents"), 3);
-  assertEquals(slots.indexOf("infrastructure"), 4);
-  assertEquals(slots.indexOf("requirements"), slots.length - 1);
+  assertEquals(slots.indexOf("infrastructure"), 2);
+  assertEquals(slots.indexOf("requirements"), 3);
+  assertEquals(slots.indexOf("deliverables"), 4);
+  assertEquals(slots.indexOf("incidents"), slots.length - 1);
 });
 
 Deno.test("composition rejects cyclic depends_on", () => {
@@ -163,9 +163,11 @@ Deno.test("navigation entries render pinned index links in order", () => {
 
   const dashboardPos = message.indexOf("Dashboard");
   const situationPos = message.indexOf("Situation Report");
+  const requirementsPos = message.indexOf("Requirements");
   const deliverablesPos = message.indexOf("Deliverables");
   assertEquals(dashboardPos < situationPos, true);
-  assertEquals(situationPos < deliverablesPos, true);
+  assertEquals(situationPos < requirementsPos, true);
+  assertEquals(requirementsPos < deliverablesPos, true);
 });
 
 function formatMrkdwn(url: string, label: string): string {
@@ -203,6 +205,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
 
   const createOrder: string[] = [];
   const listItemCreates: string[] = [];
+  const listCreateParams: Array<Record<string, unknown>> = [];
   const listBookmarkAdds: string[] = [];
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(null, { status: 200 });
@@ -249,6 +252,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
     slackLists: {
       create: async (params: { name: string }) => {
         createOrder.push(`list:${params.name}`);
+        listCreateParams.push({ ...params });
         return { list_id: `L-${params.name}` };
       },
       access: {
@@ -279,6 +283,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   const context = await provisionChannel(client, {
     channel_id: "C999",
     project_name: "Demo",
+    account_name: "Acme Corp",
     env: { SLACK_TEAM_ID: navTeamId },
   });
 
@@ -286,20 +291,29 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   assertEquals(context.compositionVersion, "1.0.0");
   assertEquals(context.dashboardCanvasId, "C-Dashboard");
   assertEquals(context.requirementsCanvasId, "C-Requirements");
-  assertEquals(context.deliverablesListId, "L-Deliverables");
-  assertEquals(context.incidentsListId, "L-Incidents");
+  assertEquals(context.deliverablesListId, "L-Acme Corp Deliverables");
+  assertEquals(context.incidentsListId, "L-Acme Corp Incidents");
   assertEquals(context.situationReportCanvasId, "C-Situation Report");
   assertEquals(createOrder.indexOf("canvas:Dashboard"), 0);
   assertEquals(createOrder.indexOf("canvas:Situation Report"), 1);
-  assertEquals(createOrder.indexOf("list:Deliverables"), 2);
-  assertEquals(createOrder.indexOf("list:Incidents"), 3);
-  assertEquals(createOrder.indexOf("canvas:Infrastructure"), 4);
-  assertEquals(createOrder.indexOf("canvas-standalone:Requirements"), 5);
+  assertEquals(createOrder.indexOf("canvas:Infrastructure"), 2);
+  assertEquals(createOrder.indexOf("canvas-standalone:Requirements"), 3);
+  assertEquals(createOrder.indexOf("list:Acme Corp Deliverables"), 4);
+  assertEquals(createOrder.indexOf("list:Acme Corp Incidents"), 5);
   assertEquals(listItemCreates.length, 2);
-  assertEquals(listBookmarkAdds, [
-    `Deliverables:https://app.slack.com/lists/${navTeamId}/L-Deliverables`,
-    `Incidents:https://app.slack.com/lists/${navTeamId}/L-Incidents`,
+  assertEquals(listCreateParams.map((params) => params.name), [
+    "Acme Corp Deliverables",
+    "Acme Corp Incidents",
   ]);
+  assertEquals(listBookmarkAdds, [
+    `Acme Corp Deliverables:https://app.slack.com/lists/${navTeamId}/L-Acme Corp Deliverables`,
+    `Acme Corp Incidents:https://app.slack.com/lists/${navTeamId}/L-Acme Corp Incidents`,
+  ]);
+  assertEquals(
+    createOrder.indexOf("canvas:Infrastructure") <
+      createOrder.indexOf("list:Acme Corp Deliverables"),
+    true,
+  );
   } finally {
     globalThis.fetch = originalFetch;
   }

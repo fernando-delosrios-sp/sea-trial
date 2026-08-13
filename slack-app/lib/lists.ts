@@ -1,4 +1,5 @@
 import {
+  formatScopedListName,
   getListName,
   getListSeedItems,
   getSlackListSchema,
@@ -9,7 +10,6 @@ import {
 } from "./content/slack-list-schema.ts";
 import { getDeliverableStatusChoices } from "./content/domain.ts";
 import { buildObjectLinkUrl } from "./content/message-renderer.ts";
-
 export interface SlackListCreateResponse {
   ok?: boolean;
   error?: string;
@@ -49,9 +49,21 @@ export interface SlackListReadClient {
 export interface CreateListInChannelOptions {
   attachToChannel?: boolean;
   teamId?: string;
+  accountName?: string;
+}
+
+export interface SlackListApiCallResponse {
+  ok?: boolean;
+  error?: string;
+  list_id?: string;
+  list?: { id?: string };
 }
 
 export interface SlackListClient extends SlackListReadClient {
+  apiCall?: (
+    method: string,
+    params: Record<string, unknown>,
+  ) => Promise<SlackListApiCallResponse>;
   slackLists: SlackListReadClient["slackLists"] & {
     create: (params: {
       name: string;
@@ -170,6 +182,68 @@ async function seedListItems(
   }
 }
 
+function resolveListId(response: SlackListCreateResponse): string | undefined {
+  return response.list_id ?? response.list?.id;
+}
+
+/** Creates a list directly as a channel tab (canvas-parity API). */
+async function createListChannelTab(
+  client: SlackListClient,
+  channelId: string,
+  listName: string,
+  schema: SlackListSchemaColumn[],
+): Promise<string | undefined> {
+  if (!client.apiCall) return undefined;
+
+  const response = await client.apiCall("conversations.lists.create", {
+    channel_id: channelId,
+    name: listName,
+    schema,
+  });
+
+  if (response.ok) {
+    const listId = resolveListId(response);
+    if (listId) return listId;
+  }
+
+  if (response.error === "unknown_method") return undefined;
+
+  const detail = response.error ? `: ${response.error}` : "";
+  throw new Error(`Failed to create ${listName} list channel tab${detail}`);
+}
+
+/** Attaches an existing list to a channel as a native tab when Slack exposes one. */
+async function attachListChannelTab(
+  client: SlackListClient,
+  channelId: string,
+  listId: string,
+  listName: string,
+): Promise<boolean> {
+  if (!client.apiCall) return false;
+
+  const attachAttempts: Array<{ method: string; params: Record<string, unknown> }> = [
+    { method: "conversations.lists.create", params: { channel_id: channelId, list_id: listId } },
+    { method: "slackLists.attach", params: { channel_id: channelId, list_id: listId } },
+    {
+      method: "conversations.tabs.add",
+      params: { channel_id: channelId, type: "list", entity_id: listId },
+    },
+  ];
+
+  for (const attempt of attachAttempts) {
+    const response = await client.apiCall(attempt.method, attempt.params);
+    if (response.ok) return true;
+    if (response.error === "unknown_method") continue;
+
+    const detail = response.error ? `: ${response.error}` : "";
+    throw new Error(
+      `Failed to attach ${listName} list to channel tab via ${attempt.method}${detail}`,
+    );
+  }
+
+  return false;
+}
+
 /** Adds a channel bookmark linking to a Slack List (fallback when native list tabs are unavailable). */
 export async function attachListToChannel(
   client: Pick<SlackListClient, "bookmarks">,
@@ -198,23 +272,63 @@ export async function attachListToChannel(
   }
 }
 
+/** Attaches a provisioned list to the channel (native tab when available, else bookmark). */
+export async function attachListInChannel(
+  client: SlackListClient,
+  channelId: string,
+  listRef: string,
+  listId: string,
+  options: Pick<CreateListInChannelOptions, "accountName" | "teamId">,
+): Promise<void> {
+  const listName = formatScopedListName(listRef, options.accountName);
+  const tabAttached = await attachListChannelTab(
+    client,
+    channelId,
+    listId,
+    listName,
+  );
+  if (tabAttached) return;
+
+  const teamId = options.teamId?.trim();
+  if (!teamId) {
+    throw new Error(
+      "SLACK_TEAM_ID is required to attach lists to the channel",
+    );
+  }
+  await attachListToChannel(client, channelId, listId, {
+    listTitle: listName,
+    teamId,
+  });
+}
+
 async function createListInChannel(
   client: SlackListClient,
   channelId: string,
   listRef: string,
   options: CreateListInChannelOptions = {},
 ): Promise<string> {
-  const listName = getListName(listRef);
+  const listName = formatScopedListName(listRef, options.accountName);
   const schema = getSlackListSchema(listRef);
-  const response = await client.slackLists.create({
-    name: listName,
-    schema,
-  });
 
-  const listId = response.list_id ?? response.list?.id;
+  let listId: string | undefined;
+  let attachedAsTab = false;
+
+  if (options.attachToChannel) {
+    listId = await createListChannelTab(client, channelId, listName, schema);
+    attachedAsTab = listId !== undefined;
+  }
+
   if (!listId) {
-    console.error(formatListCreateFailure(listName, response, schema));
-    throw new Error(formatListCreateFailure(listName, response, schema));
+    const response = await client.slackLists.create({
+      name: listName,
+      schema,
+    });
+
+    listId = resolveListId(response);
+    if (!listId) {
+      console.error(formatListCreateFailure(listName, response, schema));
+      throw new Error(formatListCreateFailure(listName, response, schema));
+    }
   }
 
   const accessResponse = await client.slackLists.access.set({
@@ -228,16 +342,10 @@ async function createListInChannel(
     throw new Error(`Failed to grant ${listName} list access to channel${detail}`);
   }
 
-  if (options.attachToChannel) {
-    const teamId = options.teamId?.trim();
-    if (!teamId) {
-      throw new Error(
-        "SLACK_TEAM_ID is required to attach lists to the channel",
-      );
-    }
-    await attachListToChannel(client, channelId, listId, {
-      listTitle: listName,
-      teamId,
+  if (options.attachToChannel && !attachedAsTab) {
+    await attachListInChannel(client, channelId, listRef, listId, {
+      accountName: options.accountName,
+      teamId: options.teamId,
     });
   }
 

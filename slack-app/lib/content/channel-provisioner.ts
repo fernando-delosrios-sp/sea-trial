@@ -5,6 +5,7 @@ import type { SlackListClient } from "../lists.ts";
 import {
   createDeliverablesList,
   createIncidentsList,
+  attachListInChannel,
 } from "../lists.ts";
 import { serializeEventContext } from "../event-context.ts";
 import {
@@ -54,7 +55,6 @@ export interface ProvisionInputs {
 
 export interface ChannelProvisionClient
   extends SlackCanvasClient, SlackListClient, CanvasAssetUploadClient {
-  bookmarks: NonNullable<SlackListClient["bookmarks"]>;
   chat: {
     postMessage: (params: {
       channel: string;
@@ -99,12 +99,10 @@ async function provisionResource(
       });
     }
     case "list": {
-      const listOptions = shouldAttachChannelTab(entry)
-        ? {
-          attachToChannel: true,
-          teamId: resolveProvisionTeamId(env),
-        }
-        : { attachToChannel: false };
+      const listOptions = {
+        accountName: context.accountName,
+        attachToChannel: false,
+      };
 
       if (entry.ref === "deliverables") {
         return await createDeliverablesList(client, channelId, listOptions);
@@ -165,6 +163,29 @@ async function provisionChrome(
   }
 
   return undefined;
+}
+
+async function attachProvisionedListChannels(
+  client: ChannelProvisionClient,
+  channelId: string,
+  context: TesEventContext,
+  composition: CompositionManifest,
+  slotIds: Record<string, string>,
+  env?: Record<string, string | undefined>,
+): Promise<void> {
+  const teamId = resolveProvisionTeamId(env);
+
+  for (const entry of composition.resources) {
+    if (entry.kind !== "list" || !shouldAttachChannelTab(entry)) continue;
+
+    const listId = slotIds[entry.slot];
+    if (!listId) continue;
+
+    await attachListInChannel(client, channelId, entry.ref, listId, {
+      accountName: context.accountName,
+      teamId,
+    });
+  }
 }
 
 async function finalizeDashboardCanvas(
@@ -236,6 +257,15 @@ export async function provisionChannel(
     slotIds[entry.slot] = slackId;
     context = applySlotIds(context, composition, slotIds);
   }
+
+  await attachProvisionedListChannels(
+    client,
+    inputs.channel_id,
+    context,
+    composition,
+    slotIds,
+    inputs.env,
+  );
 
   let pinnedMessageTs: string | undefined;
   for (const chromeEntry of composition.chrome ?? []) {

@@ -52,7 +52,15 @@ require_in_file "$WORKFLOW" 'LLM_MODEL' "Render sync must include LLM_MODEL"
 require_in_file "$WORKFLOW" 'api\.render\.com/v1/services/\$\{RENDER_SERVICE_ID\}/env-vars' \
   "Render sync must call Render env-vars API"
 
-# Agent-service health check before slack-app deploy
+# Scenario: Agent-service build verified before Render deploy
+require_in_file "$WORKFLOW" 'Verify agent-service build' \
+  "$WORKFLOW must run npm build before Render deploy"
+require_in_file "$WORKFLOW" 'npm run build' \
+  "deploy-agent-service must run npm run build"
+
+# Scenario: Render deploy completion verified via API (not health-only)
+require_in_file "$WORKFLOW" 'Trigger Render deploy and wait for completion' \
+  "$WORKFLOW must wait for Render deploy completion"
 require_in_file "$WORKFLOW" 'Wait for agent-service health check' "$WORKFLOW must health-check agent-service"
 require_in_file "$WORKFLOW" '/health' "$WORKFLOW must curl /health"
 

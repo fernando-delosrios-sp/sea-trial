@@ -8,7 +8,10 @@ export type LogEventName =
   | "request.received"
   | "documents.parsed"
   | "agent.completed"
-  | "request.failed";
+  | "request.failed"
+  | "delivery.consolidation.received"
+  | "delivery.consolidation.completed"
+  | "delivery.consolidation.failed";
 
 export interface LogEvent {
   name: LogEventName;

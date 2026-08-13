@@ -6,6 +6,6 @@
   },
   "list": {
     "allowed_root_properties": ["seed", "behavior"],
-    "allowed_column_properties": ["options_ref"]
+    "allowed_column_properties": ["options_ref", "is_primary_column"]
   }
 }

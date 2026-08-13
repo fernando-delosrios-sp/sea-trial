@@ -39,6 +39,7 @@
               "completed"
             ]
           },
+          "is_primary_column": { "type": "boolean" },
           "options_ref": { "type": "string" },
           "options": {
             "type": "object",

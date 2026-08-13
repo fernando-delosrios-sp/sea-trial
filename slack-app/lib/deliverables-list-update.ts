@@ -1,4 +1,5 @@
 import type { TesEventContext } from "@tes/shared/types/index.ts";
+import { toSlackListSelectValue } from "./content/slack-list-schema.ts";
 import { getListFieldChangeRules } from "./content/list-compiler.ts";
 import {
   ensureDeliveryCanvasForValidationRequired,
@@ -121,7 +122,7 @@ export async function updateDeliverableStatus(
   await params.client.slackLists.items.update({
     list_id: params.listId,
     item_id: params.listItemId,
-    fields: [{ column_id: "status", value: params.newStatus }],
+    fields: [{ column_id: "status", value: toSlackListSelectValue(params.newStatus) }],
   });
 
   const updatedRow = { ...params.row, status: params.newStatus };

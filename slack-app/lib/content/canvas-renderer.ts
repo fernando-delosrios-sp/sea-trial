@@ -1,16 +1,12 @@
-import Handlebars from "handlebars";
 import type { OnboardingForm, TesEventContext } from "@tes/shared/types/index.ts";
 import { serializeEventContext } from "../event-context.ts";
 import { applyCanvasAssetUrls } from "./canvas-assets.ts";
-import {
-  validateCanvasTemplateSource,
-} from "./capability-validator.ts";
 import { readContentText } from "./paths.ts";
+import { TEMPLATES_BY_PATH } from "./embedded-templates.generated.ts";
 import { buildSituationReportSeedMarkdown } from "../situation-report.ts";
 
 const NOT_SET = "_Not set_";
 
-let cachedTemplates: Map<string, Handlebars.TemplateDelegate> | null = null;
 let cachedDefaultDashboard: string | null = null;
 
 function loadDefaultDashboardContent(): string {
@@ -20,23 +16,16 @@ function loadDefaultDashboardContent(): string {
   return cachedDefaultDashboard;
 }
 
-function loadTemplate(relativePath: string): Handlebars.TemplateDelegate {
-  if (!cachedTemplates) {
-    cachedTemplates = new Map();
+function loadTemplate(relativePath: string) {
+  const template = TEMPLATES_BY_PATH[relativePath];
+  if (!template) {
+    throw new Error(`Unknown canvas template "${relativePath}"`);
   }
-  const cached = cachedTemplates.get(relativePath);
-  if (cached) return cached;
-
-  const source = readContentText(relativePath);
-  validateCanvasTemplateSource(source, relativePath);
-  const template = Handlebars.compile(source, { strict: false, noEscape: true });
-  cachedTemplates.set(relativePath, template);
   return template;
 }
 
 /** Resets cached canvas content — for tests only. */
 export function resetCanvasCacheForTests(): void {
-  cachedTemplates = null;
   cachedDefaultDashboard = null;
 }
 

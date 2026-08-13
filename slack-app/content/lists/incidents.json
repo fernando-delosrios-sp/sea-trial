@@ -2,7 +2,7 @@
   "$schema": "../../schemas/content/list.schema.json",
   "name": "Incidents",
   "columns": [
-    { "key": "title", "name": "Title", "type": "text" },
+    { "key": "title", "name": "Title", "type": "text", "is_primary_column": true },
     {
       "key": "status",
       "name": "Status",
@@ -10,13 +10,13 @@
       "options": {
         "format": "single_select",
         "choices": [
-          { "value": "Open", "label": "Open" },
-          { "value": "In progress", "label": "In progress" },
-          { "value": "Resolved", "label": "Resolved" }
+          { "value": "Open", "label": "Open", "color": "red" },
+          { "value": "In progress", "label": "In progress", "color": "yellow" },
+          { "value": "Resolved", "label": "Resolved", "color": "green" }
         ]
       }
     },
-    { "key": "reporter", "name": "Reporter", "type": "user" },
+    { "key": "reporter", "name": "Reporter", "type": "user", "options": { "format": "single_entity" } },
     { "key": "description", "name": "Description", "type": "text" }
   ],
   "seed": { "items": [] },

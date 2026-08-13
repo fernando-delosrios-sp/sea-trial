@@ -2,12 +2,30 @@ import {
   getListName,
   getSlackListSchema,
 } from "./content/list-compiler.ts";
+import {
+  fromSlackListSelectValue,
+  toSlackListSelectValue,
+} from "./content/slack-list-schema.ts";
+import { getDeliverableStatusChoices } from "./content/domain.ts";
 
 export interface SlackListCreateResponse {
   ok?: boolean;
   error?: string;
   list_id?: string;
   list?: { id?: string };
+}
+
+export interface SlackListAccessResponse {
+  ok?: boolean;
+  error?: string;
+}
+
+export interface SlackListSchemaColumn {
+  key: string;
+  name: string;
+  type: string;
+  is_primary_column?: boolean;
+  options?: Record<string, unknown>;
 }
 
 export interface SlackListReadClient {
@@ -24,15 +42,16 @@ export interface SlackListReadClient {
 export interface SlackListClient extends SlackListReadClient {
   slackLists: SlackListReadClient["slackLists"] & {
     create: (params: {
-      channel_id: string;
       name: string;
-      schema: Array<{
-        key: string;
-        name: string;
-        type: string;
-        options?: Record<string, unknown>;
-      }>;
+      schema: SlackListSchemaColumn[];
     }) => Promise<SlackListCreateResponse>;
+    access: {
+      set: (params: {
+        list_id: string;
+        access_level: "read" | "write" | "owner";
+        channel_ids: string[];
+      }) => Promise<SlackListAccessResponse>;
+    };
     items: {
       create: (params: {
         list_id: string;
@@ -77,6 +96,51 @@ function fieldValue(field: SlackListItemField): string {
   return "";
 }
 
+function formatListCreateFailure(
+  listName: string,
+  response: SlackListCreateResponse,
+  schema: SlackListSchemaColumn[],
+): string {
+  const detail = response.error ? `: ${response.error}` : "";
+  const statusColumn = schema.find((column) => column.key === "status");
+  const choiceCount = Array.isArray(statusColumn?.options?.choices)
+    ? statusColumn.options.choices.length
+    : 0;
+  return (
+    `Failed to create ${listName} list${detail} ` +
+    `(columns=${schema.length}, statusChoices=${choiceCount}, ` +
+    `keys=${schema.map((column) => column.key).join(",")})`
+  );
+}
+
+async function createListInChannel(
+  client: SlackListClient,
+  channelId: string,
+  listName: string,
+  schema: SlackListSchemaColumn[],
+): Promise<string> {
+  const response = await client.slackLists.create({ name: listName, schema });
+
+  const listId = response.list_id ?? response.list?.id;
+  if (!listId) {
+    console.error(formatListCreateFailure(listName, response, schema));
+    throw new Error(formatListCreateFailure(listName, response, schema));
+  }
+
+  const accessResponse = await client.slackLists.access.set({
+    list_id: listId,
+    access_level: "write",
+    channel_ids: [channelId],
+  });
+
+  if (accessResponse.error || accessResponse.ok === false) {
+    const detail = accessResponse.error ? `: ${accessResponse.error}` : "";
+    throw new Error(`Failed to grant ${listName} list access to channel${detail}`);
+  }
+
+  return listId;
+}
+
 /** Reads deliverable rows from a Slack List by column key. */
 export async function fetchDeliverablesListRows(
   client: SlackListReadClient,
@@ -96,9 +160,11 @@ export async function fetchDeliverablesListRows(
     for (const field of item.fields ?? []) {
       byColumn.set(field.column_id, fieldValue(field));
     }
+    const statusLabels = getDeliverableStatusChoices().map((choice) => choice.value);
+    const rawStatus = byColumn.get("status") ?? "Not started";
     return {
       taskId: byColumn.get("task_id") ?? "",
-      status: byColumn.get("status") ?? "Not started",
+      status: fromSlackListSelectValue(rawStatus, statusLabels),
       situation: byColumn.get("situation") ?? "",
       category: byColumn.get("category") ?? "Uncategorized",
       deliverableUrl: byColumn.get("deliverable") || undefined,
@@ -114,18 +180,12 @@ export async function createDeliverablesList(
   client: SlackListClient,
   channelId: string,
 ): Promise<string> {
-  const response = await client.slackLists.create({
-    channel_id: channelId,
-    name: getListName("deliverables"),
-    schema: getSlackListSchema("deliverables"),
-  });
-
-  const listId = response.list_id ?? response.list?.id;
-  if (!listId) {
-    const detail = response.error ? `: ${response.error}` : "";
-    throw new Error(`Failed to create Deliverables list${detail}`);
-  }
-  return listId;
+  return await createListInChannel(
+    client,
+    channelId,
+    getListName("deliverables"),
+    getSlackListSchema("deliverables"),
+  );
 }
 
 /**
@@ -135,17 +195,10 @@ export async function createIncidentsList(
   client: SlackListClient,
   channelId: string,
 ): Promise<string> {
-  const response = await client.slackLists.create({
-    channel_id: channelId,
-    name: getListName("incidents"),
-    schema: getSlackListSchema("incidents"),
-  });
-
-  const listId = response.list_id ?? response.list?.id;
-  if (!listId) {
-    const detail = response.error ? `: ${response.error}` : "";
-    throw new Error(`Failed to create Incidents list${detail}`);
-  }
-  return listId;
+  return await createListInChannel(
+    client,
+    channelId,
+    getListName("incidents"),
+    getSlackListSchema("incidents"),
+  );
 }
-

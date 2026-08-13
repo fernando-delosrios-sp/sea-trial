@@ -85,7 +85,7 @@ Deno.test("updateDeliverableStatus dispatches Validation required canvas creatio
       },
     });
 
-    assertEquals(updatedStatus, "Validation required");
+    assertEquals(updatedStatus, "validation_required");
     assertEquals(result.canvasResult?.created, true);
     assertEquals(result.canvasResult?.canvasId, "canvas-delivery-1");
     assertEquals(replacedMarkdown.includes("consolidate_delivery"), true);

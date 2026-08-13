@@ -5,12 +5,13 @@
     {
       "key": "task_id",
       "name": "Task ID",
-      "type": "text"
+      "type": "text",
+      "is_primary_column": true
     },
     {
       "key": "assignee",
       "name": "Assignee",
-      "type": "user"
+      "type": "assignee"
     },
     {
       "key": "status",
@@ -36,7 +37,7 @@
     {
       "key": "due_date",
       "name": "Due date",
-      "type": "date"
+      "type": "due_date"
     },
     {
       "key": "deliverable",

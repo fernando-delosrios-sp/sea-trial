@@ -236,6 +236,9 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
         createOrder.push(`list:${params.name}`);
         return { list_id: `L-${params.name}` };
       },
+      access: {
+        set: async () => ({ ok: true }),
+      },
       items: {
         create: async () => ({ item: { id: "item1" } }),
         list: async () => ({ items: [] }),

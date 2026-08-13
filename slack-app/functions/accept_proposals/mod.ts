@@ -1,4 +1,5 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
+import { toSlackListSelectValue } from "../../lib/content/slack-list-schema.ts";
 import type { DeliverableProposal } from "@tes/shared/types/index.ts";
 import { replaceCanvasContent } from "../../lib/canvas.ts";
 import {
@@ -74,7 +75,7 @@ export default SlackFunction(
           initial_fields: [
             { column_id: "task_id", value: row.taskId },
             { column_id: "assignee", value: row.assignee },
-            { column_id: "status", value: row.status },
+            { column_id: "status", value: toSlackListSelectValue(row.status) },
             { column_id: "situation", value: row.situation },
             { column_id: "category", value: row.category },
             { column_id: "requirements", value: row.requirements },

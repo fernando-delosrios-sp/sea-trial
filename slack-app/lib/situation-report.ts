@@ -1,14 +1,10 @@
 import type { DeliverableStatus, TesEventContext } from "@tes/shared/types/index.ts";
-import Handlebars from "handlebars";
 import {
   getCustomerBucketDisplayName,
   mapToCustomerStatus,
   type CustomerStatusBucket,
 } from "./content/domain.ts";
-import { readContentText } from "./content/paths.ts";
-import {
-  validateCanvasTemplateSource,
-} from "./content/capability-validator.ts";
+import { TEMPLATES_BY_PATH } from "./content/embedded-templates.generated.ts";
 
 import {
   extractDeliveryExcerpt,
@@ -36,14 +32,14 @@ const EMPTY_STATE =
 
 export { extractDeliveryExcerpt };
 
-let cachedTemplate: Handlebars.TemplateDelegate | null = null;
+let cachedTemplate: ReturnType<typeof loadTemplate> | null = null;
 
-function loadTemplate(): Handlebars.TemplateDelegate {
-  if (cachedTemplate) return cachedTemplate;
-  const source = readContentText("canvases/situation-report.hbs.md");
-  validateCanvasTemplateSource(source, "canvases/situation-report.hbs.md");
-  cachedTemplate = Handlebars.compile(source, { strict: false, noEscape: true });
-  return cachedTemplate;
+function loadTemplate() {
+  const template = TEMPLATES_BY_PATH["canvases/situation-report.hbs.md"];
+  if (!template) {
+    throw new Error("Missing precompiled template canvases/situation-report.hbs.md");
+  }
+  return template;
 }
 
 /** Resets cached template — for tests only. */

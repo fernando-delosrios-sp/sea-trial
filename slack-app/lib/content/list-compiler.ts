@@ -3,6 +3,7 @@ import {
 } from "./capability-validator.ts";
 import { resolveListOptionsRef } from "./domain-ref-resolver.ts";
 import { readContentJson } from "./paths.ts";
+import { finalizeSlackListSchema } from "./slack-list-schema.ts";
 
 export interface ListColumnChoice {
   value: string;
@@ -20,6 +21,7 @@ export interface ListColumnDefinition {
   key: string;
   name: string;
   type: string;
+  is_primary_column?: boolean;
   options?: ListColumnOptions;
 }
 
@@ -27,6 +29,7 @@ export interface SlackListColumn {
   key: string;
   name: string;
   type: string;
+  is_primary_column?: boolean;
   options?: ListColumnOptions;
 }
 
@@ -106,7 +109,15 @@ function validateListDefinition(data: unknown, source: string): ListDefinition {
       }
     }
 
-    return { key, name: colName, type, options };
+    const isPrimaryColumn = column.is_primary_column === true;
+
+    return {
+      key,
+      name: colName,
+      type,
+      ...(isPrimaryColumn ? { is_primary_column: true } : {}),
+      options,
+    };
   });
 
   const seed = row.seed;
@@ -179,17 +190,21 @@ export function getListColumns(listName: string): ListColumnDefinition[] {
 
 /** Returns Slack API schema columns for list creation. */
 export function getSlackListSchema(listName: string): SlackListColumn[] {
-  return loadList(listName).columns.map((column) => {
+  const schema = loadList(listName).columns.map((column) => {
     const slackColumn: SlackListColumn = {
       key: column.key,
       name: column.name,
       type: column.type,
     };
+    if (column.is_primary_column) {
+      slackColumn.is_primary_column = true;
+    }
     if (column.options) {
       slackColumn.options = column.options;
     }
     return slackColumn;
   });
+  return finalizeSlackListSchema(schema);
 }
 
 /** Returns the display name for a list definition. */

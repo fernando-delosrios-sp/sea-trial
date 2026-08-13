@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-13 — Slack Lists API
+
+### Fixed
+
+- **Slack Lists creation** — Align list schemas with Slack Lists API (primary column, typed columns, select colors, snake_case values) and grant channel access after create instead of passing `channel_id`
+- **Hosted template rendering** — Precompile Handlebars canvas and message templates at build time alongside existing embedded content
+
+---
+
 ## 2026-08-12 — Hosted Slack Content
 
 ### Fixed

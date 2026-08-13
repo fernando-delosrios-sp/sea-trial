@@ -1,4 +1,3 @@
-import Handlebars from "handlebars";
 import type { TesEventContext } from "@tes/shared/types/index.ts";
 import {
   getContextFieldForSlot,
@@ -8,30 +7,18 @@ import {
 import {
   validateMessageBlocks,
 } from "./capability-validator.ts";
-import { readContentText } from "./paths.ts";
+import { TEMPLATES_BY_PATH } from "./embedded-templates.generated.ts";
 
-let cachedTemplate: Handlebars.TemplateDelegate | null = null;
-let helpersRegistered = false;
-
-function ensureHelpers(): void {
-  if (helpersRegistered) return;
-  Handlebars.registerHelper("json", (value: unknown) => {
-    return new Handlebars.SafeString(JSON.stringify(value));
-  });
-  helpersRegistered = true;
-}
-
-function loadPinnedIndexTemplate(): Handlebars.TemplateDelegate {
-  ensureHelpers();
-  if (cachedTemplate) return cachedTemplate;
-  const source = readContentText("messages/pinned-index.hbs.json");
-  cachedTemplate = Handlebars.compile(source, { strict: false, noEscape: true });
-  return cachedTemplate;
+function loadPinnedIndexTemplate() {
+  const template = TEMPLATES_BY_PATH["messages/pinned-index.hbs.json"];
+  if (!template) {
+    throw new Error("Missing precompiled template messages/pinned-index.hbs.json");
+  }
+  return template;
 }
 
 /** Resets cached message templates — for tests only. */
 export function resetMessageCacheForTests(): void {
-  cachedTemplate = null;
 }
 
 function resolveComposition(

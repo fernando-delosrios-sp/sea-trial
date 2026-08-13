@@ -207,6 +207,8 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   const listItemCreates: string[] = [];
   const listCreateParams: Array<Record<string, unknown>> = [];
   const listBookmarkAdds: string[] = [];
+  const canvasEditContents: string[] = [];
+  let onboardingTriggerCreates = 0;
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(null, { status: 200 });
 
@@ -244,7 +246,16 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
         );
         return { canvas_id: `C-${params.title}` };
       },
-      edit: async () => ({}),
+      edit: async (params: {
+        canvas_id: string;
+        changes: Array<{ document_content?: { markdown: string } }>;
+      }) => {
+        const markdown = params.changes.find((change) =>
+          change.document_content?.markdown
+        )?.document_content?.markdown;
+        if (markdown) canvasEditContents.push(markdown);
+        return {};
+      },
       sections: {
         lookup: async () => ({ sections: [] }),
       },
@@ -277,6 +288,23 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
     },
     pins: {
       add: async () => ({}),
+    },
+    workflows: {
+      triggers: {
+        create: async () => {
+          onboardingTriggerCreates += 1;
+          return {
+            ok: true,
+            trigger: {
+              id: "FtONBOARD123",
+              share_url: "https://slack.com/shortcuts/FtONBOARD123/abc",
+            },
+          };
+        },
+        permissions: {
+          add: async () => ({ ok: true }),
+        },
+      },
     },
   };
 
@@ -312,6 +340,14 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   assertEquals(
     createOrder.indexOf("canvas:Infrastructure") <
       createOrder.indexOf("list:Acme Corp Deliverables"),
+    true,
+  );
+  assertEquals(onboardingTriggerCreates, 1);
+  assertEquals(canvasEditContents.length > 0, true);
+  assertEquals(
+    canvasEditContents.some((content) =>
+      content.includes("https://slack.com/shortcuts/FtONBOARD123/abc")
+    ),
     true,
   );
   } finally {

@@ -101,5 +101,11 @@
     }
   ],
   "organization": [],
-  "automation": []
+  "automation": [
+    {
+      "slot": "onboarding_shortcut",
+      "kind": "trigger",
+      "ref": "onboarding"
+    }
+  ]
 }

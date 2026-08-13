@@ -30,6 +30,10 @@ import {
 } from "./message-renderer.ts";
 import { isKindProvisionable } from "./kind-registry.ts";
 import { buildOnboardingCanvasLink } from "../onboarding-canvas-link.ts";
+import {
+  provisionOnboardingChannelShortcut,
+  type OnboardingTriggerClient,
+} from "../onboarding-channel-trigger.ts";
 
 function resolveProvisionTeamId(
   env?: Record<string, string | undefined>,
@@ -54,7 +58,8 @@ export interface ProvisionInputs {
 }
 
 export interface ChannelProvisionClient
-  extends SlackCanvasClient, SlackListClient, CanvasAssetUploadClient {
+  extends SlackCanvasClient, SlackListClient, CanvasAssetUploadClient,
+    OnboardingTriggerClient {
   chat: {
     postMessage: (params: {
       channel: string;
@@ -188,20 +193,39 @@ async function attachProvisionedListChannels(
   }
 }
 
+async function provisionAutomation(
+  client: ChannelProvisionClient,
+  composition: CompositionManifest,
+  channelId: string,
+  dashboardCanvasId: string,
+): Promise<string | undefined> {
+  for (const entry of composition.automation ?? []) {
+    if (entry.ref !== "onboarding") continue;
+    return await provisionOnboardingChannelShortcut(
+      client,
+      channelId,
+      dashboardCanvasId,
+    );
+  }
+  return undefined;
+}
+
 async function finalizeDashboardCanvas(
   client: ChannelProvisionClient,
   channelId: string,
   context: TesEventContext,
   pinnedMessageTs?: string,
+  onboardingShortcutUrl?: string,
   env?: Record<string, string | undefined>,
 ): Promise<void> {
   if (!context.dashboardCanvasId) return;
 
-  const onboardingLink = buildOnboardingCanvasLink(
-    channelId,
-    pinnedMessageTs,
-    env,
-  );
+  const onboardingLink = onboardingShortcutUrl ??
+    buildOnboardingCanvasLink(
+      channelId,
+      pinnedMessageTs,
+      env,
+    );
   const content = await renderDashboardCanvasForSlack(
     client,
     channelId,
@@ -279,11 +303,21 @@ export async function provisionChannel(
     ) ?? pinnedMessageTs;
   }
 
+  const onboardingShortcutUrl = context.dashboardCanvasId
+    ? await provisionAutomation(
+      client,
+      composition,
+      inputs.channel_id,
+      context.dashboardCanvasId,
+    )
+    : undefined;
+
   await finalizeDashboardCanvas(
     client,
     inputs.channel_id,
     context,
     pinnedMessageTs,
+    onboardingShortcutUrl,
     inputs.env,
   );
 

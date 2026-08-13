@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-13 — Onboarding channel shortcuts
+
+### Added
+
+- **Onboarding channel shortcuts** — Provision a per-channel "Complete Onboarding" shortcut when a TES Event Channel is created; embed the shortcut URL on the dashboard canvas and route triggers through `OpenOnboardingWorkflow`
+
+---
+
 ## 2026-08-13 — List channel attachment
 
 ### Fixed

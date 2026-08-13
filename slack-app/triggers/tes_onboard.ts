@@ -1,12 +1,12 @@
 import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/mod.ts";
-import { OpenOnboardingFunction } from "../functions/open_onboarding/mod.ts";
+import OpenOnboardingWorkflow from "../workflows/open_onboarding.ts";
 
 const tesOnboardTrigger = {
   type: TriggerTypes.Shortcut,
   name: "TES Onboard",
   description:
-    "Legacy channel shortcut — prefer Complete onboarding on the pinned index (no Account pre-fill)",
-  workflow: `#/functions/${OpenOnboardingFunction.definition.callback_id}`,
+    "Legacy channel shortcut — prefer Complete onboarding on the pinned index",
+  workflow: `#/workflows/${OpenOnboardingWorkflow.definition.callback_id}`,
   inputs: {
     channel_id: {
       value: TriggerContextData.Shortcut.channel_id,

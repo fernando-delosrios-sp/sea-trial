@@ -21,7 +21,7 @@ triggers:
     trigger_def: triggers/complete_onboarding.ts
     scope: global
     channels: []
-    enabled: false  # block action on pinned index is primary; trigger def needs function→workflow fix
+    enabled: false  # per-channel shortcuts are provisioned at channel create; global remains optional
 
   - id: tes-onboard
     trigger_def: triggers/tes_onboard.ts

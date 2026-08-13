@@ -7,7 +7,9 @@ import {
   executeOnboardingSubmit,
   loadDashboardContentForButton,
   parseOnboardingForm,
+  type SlackOnboardingSubmitClient,
 } from "../../lib/onboarding-view-submit.ts";
+import type { CanvasSectionsClient } from "../../lib/canvas.ts";
 
 export const OpenOnboardingFunction = DefineFunction({
   callback_id: "open_onboarding",
@@ -18,29 +20,55 @@ export const OpenOnboardingFunction = DefineFunction({
       interactivity: { type: Schema.slack.types.interactivity },
       channel_id: { type: Schema.slack.types.channel_id },
       dashboard_canvas_content: { type: Schema.types.string },
+      dashboard_canvas_id: { type: Schema.types.string },
     },
-    required: ["interactivity", "channel_id", "dashboard_canvas_content"],
+    required: ["interactivity", "channel_id"],
   },
   output_parameters: { properties: {}, required: [] },
 });
 
+async function resolveDashboardCanvasContent(
+  client: Parameters<typeof loadDashboardContentForButton>[0],
+  inputs: {
+    dashboard_canvas_content?: string;
+    dashboard_canvas_id?: string;
+  },
+): Promise<string> {
+  const inline = inputs.dashboard_canvas_content?.trim() ?? "";
+  if (inline) return inline;
+
+  if (inputs.dashboard_canvas_id?.trim()) {
+    return await loadDashboardContentForButton(
+      client,
+      JSON.stringify({ dashboard_canvas_id: inputs.dashboard_canvas_id.trim() }),
+      "",
+    );
+  }
+
+  return "";
+}
+
 export default SlackFunction(
   OpenOnboardingFunction,
   async ({ inputs, client }) => {
-    if (!inputs.dashboard_canvas_content.trim()) {
+    const dashboardCanvasContent = await resolveDashboardCanvasContent(
+      client as unknown as CanvasSectionsClient,
+      inputs,
+    );
+    if (!dashboardCanvasContent) {
       return {
         error:
           "Dashboard content is unavailable. Use the Complete onboarding button on the pinned index message.",
       };
     }
 
-    const accountName = resolveAccountPrefill(inputs.dashboard_canvas_content);
+    const accountName = resolveAccountPrefill(dashboardCanvasContent);
 
     await client.views.open({
       interactivity_pointer: inputs.interactivity.interactivity_pointer,
       view: buildOnboardingModalView({
         channelId: inputs.channel_id,
-        dashboardCanvasContent: inputs.dashboard_canvas_content,
+        dashboardCanvasContent,
         accountName,
       }),
     });
@@ -56,7 +84,7 @@ export default SlackFunction(
     }
 
     const dashboardCanvasContent = await loadDashboardContentForButton(
-      client,
+      client as unknown as CanvasSectionsClient,
       typeof action.value === "string" ? action.value : undefined,
       "",
     );
@@ -77,13 +105,17 @@ export default SlackFunction(
 ).addViewSubmissionHandler(
   "submit_onboarding",
   async ({ view, client }) => {
+    if (!view.private_metadata) {
+      return { error: "Missing onboarding metadata." };
+    }
+
     const metadata = JSON.parse(view.private_metadata) as {
       channel_id: string;
       dashboard_canvas_content: string;
     };
 
     const result = await executeOnboardingSubmit(
-      client,
+      client as unknown as SlackOnboardingSubmitClient,
       metadata,
       parseOnboardingForm(view.state.values),
     );

@@ -1,15 +1,15 @@
 import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/mod.ts";
-import { OpenOnboardingFunction } from "../functions/open_onboarding/mod.ts";
+import OpenOnboardingWorkflow from "../workflows/open_onboarding.ts";
 
 /**
- * Link trigger for the pinned index "Complete onboarding" button.
- * Deploy with: slack trigger create --trigger-def triggers/complete_onboarding.ts
+ * Global shortcut fallback for opening onboarding (channel shortcuts are
+ * provisioned per TES Event Channel at create time).
  */
 const completeOnboardingTrigger = {
   type: TriggerTypes.Shortcut,
   name: "Complete Onboarding",
   description: "Open onboarding from the pinned index button",
-  workflow: `#/functions/${OpenOnboardingFunction.definition.callback_id}`,
+  workflow: `#/workflows/${OpenOnboardingWorkflow.definition.callback_id}`,
   inputs: {
     channel_id: {
       value: TriggerContextData.Shortcut.channel_id,

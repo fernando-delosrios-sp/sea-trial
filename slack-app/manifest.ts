@@ -13,6 +13,7 @@ import ConsolidateDeliveryFunction from "./functions/consolidate_delivery/mod.ts
 import MarkDeliveryReviewedFunction from "./functions/mark_delivery_reviewed/mod.ts";
 import HandleThreadReplyFunction from "./functions/handle_thread_reply/mod.ts";
 import CreateTesEventWorkflow from "./workflows/create_tes_event.ts";
+import OpenOnboardingWorkflow from "./workflows/open_onboarding.ts";
 import { buildOutgoingDomains } from "./lib/outgoing-domains.ts";
 
 loadSync({ export: true, allowEmptyValues: true });
@@ -38,7 +39,7 @@ export default Manifest({
     MarkDeliveryReviewedFunction,
     HandleThreadReplyFunction,
   ],
-  workflows: [CreateTesEventWorkflow],
+  workflows: [CreateTesEventWorkflow, OpenOnboardingWorkflow],
   outgoingDomains: buildOutgoingDomains(
     Deno.env.get("AGENT_SERVICE_URL"),
     Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"),
@@ -56,6 +57,7 @@ export default Manifest({
     "lists:read",
     "lists:write",
     "bookmarks:write",
+    "triggers:write",
   ],
 });
 

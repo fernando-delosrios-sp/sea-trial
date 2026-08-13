@@ -5,7 +5,6 @@
 import Handlebars from "handlebars";
 import { encodeBase64 } from "std/encoding/base64.ts";
 import { join } from "std/path/join.ts";
-import { validateCanvasTemplateSource } from "../lib/content/capability-validator.ts";
 
 const ROOT = new URL("../", import.meta.url).pathname;
 const OUT_CONTENT = join(ROOT, "lib/content/embedded-content.generated.ts");
@@ -74,6 +73,23 @@ function serializeJson(value: unknown): string {
 
 function serializeText(value: string): string {
   return JSON.stringify(value);
+}
+
+interface CanvasCatalog {
+  forbidden_patterns: string[];
+}
+
+/** Bootstrap-safe canvas validation — reads catalog from disk before embed output exists. */
+function validateCanvasTemplateSource(sourceText: string, source: string): void {
+  const catalogPath = join(ROOT, "schemas/content/capabilities/canvas.v1.json");
+  const catalog = JSON.parse(Deno.readTextFileSync(catalogPath)) as CanvasCatalog;
+  for (const pattern of catalog.forbidden_patterns) {
+    if (sourceText.includes(pattern)) {
+      throw new Error(
+        `${source} must not contain forbidden pattern "${pattern}" in author templates`,
+      );
+    }
+  }
 }
 
 const jsonEntries: string[] = [];

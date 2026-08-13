@@ -203,11 +203,11 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
 
   const createOrder: string[] = [];
   const listItemCreates: string[] = [];
+  const listBookmarkAdds: string[] = [];
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(null, { status: 200 });
 
   try {
-  Deno.env.set("SLACK_TEAM_ID", navTeamId);
   const client = {
     files: {
       getUploadURLExternal: async () => ({
@@ -247,7 +247,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
       },
     },
     slackLists: {
-      create: async (params: { name: string; channel_id?: string }) => {
+      create: async (params: { name: string }) => {
         createOrder.push(`list:${params.name}`);
         return { list_id: `L-${params.name}` };
       },
@@ -262,6 +262,12 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
         list: async () => ({ items: [] }),
       },
     },
+    bookmarks: {
+      add: async (params: { title: string; link: string }) => {
+        listBookmarkAdds.push(`${params.title}:${params.link}`);
+        return { ok: true };
+      },
+    },
     chat: {
       postMessage: async () => ({ ts: "1234.5678" }),
     },
@@ -273,6 +279,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   const context = await provisionChannel(client, {
     channel_id: "C999",
     project_name: "Demo",
+    env: { SLACK_TEAM_ID: navTeamId },
   });
 
   assertEquals(context.channelType, "tes-event");
@@ -289,8 +296,11 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   assertEquals(createOrder.indexOf("canvas:Infrastructure"), 4);
   assertEquals(createOrder.indexOf("canvas-standalone:Requirements"), 5);
   assertEquals(listItemCreates.length, 2);
+  assertEquals(listBookmarkAdds, [
+    `Deliverables:https://app.slack.com/lists/${navTeamId}/L-Deliverables`,
+    `Incidents:https://app.slack.com/lists/${navTeamId}/L-Incidents`,
+  ]);
   } finally {
-    Deno.env.delete("SLACK_TEAM_ID");
     globalThis.fetch = originalFetch;
   }
 });

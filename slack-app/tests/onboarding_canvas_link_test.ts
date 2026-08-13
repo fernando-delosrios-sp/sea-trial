@@ -13,19 +13,15 @@ Deno.test("buildPinnedMessageLink formats Slack archive URLs", () => {
 });
 
 Deno.test("buildOnboardingCanvasLink prefers trigger URL over pinned message", () => {
-  Deno.env.set("SLACK_ONBOARDING_TRIGGER_URL", "https://slack.com/shortcuts/onboarding");
-  try {
-    assertEquals(
-      buildOnboardingCanvasLink("C123", "1234.5678"),
-      "https://slack.com/shortcuts/onboarding",
-    );
-  } finally {
-    Deno.env.delete("SLACK_ONBOARDING_TRIGGER_URL");
-  }
+  assertEquals(
+    buildOnboardingCanvasLink("C123", "1234.5678", {
+      SLACK_ONBOARDING_TRIGGER_URL: "https://slack.com/shortcuts/onboarding",
+    }),
+    "https://slack.com/shortcuts/onboarding",
+  );
 });
 
 Deno.test("buildOnboardingCanvasLink falls back to pinned message link", () => {
-  Deno.env.delete("SLACK_ONBOARDING_TRIGGER_URL");
   assertEquals(
     buildOnboardingCanvasLink("C123", "1234.5678"),
     "https://app.slack.com/archives/C123/p12345678",
@@ -33,6 +29,5 @@ Deno.test("buildOnboardingCanvasLink falls back to pinned message link", () => {
 });
 
 Deno.test("resolveOnboardingTriggerUrl returns undefined when unset", () => {
-  Deno.env.delete("SLACK_ONBOARDING_TRIGGER_URL");
   assertEquals(resolveOnboardingTriggerUrl(), undefined);
 });

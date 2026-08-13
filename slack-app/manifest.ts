@@ -55,6 +55,7 @@ export default Manifest({
     "canvases:write",
     "lists:read",
     "lists:write",
+    "bookmarks:write",
   ],
 });
 

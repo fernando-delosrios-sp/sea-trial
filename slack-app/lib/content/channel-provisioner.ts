@@ -19,7 +19,6 @@ import {
   type CanvasAssetUploadClient,
 } from "./canvas-assets.ts";
 import {
-  renderDashboardCanvas,
   renderInfrastructureCanvas,
   renderRequirementsCanvas,
   renderSituationReportSeedCanvas,
@@ -31,8 +30,10 @@ import {
 import { isKindProvisionable } from "./kind-registry.ts";
 import { buildOnboardingCanvasLink } from "../onboarding-canvas-link.ts";
 
-function resolveProvisionTeamId(): string {
-  const teamId = Deno.env.get("SLACK_TEAM_ID")?.trim();
+function resolveProvisionTeamId(
+  env?: Record<string, string | undefined>,
+): string {
+  const teamId = env?.["SLACK_TEAM_ID"]?.trim();
   if (!teamId) {
     throw new Error(
       "SLACK_TEAM_ID is required to build pinned index navigation links",
@@ -48,10 +49,12 @@ export interface ProvisionInputs {
   salesforce_opportunity_url?: string;
   member_user_ids?: string[];
   context_notes?: string;
+  env?: Record<string, string | undefined>;
 }
 
 export interface ChannelProvisionClient
   extends SlackCanvasClient, SlackListClient, CanvasAssetUploadClient {
+  bookmarks: NonNullable<SlackListClient["bookmarks"]>;
   chat: {
     postMessage: (params: {
       channel: string;
@@ -73,7 +76,7 @@ async function provisionResource(
   entry: ProvisionEntry,
   channelId: string,
   context: TesEventContext,
-  options?: { skipDashboardAssets?: boolean },
+  env?: Record<string, string | undefined>,
 ): Promise<string> {
   if (!isKindProvisionable(entry.kind)) {
     throw new Error(
@@ -88,7 +91,6 @@ async function provisionResource(
         entry.ref,
         channelId,
         context,
-        options,
       );
       return await createCanvas(client, {
         ...(shouldAttachChannelTab(entry) ? { channelId } : {}),
@@ -97,11 +99,18 @@ async function provisionResource(
       });
     }
     case "list": {
+      const listOptions = shouldAttachChannelTab(entry)
+        ? {
+          attachToChannel: true,
+          teamId: resolveProvisionTeamId(env),
+        }
+        : { attachToChannel: false };
+
       if (entry.ref === "deliverables") {
-        return await createDeliverablesList(client, channelId);
+        return await createDeliverablesList(client, channelId, listOptions);
       }
       if (entry.ref === "incidents") {
-        return await createIncidentsList(client, channelId);
+        return await createIncidentsList(client, channelId, listOptions);
       }
       throw new Error(`Unknown list ref "${entry.ref}"`);
     }
@@ -115,7 +124,6 @@ async function renderCanvasContent(
   ref: string,
   channelId: string,
   context: TesEventContext,
-  options?: { skipDashboardAssets?: boolean },
 ): Promise<string> {
   switch (ref) {
     case "requirements":
@@ -125,9 +133,6 @@ async function renderCanvasContent(
     case "situation-report":
       return renderSituationReportSeedCanvas(context);
     case "dashboard":
-      if (options?.skipDashboardAssets) {
-        return renderDashboardCanvas(context);
-      }
       return await renderDashboardCanvasForSlack(client, channelId, context);
     default:
       throw new Error(`Unknown canvas ref "${ref}"`);
@@ -140,11 +145,12 @@ async function provisionChrome(
   channelId: string,
   context: TesEventContext,
   composition: CompositionManifest,
+  env?: Record<string, string | undefined>,
 ): Promise<string | undefined> {
   if (!isKindProvisionable(entry.kind)) return undefined;
 
   if (entry.kind === "message" && entry.ref === "pinned-index") {
-    const navOptions = { teamId: resolveProvisionTeamId() };
+    const navOptions = { teamId: resolveProvisionTeamId(env) };
     const indexMessage = await client.chat.postMessage({
       channel: channelId,
       text: renderPinnedIndexMessage(context, composition, navOptions),
@@ -166,10 +172,15 @@ async function finalizeDashboardCanvas(
   channelId: string,
   context: TesEventContext,
   pinnedMessageTs?: string,
+  env?: Record<string, string | undefined>,
 ): Promise<void> {
   if (!context.dashboardCanvasId) return;
 
-  const onboardingLink = buildOnboardingCanvasLink(channelId, pinnedMessageTs);
+  const onboardingLink = buildOnboardingCanvasLink(
+    channelId,
+    pinnedMessageTs,
+    env,
+  );
   const content = await renderDashboardCanvasForSlack(
     client,
     channelId,
@@ -220,7 +231,7 @@ export async function provisionChannel(
       entry,
       inputs.channel_id,
       context,
-      entry.ref === "dashboard" ? { skipDashboardAssets: true } : undefined,
+      inputs.env,
     );
     slotIds[entry.slot] = slackId;
     context = applySlotIds(context, composition, slotIds);
@@ -234,6 +245,7 @@ export async function provisionChannel(
       inputs.channel_id,
       context,
       composition,
+      inputs.env,
     ) ?? pinnedMessageTs;
   }
 
@@ -242,6 +254,7 @@ export async function provisionChannel(
     inputs.channel_id,
     context,
     pinnedMessageTs,
+    inputs.env,
   );
 
   return context;

@@ -8,8 +8,10 @@ export function buildPinnedMessageLink(
 }
 
 /** Optional workflow shortcut URL configured at deploy time. */
-export function resolveOnboardingTriggerUrl(): string | undefined {
-  const url = Deno.env.get("SLACK_ONBOARDING_TRIGGER_URL")?.trim();
+export function resolveOnboardingTriggerUrl(
+  env?: Record<string, string | undefined>,
+): string | undefined {
+  const url = env?.["SLACK_ONBOARDING_TRIGGER_URL"]?.trim();
   return url || undefined;
 }
 
@@ -17,8 +19,9 @@ export function resolveOnboardingTriggerUrl(): string | undefined {
 export function buildOnboardingCanvasLink(
   channelId: string,
   pinnedMessageTs?: string,
+  env?: Record<string, string | undefined>,
 ): string | undefined {
-  const triggerUrl = resolveOnboardingTriggerUrl();
+  const triggerUrl = resolveOnboardingTriggerUrl(env);
   if (triggerUrl) return triggerUrl;
   if (pinnedMessageTs) {
     return buildPinnedMessageLink(channelId, pinnedMessageTs);

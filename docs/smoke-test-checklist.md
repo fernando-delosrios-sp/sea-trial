@@ -23,6 +23,7 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 
 - [ ] Dashboard, Requirements, Infrastructure canvases exist
 - [ ] Deliverables and Incidents lists exist
+- [ ] Deliverables and Incidents appear as channel bookmarks (channel header) linking to each list
 - [ ] Pinned index message links all objects
 - [ ] Onboarding CTA visible when onboarding incomplete
 

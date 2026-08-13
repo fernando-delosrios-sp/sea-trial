@@ -38,7 +38,6 @@ require_in_file "$WORKFLOW" 'validate-config:' "$WORKFLOW must define validate-c
 require_in_file "$WORKFLOW" 'check_secret LLM_API_KEY' "validate-config must check LLM_API_KEY"
 require_in_file "$WORKFLOW" 'check_secret SLACK_SERVICE_TOKEN' "validate-config must check SLACK_SERVICE_TOKEN"
 require_in_file "$WORKFLOW" 'check_secret RENDER_API_KEY' "validate-config must check RENDER_API_KEY"
-require_in_file "$WORKFLOW" 'check_secret RENDER_DEPLOY_HOOK_URL' "validate-config must check RENDER_DEPLOY_HOOK_URL"
 require_in_file "$WORKFLOW" 'check_var AGENT_SERVICE_URL' "validate-config must check AGENT_SERVICE_URL"
 require_in_file "$WORKFLOW" 'check_var LLM_BASE_URL' "validate-config must check LLM_BASE_URL"
 require_in_file "$WORKFLOW" 'check_var LLM_MODEL' "validate-config must check LLM_MODEL"
@@ -59,8 +58,8 @@ require_in_file "$WORKFLOW" 'npm run build' \
   "deploy-agent-service must run npm run build"
 
 # Scenario: Render deploy completion verified via API (not health-only)
-require_in_file "$WORKFLOW" 'Trigger Render deploy and wait for completion' \
-  "$WORKFLOW must wait for Render deploy completion"
+require_in_file "$WORKFLOW" '/v1/services/\$\{RENDER_SERVICE_ID\}/deploys' \
+  "$WORKFLOW must trigger Render deploy via API"
 require_in_file "$WORKFLOW" 'Wait for agent-service health check' "$WORKFLOW must health-check agent-service"
 require_in_file "$WORKFLOW" '/health' "$WORKFLOW must curl /health"
 
@@ -87,7 +86,7 @@ TRIGGERS_CONFIG="$ROOT/slack-app/triggers.config.yaml"
 # Scenario: Secrets inventory documented
 for doc in "$README" "$CHECKLIST"; do
   [[ -f "$doc" ]] || fail "missing documentation file: $doc"
-  for key in LLM_API_KEY SLACK_SERVICE_TOKEN RENDER_API_KEY RENDER_DEPLOY_HOOK_URL \
+  for key in LLM_API_KEY SLACK_SERVICE_TOKEN RENDER_API_KEY \
     AGENT_SERVICE_URL LLM_BASE_URL LLM_MODEL RENDER_SERVICE_ID; do
     require_in_file "$doc" "$key" "$doc must document $key"
   done

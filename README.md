@@ -108,8 +108,7 @@ Configuration is stored in GitHub Secrets and Variables. A manual workflow deplo
 |--------|---------|
 | `LLM_API_KEY` | OpenAI-compatible API key for agent-service |
 | `SLACK_SERVICE_TOKEN` | Slack CLI service token for `slack deploy` |
-| `RENDER_API_KEY` | Render API key to sync agent-service env vars |
-| `RENDER_DEPLOY_HOOK_URL` | Render deploy hook URL for agent-service |
+| `RENDER_API_KEY` | Render API key to sync agent-service env vars and trigger deploys |
 | `OTEL_EXPORTER_OTLP_HEADERS` | Grafana Cloud OTLP authorization header (required when logging enabled) |
 
 ### GitHub Variables

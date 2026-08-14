@@ -21,7 +21,7 @@ triggers:
     trigger_def: triggers/complete_onboarding.ts
     scope: global
     channels: []
-    enabled: true  # shared deploy-time link trigger; channel provision grants access via permissions
+    enabled: false  # per-channel triggers.create at seed time surfaces Workflows tab bookmarks
 
   - id: tes-onboard
     trigger_def: triggers/tes_onboard.ts

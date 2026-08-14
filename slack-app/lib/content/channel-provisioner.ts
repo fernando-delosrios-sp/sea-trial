@@ -188,6 +188,7 @@ async function provisionWorkflowStep(
     },
     env,
     listedTriggers,
+    context.dashboardCanvasId,
   );
 }
 

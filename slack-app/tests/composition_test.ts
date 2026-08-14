@@ -340,19 +340,20 @@ Deno.test("navigation entry with unmapped step id throws", () => {
 });
 
 function buildWorkflowTriggerMock() {
+  let createCalls = 0;
   const permissionAdds: Record<string, unknown>[] = [];
-  const permissionSets: Record<string, unknown>[] = [];
 
   return {
+    createCalls: () => createCalls,
     permissionAdds: () => permissionAdds,
-    permissionSets: () => permissionSets,
     workflows: {
       triggers: {
+        create: async () => {
+          createCalls += 1;
+          const id = `FtONBOARD${createCalls}`;
+          return { ok: true, trigger: { id } };
+        },
         permissions: {
-          set: async (payload: Record<string, unknown>) => {
-            permissionSets.push(payload);
-            return { ok: true };
-          },
           add: async (payload: Record<string, unknown>) => {
             permissionAdds.push(payload);
             return { ok: true };
@@ -505,14 +506,15 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
       createOrder.indexOf("list:Acme Corp Deliverables"),
     true,
   );
+  assertEquals(workflowTriggerMock.createCalls(), 1);
   assertEquals(workflowTriggerMock.permissionAdds(), [{
-    trigger_id: "FtONBOARD123",
+    trigger_id: "FtONBOARD1",
     channel_ids: ["C999"],
   }]);
   assertEquals(canvasEditContents.length > 0, true);
   assertEquals(
     canvasEditContents.some((content) =>
-      content.includes("https://slack.com/shortcuts/FtONBOARD123")
+      content.includes("https://slack.com/shortcuts/FtONBOARD1")
     ),
     true,
   );
@@ -746,7 +748,7 @@ Deno.test("channel provisioner creates list without bookmark when flag absent", 
   assertEquals(listBookmarkAdds.length, 0);
 });
 
-Deno.test("channel provisioner reuses shared trigger across two channels", async () => {
+Deno.test("channel provisioner creates per-channel onboarding triggers", async () => {
   resetCompositionCacheForTests();
   resetKindCacheForTests();
   resetMessageCacheForTests();
@@ -814,9 +816,10 @@ Deno.test("channel provisioner reuses shared trigger across two channels", async
       env: provisionEnv,
     });
 
+    assertEquals(workflowTriggerMock.createCalls(), 2);
     assertEquals(workflowTriggerMock.permissionAdds(), [
-      { trigger_id: "FtONBOARD123", channel_ids: ["C111"] },
-      { trigger_id: "FtONBOARD123", channel_ids: ["C222"] },
+      { trigger_id: "FtONBOARD1", channel_ids: ["C111"] },
+      { trigger_id: "FtONBOARD2", channel_ids: ["C222"] },
     ]);
   } finally {
     globalThis.fetch = originalFetch;

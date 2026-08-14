@@ -161,8 +161,8 @@ export async function syncWorkflowTriggerEnvVars(
   }
 
   if (!envVars.SLACK_ONBOARDING_TRIGGER_ID) {
-    throw new Error(
-      "Complete Onboarding trigger not found after provision; cannot set SLACK_ONBOARDING_TRIGGER_ID",
+    console.log(
+      "[workflow-env] Complete Onboarding trigger not listed — skipping SLACK_ONBOARDING_TRIGGER_ID sync",
     );
   }
 }

@@ -6,28 +6,33 @@ import {
 } from "../lib/onboarding-channel-trigger.ts";
 
 const sharedTriggerId = "FtONBOARD123";
+const dashboardCanvasId = "F_DASHBOARD";
 
 function buildClient(
   handlers: {
-    set?: (payload: Record<string, unknown>) => Promise<{ ok: boolean }>;
-    add?: (payload: Record<string, unknown>) => Promise<{ ok: boolean }>;
+    create?: (payload: Record<string, unknown>) => Promise<{
+      ok: boolean;
+      trigger?: { id?: string; share_url?: string };
+      error?: string;
+    }>;
+    add?: (payload: Record<string, unknown>) => Promise<{ ok: boolean; error?: string }>;
     featured?: (payload: Record<string, unknown>) => Promise<{ ok: boolean }>;
   },
 ) {
-  const setPayloads: Record<string, unknown>[] = [];
+  const createPayloads: Record<string, unknown>[] = [];
   const addPayloads: Record<string, unknown>[] = [];
   const featuredPayloads: Record<string, unknown>[] = [];
 
   const client = {
     workflows: {
       triggers: {
+        create: handlers.create
+          ? async (payload: Record<string, unknown>) => {
+            createPayloads.push(payload);
+            return handlers.create!(payload);
+          }
+          : undefined,
         permissions: {
-          set: handlers.set
-            ? async (payload: Record<string, unknown>) => {
-              setPayloads.push(payload);
-              return handlers.set!(payload);
-            }
-            : undefined,
           add: async (payload: Record<string, unknown>) => {
             addPayloads.push(payload);
             return handlers.add
@@ -47,79 +52,60 @@ function buildClient(
     },
   };
 
-  return { client, setPayloads, addPayloads, featuredPayloads };
+  return { client, createPayloads, addPayloads, featuredPayloads };
 }
 
-Deno.test("associateWorkflowWithChannel grants bookmark access without creating trigger", async () => {
-  const { client, setPayloads, addPayloads } = buildClient({
-    set: async () => ({ ok: true }),
+Deno.test("provisionWorkflowChannelAssociation creates per-channel onboarding trigger for bookmark", async () => {
+  const { client, createPayloads, addPayloads } = buildClient({
+    create: async () => ({
+      ok: true,
+      trigger: { id: "FtCHANNEL123" },
+    }),
     add: async () => ({ ok: true }),
   });
 
-  const url = await associateWorkflowWithChannel(
+  const url = await provisionWorkflowChannelAssociation(
     client,
     "C999",
-    sharedTriggerId,
+    "open_onboarding_workflow",
     { bookmark: true },
+    undefined,
+    undefined,
+    dashboardCanvasId,
   );
 
-  assertEquals(url, `https://slack.com/shortcuts/${sharedTriggerId}`);
-  assertEquals(setPayloads, [{
-    trigger_id: sharedTriggerId,
-    permission_type: "named_entities",
-  }]);
+  assertEquals(url, "https://slack.com/shortcuts/FtCHANNEL123");
+  assertEquals(createPayloads.length, 1);
+  const inputs = createPayloads[0].inputs as Record<string, { value: unknown }>;
+  assertEquals(inputs.channel_id.value, "C999");
+  assertEquals(inputs.dashboard_canvas_id.value, dashboardCanvasId);
   assertEquals(addPayloads, [{
-    trigger_id: sharedTriggerId,
+    trigger_id: "FtCHANNEL123",
     channel_ids: ["C999"],
   }]);
 });
 
-Deno.test("provisionWorkflowChannelAssociation resolves shared trigger from env", async () => {
-  const { client, addPayloads } = buildClient({
-    set: async () => ({ ok: true }),
+Deno.test("provisionWorkflowChannelAssociation throws when dashboard canvas missing for bookmark", async () => {
+  const { client } = buildClient({
+    create: async () => ({ ok: true, trigger: { id: "FtCHANNEL123" } }),
     add: async () => ({ ok: true }),
   });
 
-  const url = await provisionWorkflowChannelAssociation(
-    client,
-    "C999",
-    "open_onboarding_workflow",
-    { bookmark: true },
-    { SLACK_ONBOARDING_TRIGGER_ID: sharedTriggerId },
+  await assertRejects(
+    () =>
+      provisionWorkflowChannelAssociation(
+        client,
+        "C999",
+        "open_onboarding_workflow",
+        { bookmark: true },
+      ),
+    Error,
+    "requires dashboard canvas to be provisioned first",
   );
-
-  assertEquals(url, `https://slack.com/shortcuts/${sharedTriggerId}`);
-  assertEquals(addPayloads.length, 1);
-  assertEquals(addPayloads[0].channel_ids, ["C999"]);
-});
-
-Deno.test("provisionWorkflowChannelAssociation resolves shared trigger from trigger list", async () => {
-  const { client, addPayloads } = buildClient({
-    set: async () => ({ ok: true }),
-    add: async () => ({ ok: true }),
-  });
-
-  const listedTriggers: ListedTrigger[] = [{
-    id: sharedTriggerId,
-    title: "Complete Onboarding",
-  }];
-
-  const url = await provisionWorkflowChannelAssociation(
-    client,
-    "C999",
-    "open_onboarding_workflow",
-    { bookmark: true },
-    {},
-    listedTriggers,
-  );
-
-  assertEquals(url, `https://slack.com/shortcuts/${sharedTriggerId}`);
-  assertEquals(addPayloads.length, 1);
 });
 
 Deno.test("associateWorkflowWithChannel calls workflows.featured.add when featured", async () => {
   const { client, featuredPayloads } = buildClient({
-    add: async () => ({ ok: true }),
     featured: async () => ({ ok: true }),
   });
 
@@ -137,8 +123,25 @@ Deno.test("associateWorkflowWithChannel calls workflows.featured.add when featur
   }]);
 });
 
-Deno.test("provisionWorkflowChannelAssociation throws when trigger id missing and bookmark requested", async () => {
-  const { client } = buildClient({ add: async () => ({ ok: true }) });
+Deno.test("provisionWorkflowChannelAssociation resolves shared trigger for featured only", async () => {
+  const { client, featuredPayloads } = buildClient({
+    featured: async () => ({ ok: true }),
+  });
+
+  const url = await provisionWorkflowChannelAssociation(
+    client,
+    "C999",
+    "open_onboarding_workflow",
+    { featured: true },
+    { SLACK_ONBOARDING_TRIGGER_ID: sharedTriggerId },
+  );
+
+  assertEquals(url, `https://slack.com/shortcuts/${sharedTriggerId}`);
+  assertEquals(featuredPayloads.length, 1);
+});
+
+Deno.test("provisionWorkflowChannelAssociation throws when shared trigger missing for featured", async () => {
+  const { client } = buildClient({ featured: async () => ({ ok: true }) });
 
   await assertRejects(
     () =>
@@ -146,7 +149,7 @@ Deno.test("provisionWorkflowChannelAssociation throws when trigger id missing an
         client,
         "C999",
         "open_onboarding_workflow",
-        { bookmark: true },
+        { featured: true },
       ),
     Error,
     'Cannot resolve deploy-time trigger for workflow link "open_onboarding_workflow"',
@@ -164,8 +167,30 @@ Deno.test("provisionWorkflowChannelAssociation throws for unknown workflow link"
         "unknown_workflow_link",
         { bookmark: true },
         { SLACK_ONBOARDING_TRIGGER_ID: sharedTriggerId },
+        undefined,
+        dashboardCanvasId,
       ),
     Error,
     'Unknown workflow link "unknown_workflow_link"',
   );
+});
+
+Deno.test("provisionWorkflowChannelAssociation falls back to trigger list for featured", async () => {
+  const { client } = buildClient({ featured: async () => ({ ok: true }) });
+
+  const listedTriggers: ListedTrigger[] = [{
+    id: sharedTriggerId,
+    title: "Complete Onboarding",
+  }];
+
+  const url = await provisionWorkflowChannelAssociation(
+    client,
+    "C999",
+    "open_onboarding_workflow",
+    { featured: true },
+    {},
+    listedTriggers,
+  );
+
+  assertEquals(url, `https://slack.com/shortcuts/${sharedTriggerId}`);
 });

@@ -6,8 +6,10 @@ import {
   parseTriggerListOutput,
   parseTriggersConfig,
   writeTriggerDefinitionFile,
+  type ListedTrigger,
   type ProvisionTarget,
 } from "../lib/triggers-config.ts";
+import { buildWorkflowTriggerEnvVars } from "../lib/workflow-trigger-registry.ts";
 
 export interface SlackCommandRunner {
   run(args: string[]): Promise<{ code: number; stdout: string; stderr: string }>;
@@ -128,6 +130,43 @@ function extractTriggerId(output: string): string | undefined {
   return match?.[1];
 }
 
+export async function syncWorkflowTriggerEnvVars(
+  runner: SlackCommandRunner,
+  appId: string,
+  token: string,
+  listed: ListedTrigger[],
+): Promise<void> {
+  const envVars = buildWorkflowTriggerEnvVars(listed);
+
+  for (const [key, value] of Object.entries(envVars)) {
+    const result = await runner.run([
+      "env",
+      "set",
+      key,
+      value,
+      "--app",
+      appId,
+      "--token",
+      token,
+      "-s",
+    ]);
+
+    if (result.code !== 0) {
+      throw new Error(
+        `slack env set ${key} failed: ${result.stderr || result.stdout}`,
+      );
+    }
+
+    console.log(`[workflow-env] set ${key}=${value}`);
+  }
+
+  if (!envVars.SLACK_ONBOARDING_TRIGGER_ID) {
+    throw new Error(
+      "Complete Onboarding trigger not found after provision; cannot set SLACK_ONBOARDING_TRIGGER_ID",
+    );
+  }
+}
+
 export async function provisionTriggersFromConfig(options: {
   rootDir: string;
   runner: SlackCommandRunner;
@@ -165,6 +204,11 @@ export async function provisionTriggersFromConfig(options: {
       `[${target.configId}] ${existing ? "updated" : "created"}: ${target.title}`,
     );
   }
+
+  const listedAfter = parseTriggerListOutput(
+    await listTriggers(options.runner, appId, token),
+  );
+  await syncWorkflowTriggerEnvVars(options.runner, appId, token, listedAfter);
 }
 
 if (import.meta.main) {

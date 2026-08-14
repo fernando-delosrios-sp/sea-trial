@@ -1,6 +1,7 @@
 import { assertEquals } from "std/assert/mod.ts";
 import {
   isKnownWorkflowLink,
+  buildWorkflowTriggerEnvVars,
   resolveWorkflowTriggerId,
   resolveWorkflowTriggerShareUrl,
 } from "../lib/workflow-trigger-registry.ts";
@@ -46,6 +47,19 @@ Deno.test("resolveWorkflowTriggerId returns undefined when env and list miss", (
       { id: "FtOTHER", title: "Other Trigger" },
     ]),
     undefined,
+  );
+});
+
+Deno.test("buildWorkflowTriggerEnvVars maps onboarding trigger from list", () => {
+  const envVars = buildWorkflowTriggerEnvVars([
+    { id: "FtONBOARD123", title: "Complete Onboarding" },
+    { id: "FtCREATE", title: "Create TES Event" },
+  ]);
+
+  assertEquals(envVars.SLACK_ONBOARDING_TRIGGER_ID, "FtONBOARD123");
+  assertEquals(
+    envVars.SLACK_ONBOARDING_TRIGGER_URL,
+    "https://slack.com/shortcuts/FtONBOARD123",
   );
 });
 

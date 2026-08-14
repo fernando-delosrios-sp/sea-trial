@@ -50,7 +50,11 @@ export async function associateWorkflowWithChannel(
         permission_type: "named_entities",
       });
       if (!basePermissions.ok) {
-        return undefined;
+        throw new Error(
+          `Failed to set workflow trigger permissions for ${triggerId}${
+            basePermissions.error ? `: ${basePermissions.error}` : ""
+          }`,
+        );
       }
     }
 
@@ -60,7 +64,11 @@ export async function associateWorkflowWithChannel(
     });
 
     if (!accessResponse.ok) {
-      return undefined;
+      throw new Error(
+        `Failed to grant workflow trigger ${triggerId} access to channel ${channelId}${
+          accessResponse.error ? `: ${accessResponse.error}` : ""
+        }`,
+      );
     }
   }
 
@@ -70,7 +78,11 @@ export async function associateWorkflowWithChannel(
       trigger_ids: [triggerId],
     });
     if (!featuredResponse.ok) {
-      return undefined;
+      throw new Error(
+        `Failed to feature workflow trigger ${triggerId} in channel ${channelId}${
+          featuredResponse.error ? `: ${featuredResponse.error}` : ""
+        }`,
+      );
     }
   }
 
@@ -95,6 +107,11 @@ export async function provisionWorkflowChannelAssociation(
 
   const triggerId = resolveWorkflowTriggerId(link, env, listedTriggers);
   if (!triggerId) {
+    if (options.bookmark === true || options.featured === true) {
+      throw new Error(
+        `Cannot resolve deploy-time trigger for workflow link "${link}" — set SLACK_ONBOARDING_TRIGGER_ID or redeploy triggers`,
+      );
+    }
     return undefined;
   }
 

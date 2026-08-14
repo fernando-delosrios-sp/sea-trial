@@ -137,17 +137,20 @@ Deno.test("associateWorkflowWithChannel calls workflows.featured.add when featur
   }]);
 });
 
-Deno.test("provisionWorkflowChannelAssociation returns undefined when trigger id missing", async () => {
+Deno.test("provisionWorkflowChannelAssociation throws when trigger id missing and bookmark requested", async () => {
   const { client } = buildClient({ add: async () => ({ ok: true }) });
 
-  const url = await provisionWorkflowChannelAssociation(
-    client,
-    "C999",
-    "open_onboarding_workflow",
-    { bookmark: true },
+  await assertRejects(
+    () =>
+      provisionWorkflowChannelAssociation(
+        client,
+        "C999",
+        "open_onboarding_workflow",
+        { bookmark: true },
+      ),
+    Error,
+    'Cannot resolve deploy-time trigger for workflow link "open_onboarding_workflow"',
   );
-
-  assertEquals(url, undefined);
 });
 
 Deno.test("provisionWorkflowChannelAssociation throws for unknown workflow link", async () => {

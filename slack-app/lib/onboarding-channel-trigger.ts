@@ -1,5 +1,6 @@
 import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/mod.ts";
 import type { ListedTrigger } from "./triggers-config.ts";
+import type { SlackListApiCallResponse, SlackListClient } from "./lists.ts";
 import OpenOnboardingWorkflow from "../workflows/open_onboarding.ts";
 import {
   isKnownWorkflowLink,
@@ -12,18 +13,19 @@ export interface WorkflowAssociationOptions {
   featured?: true;
 }
 
+type SlackApiResponse = SlackListApiCallResponse & {
+  trigger?: {
+    id?: string;
+    share_url?: string;
+    shortcut_url?: string;
+  };
+};
+
 export interface WorkflowTriggerClient {
+  apiCall?: SlackListClient["apiCall"];
   workflows: {
     triggers: {
-      create?: (payload: Record<string, unknown>) => Promise<{
-        ok?: boolean;
-        error?: string;
-        trigger?: {
-          id?: string;
-          share_url?: string;
-          shortcut_url?: string;
-        };
-      }>;
+      create?: (payload: Record<string, unknown>) => Promise<SlackApiResponse>;
       permissions: {
         set?: (payload: {
           trigger_id: string;
@@ -53,9 +55,114 @@ function resolveTriggerShareUrl(
   return undefined;
 }
 
+async function callWorkflowApi(
+  client: WorkflowTriggerClient,
+  method: string,
+  params: Record<string, unknown>,
+): Promise<{ ok?: boolean; error?: string }> {
+  if (method === "workflows.triggers.permissions.set") {
+    const set = client.workflows.triggers.permissions.set;
+    if (set) {
+      return set(params as { trigger_id: string; permission_type?: string });
+    }
+  }
+
+  if (method === "workflows.triggers.permissions.add") {
+    return client.workflows.triggers.permissions.add(
+      params as { trigger_id: string; channel_ids?: string[] },
+    );
+  }
+
+  if (method === "workflows.featured.add") {
+    const add = client.workflows.featured?.add;
+    if (add) {
+      return add(
+        params as { channel_id: string; trigger_ids: string[] },
+      );
+    }
+  }
+
+  if (client.apiCall) {
+    return client.apiCall(method, params);
+  }
+
+  throw new Error(`Client does not support ${method}`);
+}
+
 /**
- * Creates a channel-scoped onboarding shortcut and grants channel access.
- * This is the supported path for Workflows tab bookmark surfacing.
+ * Restricts a trigger to named entities and grants the channel run access.
+ * Populates the Workflows tab bookmarked list for link triggers.
+ */
+async function grantChannelTriggerAccess(
+  client: WorkflowTriggerClient,
+  triggerId: string,
+  channelId: string,
+): Promise<void> {
+  const setResponse = await callWorkflowApi(
+    client,
+    "workflows.triggers.permissions.set",
+    {
+      trigger_id: triggerId,
+      permission_type: "named_entities",
+    },
+  );
+
+  if (!setResponse.ok) {
+    throw new Error(
+      `Failed to set workflow trigger permissions for ${triggerId}${
+        setResponse.error ? `: ${setResponse.error}` : ""
+      }`,
+    );
+  }
+
+  const accessResponse = await callWorkflowApi(
+    client,
+    "workflows.triggers.permissions.add",
+    {
+      trigger_id: triggerId,
+      channel_ids: [channelId],
+    },
+  );
+
+  if (!accessResponse.ok) {
+    throw new Error(
+      `Failed to grant workflow trigger ${triggerId} access to channel ${channelId}${
+        accessResponse.error ? `: ${accessResponse.error}` : ""
+      }`,
+    );
+  }
+}
+
+/**
+ * Ensures the channel Workflows header tab exists and lists the trigger.
+ * Slack exposes no bookmark-only tab API; featured.add creates the tab surface.
+ */
+async function ensureWorkflowsChannelTab(
+  client: WorkflowTriggerClient,
+  channelId: string,
+  triggerId: string,
+): Promise<void> {
+  const featuredResponse = await callWorkflowApi(
+    client,
+    "workflows.featured.add",
+    {
+      channel_id: channelId,
+      trigger_ids: [triggerId],
+    },
+  );
+
+  if (!featuredResponse.ok) {
+    throw new Error(
+      `Failed to add workflow trigger ${triggerId} to channel ${channelId} Workflows tab${
+        featuredResponse.error ? `: ${featuredResponse.error}` : ""
+      }`,
+    );
+  }
+}
+
+/**
+ * Creates a channel-scoped onboarding shortcut, grants access, and surfaces
+ * it in the channel Workflows tab.
  */
 async function createChannelOnboardingTrigger(
   client: WorkflowTriggerClient,
@@ -89,18 +196,9 @@ async function createChannelOnboardingTrigger(
     );
   }
 
-  const accessResponse = await client.workflows.triggers.permissions.add({
-    trigger_id: triggerResponse.trigger.id,
-    channel_ids: [channelId],
-  });
-
-  if (!accessResponse.ok) {
-    throw new Error(
-      `${
-        `Failed to grant onboarding trigger access to channel ${channelId}`
-      }${accessResponse.error ? `: ${accessResponse.error}` : ""}`,
-    );
-  }
+  const triggerId = triggerResponse.trigger.id;
+  await grantChannelTriggerAccess(client, triggerId, channelId);
+  await ensureWorkflowsChannelTab(client, channelId, triggerId);
 
   const shareUrl = resolveTriggerShareUrl(triggerResponse.trigger);
   if (!shareUrl) {
@@ -114,7 +212,7 @@ async function createChannelOnboardingTrigger(
 
 /**
  * Grants a shared deploy-time workflow trigger channel-scoped run access and
- * optional Workflows tab featured surfacing.
+ * optional Workflows tab surfacing.
  */
 export async function associateWorkflowWithChannel(
   client: WorkflowTriggerClient,
@@ -122,18 +220,13 @@ export async function associateWorkflowWithChannel(
   triggerId: string,
   options: WorkflowAssociationOptions = {},
 ): Promise<string | undefined> {
-  if (options.featured === true && client.workflows.featured?.add) {
-    const featuredResponse = await client.workflows.featured.add({
-      channel_id: channelId,
-      trigger_ids: [triggerId],
-    });
-    if (!featuredResponse.ok) {
-      throw new Error(
-        `Failed to feature workflow trigger ${triggerId} in channel ${channelId}${
-          featuredResponse.error ? `: ${featuredResponse.error}` : ""
-        }`,
-      );
-    }
+  if (options.bookmark === true) {
+    await grantChannelTriggerAccess(client, triggerId, channelId);
+    await ensureWorkflowsChannelTab(client, channelId, triggerId);
+  }
+
+  if (options.featured === true) {
+    await ensureWorkflowsChannelTab(client, channelId, triggerId);
   }
 
   return resolveWorkflowTriggerShareUrl(triggerId);
@@ -170,7 +263,7 @@ export async function provisionWorkflowChannelAssociation(
 
   const triggerId = resolveWorkflowTriggerId(link, env, listedTriggers);
   if (!triggerId) {
-    if (options.featured === true) {
+    if (options.bookmark === true || options.featured === true) {
       throw new Error(
         `Cannot resolve deploy-time trigger for workflow link "${link}" — set SLACK_ONBOARDING_TRIGGER_ID or redeploy triggers`,
       );

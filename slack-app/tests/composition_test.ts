@@ -341,11 +341,15 @@ Deno.test("navigation entry with unmapped step id throws", () => {
 
 function buildWorkflowTriggerMock() {
   let createCalls = 0;
+  const permissionSets: Record<string, unknown>[] = [];
   const permissionAdds: Record<string, unknown>[] = [];
+  const featuredAdds: Record<string, unknown>[] = [];
 
   return {
     createCalls: () => createCalls,
+    permissionSets: () => permissionSets,
     permissionAdds: () => permissionAdds,
+    featuredAdds: () => featuredAdds,
     workflows: {
       triggers: {
         create: async () => {
@@ -354,6 +358,10 @@ function buildWorkflowTriggerMock() {
           return { ok: true, trigger: { id } };
         },
         permissions: {
+          set: async (payload: Record<string, unknown>) => {
+            permissionSets.push(payload);
+            return { ok: true };
+          },
           add: async (payload: Record<string, unknown>) => {
             permissionAdds.push(payload);
             return { ok: true };
@@ -361,7 +369,10 @@ function buildWorkflowTriggerMock() {
         },
       },
       featured: {
-        add: async () => ({ ok: true }),
+        add: async (payload: Record<string, unknown>) => {
+          featuredAdds.push(payload);
+          return { ok: true };
+        },
       },
     },
   };
@@ -507,9 +518,17 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
     true,
   );
   assertEquals(workflowTriggerMock.createCalls(), 1);
+  assertEquals(workflowTriggerMock.permissionSets(), [{
+    trigger_id: "FtONBOARD1",
+    permission_type: "named_entities",
+  }]);
   assertEquals(workflowTriggerMock.permissionAdds(), [{
     trigger_id: "FtONBOARD1",
     channel_ids: ["C999"],
+  }]);
+  assertEquals(workflowTriggerMock.featuredAdds(), [{
+    channel_id: "C999",
+    trigger_ids: ["FtONBOARD1"],
   }]);
   assertEquals(canvasEditContents.length > 0, true);
   assertEquals(
@@ -817,9 +836,9 @@ Deno.test("channel provisioner creates per-channel onboarding triggers", async (
     });
 
     assertEquals(workflowTriggerMock.createCalls(), 2);
-    assertEquals(workflowTriggerMock.permissionAdds(), [
-      { trigger_id: "FtONBOARD1", channel_ids: ["C111"] },
-      { trigger_id: "FtONBOARD2", channel_ids: ["C222"] },
+    assertEquals(workflowTriggerMock.featuredAdds(), [
+      { channel_id: "C111", trigger_ids: ["FtONBOARD1"] },
+      { channel_id: "C222", trigger_ids: ["FtONBOARD2"] },
     ]);
   } finally {
     globalThis.fetch = originalFetch;

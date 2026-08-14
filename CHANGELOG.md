@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-14 — Simplified channel composition
+
+### Changed
+
+- **Channel composition manifest** — Replace multi-plane `tes-event.json` (resources, chrome, navigation, runtime maps) with ordered `steps[]`; canvases opt in to channel tabs via `"tab": true`, lists opt in to Bookmarks bar links via `"bookmark": true`
+- **Pinned index** — Derive navigation links from composition steps with `title` instead of a separate `navigation.entries` block
+- **List channel attachment** — Provisioner adds list bookmarks directly when `bookmark: true`; skip native list-tab API probes on the manifest-driven path
+
+---
+
 ## 2026-08-13 — Onboarding channel shortcuts
 
 ### Added

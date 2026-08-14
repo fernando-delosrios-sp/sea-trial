@@ -1,8 +1,5 @@
-# channel-composition Specification
+## MODIFIED Requirements
 
-## Purpose
-Declarative blueprint for TES Event Channel structure — which Slack objects compose a channel, provisioning order, step linking, and navigation.
-## Requirements
 ### Requirement: Channel composition manifest
 
 The slack-app SHALL define channel structure in a versioned JSON manifest under `slack-app/content/channels/`. The manifest SHALL declare an ordered `steps` array. Each step SHALL have a stable `id`, a `kind` (`canvas`, `list`, or `workflow`), and kind-specific fields validated by JSON Schema. Canvas and list steps SHALL reference content templates via `ref`. Workflow steps SHALL reference deploy-time app workflows via `link`. Optional `title` MAY label a step for pinned index derivation. The `tes-event` manifest SHALL include a `situation_report` canvas step.
@@ -43,6 +40,16 @@ The slack-app SHALL define channel structure in a versioned JSON manifest under 
 - **THEN** steps SHALL be executed in manifest array order
 - **AND** cyclic or unknown `after` dependencies SHALL be rejected with a clear error when `after` is introduced in a future manifest version
 
+### Requirement: Slot-based context linking
+
+Object IDs provisioned during channel create SHALL be stored using step `id` identifiers. The provisioner SHALL bridge step IDs to flat `TesEventContext` fields for backward compatibility using an internal id-to-field map maintained in code (not in the manifest).
+
+#### Scenario: Slot map populates context fields
+
+- **GIVEN** provisioning completes for steps `dashboard`, `requirements`, and `deliverables`
+- **WHEN** context is serialized to Dashboard metadata
+- **THEN** `dashboardCanvasId`, `requirementsCanvasId`, and `deliverablesListId` SHALL contain the provisioned Slack IDs
+
 ### Requirement: Kind registry
 
 The slack-app SHALL maintain an open kind registry under `slack-app/content/kinds/*.v1.json`. Each kind SHALL declare `api_availability` (`stable`, `preview`, `planned`). Only kinds with `api_availability: stable` SHALL be provisioned.
@@ -59,15 +66,7 @@ The slack-app SHALL maintain an open kind registry under `slack-app/content/kind
 - **WHEN** channel provisioning runs
 - **THEN** the step SHALL be skipped without error
 
-### Requirement: Slot-based context linking
-
-Object IDs provisioned during channel create SHALL be stored using step `id` identifiers. The provisioner SHALL bridge step IDs to flat `TesEventContext` fields for backward compatibility using an internal id-to-field map maintained in code (not in the manifest).
-
-#### Scenario: Slot map populates context fields
-
-- **GIVEN** provisioning completes for steps `dashboard`, `requirements`, and `deliverables`
-- **WHEN** context is serialized to Dashboard metadata
-- **THEN** `dashboardCanvasId`, `requirementsCanvasId`, and `deliverablesListId` SHALL contain the provisioned Slack IDs
+## ADDED Requirements
 
 ### Requirement: Opt-in channel surfacing
 
@@ -114,3 +113,11 @@ The pinned index message SHALL derive navigable object links from manifest `step
 - **GIVEN** `tes-event.json` includes a titled `situation_report` canvas step
 - **WHEN** the pinned index message is rendered
 - **THEN** a link to the Situation Report canvas SHALL be present
+
+## REMOVED Requirements
+
+### Requirement: Navigation auto-generation
+
+**Reason**: Navigation duplicated step declarations; pinned index now derives from `steps` with `title`.
+
+**Migration**: Remove `navigation` from channel manifests; ensure each indexed object has `title` on its step.

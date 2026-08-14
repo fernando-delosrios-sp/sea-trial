@@ -40,6 +40,7 @@ Deno.test("Open onboarding form — Account is pre-filled from TesEventContext.a
     dashboardCanvasContent: dashboardContent,
     accountName: resolveAccountPrefill(dashboardContent),
   }) as {
+    private_metadata: string;
     blocks: Array<{
       block_id: string;
       element: { initial_value?: string };
@@ -50,6 +51,16 @@ Deno.test("Open onboarding form — Account is pre-filled from TesEventContext.a
   const accountBlock = view.blocks.find((block) => block.block_id === "account_name");
   assertEquals(accountBlock?.label.text, "Account");
   assertEquals(accountBlock?.element.initial_value, "Acme Corp");
+
+  const metadata = JSON.parse(view.private_metadata) as {
+    channel_id: string;
+    dashboard_canvas_id: string;
+    dashboard_canvas_content?: string;
+  };
+  assertEquals(metadata.channel_id, "C1");
+  assertEquals(metadata.dashboard_canvas_id, "dash-1");
+  assertEquals(metadata.dashboard_canvas_content, undefined);
+  assertEquals(view.private_metadata.length <= 3000, true);
 });
 
 Deno.test("Submit onboarding updates context and dashboard", () => {

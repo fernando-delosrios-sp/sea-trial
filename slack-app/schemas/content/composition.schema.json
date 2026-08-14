@@ -1,113 +1,68 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": [
-    "version",
-    "channel_type",
-    "runtime",
-    "resources",
-    "navigation"
-  ],
+  "required": ["version", "steps"],
   "properties": {
     "version": { "type": "string", "minLength": 1 },
-    "channel_type": { "type": "string", "minLength": 1 },
-    "runtime": {
-      "type": "object",
-      "required": ["context_slot_map"],
-      "properties": {
-        "context_slot_map": {
-          "type": "object",
-          "additionalProperties": { "type": "string", "minLength": 1 }
-        }
-      },
-      "additionalProperties": false
-    },
-    "resources": {
+    "steps": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/provisionEntry" }
-    },
-    "chrome": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/provisionEntry" }
-    },
-    "gates": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id"],
-        "properties": {
-          "id": { "type": "string" },
-          "blocks": { "type": "array", "items": { "type": "string" } },
-          "until": { "type": "object" },
-          "modal_ref": { "type": "string" }
-        }
-      }
-    },
-    "modals": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["ref", "kind"],
-        "properties": {
-          "ref": { "type": "string" },
-          "kind": { "type": "string" }
-        }
-      }
-    },
-    "navigation": {
-      "type": "object",
-      "required": ["title", "entries"],
-      "properties": {
-        "title": { "type": "string" },
-        "entries": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "object",
-            "required": ["slot", "label", "link_type"],
-            "properties": {
-              "slot": { "type": "string" },
-              "label": { "type": "string" },
-              "link_type": { "enum": ["canvas", "list"] }
-            },
-            "additionalProperties": false
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "dynamic_resources": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/provisionEntry" }
-    },
-    "organization": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/provisionEntry" }
-    },
-    "automation": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/provisionEntry" }
+      "items": { "$ref": "#/$defs/step" }
     }
   },
   "additionalProperties": false,
   "$defs": {
-    "provisionEntry": {
+    "step": {
       "type": "object",
-      "required": ["slot", "kind", "ref"],
+      "required": ["id", "kind"],
       "properties": {
-        "slot": { "type": "string", "minLength": 1 },
-        "kind": { "type": "string", "minLength": 1 },
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["canvas", "list", "workflow"] },
         "ref": { "type": "string", "minLength": 1 },
+        "link": { "type": "string", "minLength": 1 },
         "title": { "type": "string" },
-        "depends_on": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        },
-        "pin": { "type": "boolean" },
-        "created_by": { "type": "string" },
-        "channel_tab": { "type": "boolean" }
+        "tab": { "const": true },
+        "bookmark": { "const": true }
       },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "canvas" } } },
+          "then": {
+            "required": ["ref"],
+            "not": {
+              "anyOf": [
+                { "required": ["link"] },
+                { "required": ["bookmark"] }
+              ]
+            }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "list" } } },
+          "then": {
+            "required": ["ref"],
+            "not": {
+              "anyOf": [
+                { "required": ["link"] },
+                { "required": ["tab"] }
+              ]
+            }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "workflow" } } },
+          "then": {
+            "required": ["link"],
+            "not": {
+              "anyOf": [
+                { "required": ["ref"] },
+                { "required": ["tab"] },
+                { "required": ["bookmark"] }
+              ]
+            }
+          }
+        }
+      ],
       "additionalProperties": false
     }
   }

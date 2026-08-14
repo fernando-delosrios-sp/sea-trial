@@ -1,111 +1,51 @@
 {
   "version": "1.0.0",
-  "channel_type": "tes-event",
-  "runtime": {
-    "context_slot_map": {
-      "dashboard": "dashboardCanvasId",
-      "requirements": "requirementsCanvasId",
-      "infrastructure": "infrastructureCanvasId",
-      "deliverables": "deliverablesListId",
-      "incidents": "incidentsListId",
-      "situation_report": "situationReportCanvasId"
-    }
-  },
-  "resources": [
+  "steps": [
     {
-      "slot": "dashboard",
+      "id": "dashboard",
       "kind": "canvas",
       "ref": "dashboard",
-      "title": "Dashboard"
+      "title": "Dashboard",
+      "tab": true
     },
     {
-      "slot": "situation_report",
+      "id": "situation_report",
       "kind": "canvas",
       "ref": "situation-report",
-      "title": "Situation Report"
+      "title": "Situation Report",
+      "tab": true
     },
     {
-      "slot": "infrastructure",
+      "id": "infrastructure",
       "kind": "canvas",
       "ref": "infrastructure",
-      "title": "Infrastructure"
+      "title": "Infrastructure",
+      "tab": true
     },
     {
-      "slot": "requirements",
+      "id": "requirements",
       "kind": "canvas",
       "ref": "requirements",
-      "title": "Requirements",
-      "channel_tab": false
+      "title": "Requirements"
     },
     {
-      "slot": "deliverables",
+      "id": "deliverables",
       "kind": "list",
-      "ref": "deliverables"
+      "ref": "deliverables",
+      "title": "Deliverables",
+      "bookmark": true
     },
     {
-      "slot": "incidents",
+      "id": "incidents",
       "kind": "list",
-      "ref": "incidents"
-    }
-  ],
-  "chrome": [
-    {
-      "slot": "pinned_index",
-      "kind": "message",
-      "ref": "pinned-index",
-      "pin": true
-    }
-  ],
-  "gates": [
+      "ref": "incidents",
+      "title": "Incidents",
+      "bookmark": true
+    },
     {
       "id": "onboarding",
-      "blocks": ["agent_invoke"],
-      "until": { "field": "onboardingComplete", "equals": true },
-      "modal_ref": "onboarding"
-    },
-    {
-      "id": "deliverables_write",
-      "blocks": ["deliverables_edit"],
-      "until": { "field": "onboardingComplete", "equals": true }
-    }
-  ],
-  "modals": [
-    { "ref": "create-tes-event", "kind": "modal" },
-    { "ref": "onboarding", "kind": "modal" }
-  ],
-  "navigation": {
-    "title": "TES Event Channel Index",
-    "entries": [
-      { "slot": "dashboard", "label": "Dashboard", "link_type": "canvas" },
-      {
-        "slot": "situation_report",
-        "label": "Situation Report",
-        "link_type": "canvas"
-      },
-      {
-        "slot": "infrastructure",
-        "label": "Infrastructure",
-        "link_type": "canvas"
-      },
-      { "slot": "requirements", "label": "Requirements", "link_type": "canvas" },
-      { "slot": "deliverables", "label": "Deliverables", "link_type": "list" },
-      { "slot": "incidents", "label": "Incidents", "link_type": "list" }
-    ]
-  },
-  "dynamic_resources": [
-    {
-      "slot": "delivery_canvas",
-      "kind": "canvas",
-      "ref": "delivery",
-      "created_by": "accept_proposals"
-    }
-  ],
-  "organization": [],
-  "automation": [
-    {
-      "slot": "onboarding_shortcut",
-      "kind": "trigger",
-      "ref": "onboarding"
+      "kind": "workflow",
+      "link": "open_onboarding_workflow"
     }
   ]
 }

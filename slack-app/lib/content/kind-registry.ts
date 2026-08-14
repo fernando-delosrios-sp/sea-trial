@@ -17,6 +17,16 @@ const KIND_FILES: Record<string, string> = {
 };
 
 let cachedKinds: Map<string, KindDefinition> | null = null;
+let testKindAvailability: Map<string, ApiAvailability> | null = null;
+
+/** Overrides registry availability for a kind — tests only. */
+export function setKindAvailabilityForTests(
+  kindName: string,
+  availability: ApiAvailability,
+): void {
+  if (!testKindAvailability) testKindAvailability = new Map();
+  testKindAvailability.set(kindName, availability);
+}
 
 function validateKindDefinition(data: unknown, source: string): KindDefinition {
   if (!data || typeof data !== "object") {
@@ -98,6 +108,10 @@ export function loadKindDefinition(kindName: string): KindDefinition {
 
 /** Returns true when the kind is safe to provision at channel create. */
 export function isKindProvisionable(kindName: string): boolean {
+  const override = testKindAvailability?.get(kindName);
+  if (override !== undefined) {
+    return override === "stable";
+  }
   const definition = loadKindDefinition(kindName);
   return definition.api_availability === "stable";
 }
@@ -105,4 +119,5 @@ export function isKindProvisionable(kindName: string): boolean {
 /** Resets cached kind definitions — for tests only. */
 export function resetKindCacheForTests(): void {
   cachedKinds = null;
+  testKindAvailability = null;
 }

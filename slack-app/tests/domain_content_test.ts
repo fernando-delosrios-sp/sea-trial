@@ -11,6 +11,7 @@ import {
   parseSailpointSuitesJson,
 } from "../lib/content/domain.ts";
 import { buildOnboardingModalView } from "../lib/onboarding-modal.ts";
+import { serializeEventContext } from "../lib/event-context.ts";
 
 const DELIVERABLE_STATUS_VALUES: DeliverableStatus[] = [
   "Not started",
@@ -78,9 +79,21 @@ Deno.test("deriveComponents returns JSON-defined components per suite", () => {
 });
 
 Deno.test("onboarding modal suite options match domain JSON keys", () => {
+  const dashboardCanvasContent = serializeEventContext({
+    channelId: "C123",
+    projectName: "Test",
+    onboardingComplete: false,
+    derivedComponents: [],
+    dashboardCanvasId: "dash-123",
+    requirementsCanvasId: "req-1",
+    deliverablesListId: "list-1",
+    incidentsListId: "list-2",
+    infrastructureCanvasId: "infra-1",
+    situationReportCanvasId: "sr-1",
+  });
   const view = buildOnboardingModalView({
     channelId: "C123",
-    dashboardCanvasContent: "",
+    dashboardCanvasContent,
   });
   const blocks = view.blocks as Array<Record<string, unknown>>;
   const suiteBlock = blocks.find((b) => b.block_id === "sailpoint_suite");

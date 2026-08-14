@@ -1,13 +1,16 @@
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import {
-  getContextFieldForSlot,
+  getContextFieldForStepId,
   loadComposition,
   type CompositionManifest,
+  type CompositionStep,
 } from "./composition-resolver.ts";
 import {
   validateMessageBlocks,
 } from "./capability-validator.ts";
 import { TEMPLATES_BY_PATH } from "./embedded-templates.generated.ts";
+
+const PINNED_INDEX_TITLE = "TES Event Channel Index";
 
 function loadPinnedIndexTemplate() {
   const template = TEMPLATES_BY_PATH["messages/pinned-index.hbs.json"];
@@ -59,16 +62,22 @@ function formatMrkdwnLink(url: string, label: string): string {
   return `<${url}|${label}>`;
 }
 
-function getSlotId(
+function isNavigableStep(
+  step: CompositionStep,
+): step is CompositionStep & { title: string; kind: "canvas" | "list" } {
+  return (step.kind === "canvas" || step.kind === "list") &&
+    typeof step.title === "string" &&
+    step.title.trim().length > 0;
+}
+
+function getStepObjectId(
   context: TesEventContext,
-  composition: CompositionManifest,
-  slot: string,
-  linkLabel: string,
+  step: CompositionStep & { title: string },
 ): string {
-  const field = getContextFieldForSlot(composition, slot);
+  const field = getContextFieldForStepId(step.id);
   if (!field) {
     throw new Error(
-      `Navigation entry "${linkLabel}" references slot "${slot}" which is not mapped in runtime.context_slot_map — cannot build pinned index link`,
+      `Navigation entry "${step.title}" references step id "${step.id}" which is not mapped — cannot build pinned index link`,
     );
   }
   const value = context[field];
@@ -80,10 +89,11 @@ function buildNavigationLinks(
   composition: CompositionManifest,
   teamId: string,
 ): string[] {
-  return composition.navigation.entries.map((entry) => {
-    const id = getSlotId(context, composition, entry.slot, entry.label);
-    const url = buildObjectLinkUrl(teamId, entry.link_type, id);
-    return `- ${formatMrkdwnLink(url, entry.label)}`;
+  return composition.steps.filter(isNavigableStep).map((step) => {
+    const id = getStepObjectId(context, step);
+    const linkType = step.kind === "canvas" ? "canvas" : "list";
+    const url = buildObjectLinkUrl(teamId, linkType, id);
+    return `- ${formatMrkdwnLink(url, step.title)}`;
   });
 }
 
@@ -97,7 +107,7 @@ function buildIndexMessageText(
   const links = buildNavigationLinks(context, manifest, teamId);
 
   return [
-    `📋 *${manifest.navigation.title}*`,
+    `📋 *${PINNED_INDEX_TITLE}*`,
     "",
     ...links,
     "",
@@ -107,7 +117,7 @@ function buildIndexMessageText(
   ].join("\n");
 }
 
-/** Renders pinned index message plain text from composition navigation. */
+/** Renders pinned index message plain text from composition steps. */
 export function renderPinnedIndexMessage(
   context: TesEventContext,
   composition?: CompositionManifest,
@@ -155,4 +165,3 @@ export function pinnedIndexBlocks(
 ): Record<string, unknown>[] {
   return renderPinnedIndexBlocks(context, undefined, options);
 }
-

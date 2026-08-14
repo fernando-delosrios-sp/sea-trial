@@ -9,7 +9,7 @@ import {
   parseOnboardingForm,
   type SlackOnboardingSubmitClient,
 } from "../../lib/onboarding-view-submit.ts";
-import type { CanvasSectionsClient } from "../../lib/canvas.ts";
+import { readCanvasMarkdown, type CanvasSectionsClient } from "../../lib/canvas.ts";
 
 export const OpenOnboardingFunction = DefineFunction({
   callback_id: "open_onboarding",
@@ -28,7 +28,7 @@ export const OpenOnboardingFunction = DefineFunction({
 });
 
 async function resolveDashboardCanvasContent(
-  client: Parameters<typeof loadDashboardContentForButton>[0],
+  client: CanvasSectionsClient,
   inputs: {
     dashboard_canvas_content?: string;
     dashboard_canvas_id?: string;
@@ -37,15 +37,14 @@ async function resolveDashboardCanvasContent(
   const inline = inputs.dashboard_canvas_content?.trim() ?? "";
   if (inline) return inline;
 
-  if (inputs.dashboard_canvas_id?.trim()) {
-    return await loadDashboardContentForButton(
-      client,
-      JSON.stringify({ dashboard_canvas_id: inputs.dashboard_canvas_id.trim() }),
-      "",
-    );
-  }
+  const dashboardCanvasId = inputs.dashboard_canvas_id?.trim();
+  if (!dashboardCanvasId) return "";
 
-  return "";
+  try {
+    return await readCanvasMarkdown(client, dashboardCanvasId);
+  } catch {
+    return "";
+  }
 }
 
 export default SlackFunction(
@@ -56,9 +55,11 @@ export default SlackFunction(
       inputs,
     );
     if (!dashboardCanvasContent) {
+      const triedCanvasId = Boolean(inputs.dashboard_canvas_id?.trim());
       return {
-        error:
-          "Dashboard content is unavailable. Use the Complete onboarding button on the pinned index message.",
+        error: triedCanvasId
+          ? "Could not read the dashboard canvas. Use the Complete onboarding button on the pinned index message."
+          : "Dashboard content is unavailable. Use the Complete onboarding button on the pinned index message.",
       };
     }
 
@@ -88,6 +89,9 @@ export default SlackFunction(
       typeof action.value === "string" ? action.value : undefined,
       "",
     );
+    if (!dashboardCanvasContent) {
+      return { error: "Could not load dashboard canvas for onboarding." };
+    }
 
     const accountName = resolveAccountPrefill(dashboardCanvasContent);
 
@@ -111,12 +115,36 @@ export default SlackFunction(
 
     const metadata = JSON.parse(view.private_metadata) as {
       channel_id: string;
-      dashboard_canvas_content: string;
+      dashboard_canvas_id?: string;
+      dashboard_canvas_content?: string;
     };
+
+    let dashboardCanvasContent = metadata.dashboard_canvas_content?.trim() ?? "";
+    if (!dashboardCanvasContent) {
+      const dashboardCanvasId = metadata.dashboard_canvas_id?.trim();
+      if (!dashboardCanvasId) {
+        return { error: "Missing dashboard canvas reference in onboarding metadata." };
+      }
+
+      try {
+        dashboardCanvasContent = await readCanvasMarkdown(
+          client as unknown as CanvasSectionsClient,
+          dashboardCanvasId,
+        );
+      } catch {
+        return {
+          error:
+            "Could not load dashboard canvas. Try opening onboarding from the pinned index button.",
+        };
+      }
+    }
 
     const result = await executeOnboardingSubmit(
       client as unknown as SlackOnboardingSubmitClient,
-      metadata,
+      {
+        channel_id: metadata.channel_id,
+        dashboard_canvas_content: dashboardCanvasContent,
+      },
       parseOnboardingForm(view.state.values),
     );
 

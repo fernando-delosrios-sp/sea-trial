@@ -64,15 +64,15 @@ Import from `slack-app/lib/content/loader.ts` for the full public surface. JSON 
 
 #### Channel composition
 
-TES Event Channel structure — which objects are seeded, in what order, and how IDs link to context — is declared in `slack-app/content/channels/tes-event.json`. The kind registry under `slack-app/content/kinds/*.v1.json` defines extensible object types with `api_availability` gating. Loaders:
+TES Event Channel structure — which objects are seeded, in what order, and how they surface — is declared in `slack-app/content/channels/tes-event.json` as an ordered `steps[]` array. Each step has an `id`, a `kind` (`canvas`, `list`, or `workflow`), and kind-specific fields. Canvases opt in to channel tabs with `"tab": true`; lists opt in to Bookmarks bar links with `"bookmark": true`. The kind registry under `slack-app/content/kinds/*.v1.json` defines extensible object types with `api_availability` gating. Loaders:
 
 | Module | Purpose |
 |--------|---------|
-| `composition-resolver.ts` | Load manifest, validate, topological sort on `depends_on`, slot map |
+| `composition-resolver.ts` | Load manifest, validate steps, map step ids to `TesEventContext` fields |
 | `kind-registry.ts` | Load kind definitions; skip non-stable kinds |
-| `channel-provisioner.ts` | Orchestrate channel create; `seed_channel_objects` is a thin executor |
+| `channel-provisioner.ts` | Iterate steps in order; apply tab/bookmark flags; post pinned index |
 
-Slot identifiers in the manifest bridge to flat `TesEventContext` fields via `runtime.context_slot_map`. Pinned index links are auto-generated from `navigation.entries`. Tests in `composition_test.ts` enforce schema, order, and slot bridging.
+Step ids bridge to flat `TesEventContext` fields via an internal convention map in the resolver (not in the manifest). Pinned index links are derived from steps that include a `title`, in manifest order. Tests in `composition_test.ts` enforce schema, provisioning order, tab/bookmark flags, and id bridging.
 
 #### Triggers (automatic on deploy)
 

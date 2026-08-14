@@ -225,6 +225,31 @@ Deno.test("createDeliverablesList skips attach when attachToChannel is false", a
   assertEquals(bookmarkParams.length, 0);
 });
 
+Deno.test("attachListToChannel adds bookmark without tab API probe", async () => {
+  const bookmarkParams: Array<Record<string, unknown>> = [];
+
+  await attachListToChannel(
+    {
+      bookmarks: {
+        add: async (params) => {
+          bookmarkParams.push({ ...params });
+          return { ok: true };
+        },
+      },
+    },
+    "C123",
+    "F-deliverables",
+    { listTitle: "Acme Corp Deliverables", teamId: "T01234567" },
+  );
+
+  assertEquals(bookmarkParams, [{
+    channel_id: "C123",
+    title: "Acme Corp Deliverables",
+    type: "link",
+    link: "https://app.slack.com/lists/T01234567/F-deliverables",
+  }]);
+});
+
 Deno.test("attachListToChannel fails when bookmark add returns error", async () => {
   await assertRejects(
     () =>

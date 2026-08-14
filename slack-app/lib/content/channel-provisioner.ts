@@ -3,17 +3,18 @@ import type { SlackCanvasClient } from "../canvas.ts";
 import { createCanvas, replaceCanvasContent } from "../canvas.ts";
 import type { SlackListClient } from "../lists.ts";
 import {
+  attachListToChannel,
   createDeliverablesList,
   createIncidentsList,
-  attachListInChannel,
 } from "../lists.ts";
 import { serializeEventContext } from "../event-context.ts";
 import {
-  applySlotIds,
+  applyStepIds,
   loadComposition,
-  resolveProvisioningOrder,
+  type CanvasStep,
   type CompositionManifest,
-  type ProvisionEntry,
+  type CompositionStep,
+  type ListStep,
 } from "./composition-resolver.ts";
 import {
   renderDashboardCanvasForSlack,
@@ -34,6 +35,7 @@ import {
   provisionOnboardingChannelShortcut,
   type OnboardingTriggerClient,
 } from "../onboarding-channel-trigger.ts";
+import { formatScopedListName } from "./list-compiler.ts";
 
 function resolveProvisionTeamId(
   env?: Record<string, string | undefined>,
@@ -72,54 +74,32 @@ export interface ChannelProvisionClient
   };
 }
 
-function shouldAttachChannelTab(entry: ProvisionEntry): boolean {
-  return entry.channel_tab !== false;
+function shouldProvisionStep(step: CompositionStep): boolean {
+  if (step.kind === "workflow") return true;
+  if (step.kind === "canvas" || step.kind === "list") {
+    return isKindProvisionable(step.kind);
+  }
+  return false;
 }
 
-async function provisionResource(
+async function provisionCanvasStep(
   client: ChannelProvisionClient,
-  entry: ProvisionEntry,
+  step: CanvasStep,
   channelId: string,
   context: TesEventContext,
-  env?: Record<string, string | undefined>,
 ): Promise<string> {
-  if (!isKindProvisionable(entry.kind)) {
-    throw new Error(
-      `Kind "${entry.kind}" is not provisionable (api_availability !== stable)`,
-    );
-  }
+  const content = await renderCanvasContent(
+    client,
+    step.ref,
+    channelId,
+    context,
+  );
 
-  switch (entry.kind) {
-    case "canvas": {
-      const content = await renderCanvasContent(
-        client,
-        entry.ref,
-        channelId,
-        context,
-      );
-      return await createCanvas(client, {
-        ...(shouldAttachChannelTab(entry) ? { channelId } : {}),
-        title: entry.title ?? entry.ref,
-        content,
-      });
-    }
-    case "list": {
-      const listOptions = {
-        accountName: context.accountName,
-        attachToChannel: false,
-      };
-
-      if (entry.ref === "deliverables") {
-        return await createDeliverablesList(client, channelId, listOptions);
-      }
-      if (entry.ref === "incidents") {
-        return await createIncidentsList(client, channelId, listOptions);
-      }
-      throw new Error(`Unknown list ref "${entry.ref}"`);
-    }
-    default:
-      throw new Error(`Unsupported resource kind "${entry.kind}" for slot "${entry.slot}"`);
-  }
+  return await createCanvas(client, {
+    ...(step.tab === true ? { channelId } : {}),
+    title: step.title ?? step.ref,
+    content,
+  });
 }
 
 async function renderCanvasContent(
@@ -142,72 +122,74 @@ async function renderCanvasContent(
   }
 }
 
-async function provisionChrome(
+async function provisionListStep(
   client: ChannelProvisionClient,
-  entry: ProvisionEntry,
+  step: ListStep,
   channelId: string,
   context: TesEventContext,
-  composition: CompositionManifest,
   env?: Record<string, string | undefined>,
-): Promise<string | undefined> {
-  if (!isKindProvisionable(entry.kind)) return undefined;
+): Promise<string> {
+  const listOptions = {
+    accountName: context.accountName,
+    attachToChannel: false,
+  };
 
-  if (entry.kind === "message" && entry.ref === "pinned-index") {
-    const navOptions = { teamId: resolveProvisionTeamId(env) };
-    const indexMessage = await client.chat.postMessage({
-      channel: channelId,
-      text: renderPinnedIndexMessage(context, composition, navOptions),
-      blocks: renderPinnedIndexBlocks(context, composition, navOptions),
-    });
-
-    if (entry.pin && indexMessage.ts) {
-      await client.pins.add({ channel: channelId, timestamp: indexMessage.ts });
-    }
-
-    return indexMessage.ts;
+  let listId: string;
+  if (step.ref === "deliverables") {
+    listId = await createDeliverablesList(client, channelId, listOptions);
+  } else if (step.ref === "incidents") {
+    listId = await createIncidentsList(client, channelId, listOptions);
+  } else {
+    throw new Error(`Unknown list ref "${step.ref}"`);
   }
 
-  return undefined;
-}
-
-async function attachProvisionedListChannels(
-  client: ChannelProvisionClient,
-  channelId: string,
-  context: TesEventContext,
-  composition: CompositionManifest,
-  slotIds: Record<string, string>,
-  env?: Record<string, string | undefined>,
-): Promise<void> {
-  const teamId = resolveProvisionTeamId(env);
-
-  for (const entry of composition.resources) {
-    if (entry.kind !== "list" || !shouldAttachChannelTab(entry)) continue;
-
-    const listId = slotIds[entry.slot];
-    if (!listId) continue;
-
-    await attachListInChannel(client, channelId, entry.ref, listId, {
-      accountName: context.accountName,
-      teamId,
+  if (step.bookmark === true) {
+    const listTitle = formatScopedListName(step.ref, context.accountName);
+    await attachListToChannel(client, channelId, listId, {
+      listTitle,
+      teamId: resolveProvisionTeamId(env),
     });
   }
+
+  return listId;
 }
 
-async function provisionAutomation(
+async function provisionWorkflowStep(
   client: ChannelProvisionClient,
-  composition: CompositionManifest,
+  step: CompositionStep & { kind: "workflow" },
   channelId: string,
   dashboardCanvasId: string,
 ): Promise<string | undefined> {
-  for (const entry of composition.automation ?? []) {
-    if (entry.ref !== "onboarding") continue;
-    return await provisionOnboardingChannelShortcut(
-      client,
-      channelId,
-      dashboardCanvasId,
-    );
+  if (step.link !== "open_onboarding_workflow") {
+    throw new Error(`Unknown workflow link "${step.link}" for step "${step.id}"`);
   }
-  return undefined;
+
+  return await provisionOnboardingChannelShortcut(
+    client,
+    channelId,
+    dashboardCanvasId,
+  );
+}
+
+async function postPinnedIndex(
+  client: ChannelProvisionClient,
+  channelId: string,
+  context: TesEventContext,
+  composition: CompositionManifest,
+  env?: Record<string, string | undefined>,
+): Promise<string | undefined> {
+  const navOptions = { teamId: resolveProvisionTeamId(env) };
+  const indexMessage = await client.chat.postMessage({
+    channel: channelId,
+    text: renderPinnedIndexMessage(context, composition, navOptions),
+    blocks: renderPinnedIndexBlocks(context, composition, navOptions),
+  });
+
+  if (indexMessage.ts) {
+    await client.pins.add({ channel: channelId, timestamp: indexMessage.ts });
+  }
+
+  return indexMessage.ts;
 }
 
 async function finalizeDashboardCanvas(
@@ -245,9 +227,9 @@ export async function provisionChannel(
   client: ChannelProvisionClient,
   inputs: ProvisionInputs,
   channelType = "tes-event",
+  compositionOverride?: CompositionManifest,
 ): Promise<TesEventContext> {
-  const composition = loadComposition(channelType);
-  const orderedResources = resolveProvisioningOrder(composition.resources);
+  const composition = compositionOverride ?? loadComposition(channelType);
 
   let context: TesEventContext = {
     channelId: inputs.channel_id,
@@ -264,53 +246,66 @@ export async function provisionChannel(
     salesforceOpportunityUrl: inputs.salesforce_opportunity_url,
     memberUserIds: inputs.member_user_ids,
     contextNotes: inputs.context_notes,
-    channelType: composition.channel_type,
+    channelType,
     compositionVersion: composition.version,
   };
 
-  const slotIds: Record<string, string> = {};
+  const stepIds: Record<string, string> = {};
+  let onboardingShortcutUrl: string | undefined;
 
-  for (const entry of orderedResources) {
-    const slackId = await provisionResource(
-      client,
-      entry,
-      inputs.channel_id,
-      context,
-      inputs.env,
-    );
-    slotIds[entry.slot] = slackId;
-    context = applySlotIds(context, composition, slotIds);
+  for (const step of composition.steps) {
+    if (!shouldProvisionStep(step)) continue;
+
+    switch (step.kind) {
+      case "canvas": {
+        const slackId = await provisionCanvasStep(
+          client,
+          step,
+          inputs.channel_id,
+          context,
+        );
+        stepIds[step.id] = slackId;
+        context = applyStepIds(context, stepIds);
+        break;
+      }
+      case "list": {
+        const listId = await provisionListStep(
+          client,
+          step,
+          inputs.channel_id,
+          context,
+          inputs.env,
+        );
+        stepIds[step.id] = listId;
+        context = applyStepIds(context, stepIds);
+        break;
+      }
+      case "workflow": {
+        if (!context.dashboardCanvasId) {
+          throw new Error(
+            `Workflow step "${step.id}" requires dashboard canvas to be provisioned first`,
+          );
+        }
+        onboardingShortcutUrl = await provisionWorkflowStep(
+          client,
+          step,
+          inputs.channel_id,
+          context.dashboardCanvasId,
+        ) ?? onboardingShortcutUrl;
+        break;
+      }
+      default:
+        throw new Error(`Unsupported step kind "${(step as CompositionStep).kind}"`);
+    }
   }
 
-  await attachProvisionedListChannels(
+  const pinnedMessageTs = await postPinnedIndex(
     client,
     inputs.channel_id,
     context,
     composition,
-    slotIds,
     inputs.env,
   );
-
-  let pinnedMessageTs: string | undefined;
-  for (const chromeEntry of composition.chrome ?? []) {
-    pinnedMessageTs = await provisionChrome(
-      client,
-      chromeEntry,
-      inputs.channel_id,
-      context,
-      composition,
-      inputs.env,
-    ) ?? pinnedMessageTs;
-  }
-
-  const onboardingShortcutUrl = context.dashboardCanvasId
-    ? await provisionAutomation(
-      client,
-      composition,
-      inputs.channel_id,
-      context.dashboardCanvasId,
-    )
-    : undefined;
 
   await finalizeDashboardCanvas(
     client,

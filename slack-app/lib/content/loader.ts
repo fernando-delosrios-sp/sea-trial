@@ -100,22 +100,26 @@ export {
 
 export {
   applySlotIds,
+  applyStepIds,
   getContextFieldForSlot,
+  getContextFieldForStepId,
   loadComposition,
   parseCompositionJson,
-  resolveProvisioningOrder,
   resetCompositionCacheForTests,
 } from "./composition-resolver.ts";
 export type {
+  CanvasStep,
   CompositionManifest,
-  NavigationEntry,
-  ProvisionEntry,
+  CompositionStep,
+  ListStep,
+  WorkflowStep,
 } from "./composition-resolver.ts";
 
 export {
   isKindProvisionable,
   loadKindDefinition,
   resetKindCacheForTests,
+  setKindAvailabilityForTests,
 } from "./kind-registry.ts";
 export type { ApiAvailability, KindDefinition } from "./kind-registry.ts";
 

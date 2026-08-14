@@ -4,19 +4,20 @@ import {
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import {
-  applySlotIds,
-  getContextFieldForSlot,
+  applyStepIds,
+  getContextFieldForStepId,
   loadComposition,
   parseCompositionJson,
-  resolveProvisioningOrder,
   resetCompositionCacheForTests,
 } from "../lib/content/composition-resolver.ts";
 import {
   isKindProvisionable,
   loadKindDefinition,
   resetKindCacheForTests,
+  setKindAvailabilityForTests,
 } from "../lib/content/kind-registry.ts";
 import { provisionChannel } from "../lib/content/channel-provisioner.ts";
+import type { CompositionManifest } from "../lib/content/composition-resolver.ts";
 import {
   renderPinnedIndexMessage,
   resetMessageCacheForTests,
@@ -42,54 +43,65 @@ const baseContext: TesEventContext = {
 Deno.test("tes-event composition manifest loads and validates", () => {
   resetCompositionCacheForTests();
   const composition = loadComposition("tes-event");
-  assertEquals(composition.channel_type, "tes-event");
   assertEquals(composition.version, "1.0.0");
-  assertEquals(composition.resources.length, 6);
+  assertEquals(composition.steps.length, 7);
   assertEquals(
-    getContextFieldForSlot(composition, "dashboard"),
+    getContextFieldForStepId("dashboard"),
     "dashboardCanvasId",
   );
+  assertEquals(composition.steps[0], {
+    id: "dashboard",
+    kind: "canvas",
+    ref: "dashboard",
+    title: "Dashboard",
+    tab: true,
+  });
 });
 
-Deno.test("composition provisioning order follows manifest resource order", () => {
+Deno.test("composition steps follow tes-event provisioning order", () => {
   const composition = loadComposition("tes-event");
-  const ordered = resolveProvisioningOrder(composition.resources);
-  const slots = ordered.map((entry) => entry.slot);
+  const stepIds = composition.steps.map((step) => step.id);
 
-  assertEquals(slots[0], "dashboard");
-  assertEquals(slots.indexOf("situation_report"), 1);
-  assertEquals(slots.indexOf("infrastructure"), 2);
-  assertEquals(slots.indexOf("requirements"), 3);
-  assertEquals(slots.indexOf("deliverables"), 4);
-  assertEquals(slots.indexOf("incidents"), slots.length - 1);
+  assertEquals(stepIds, [
+    "dashboard",
+    "situation_report",
+    "infrastructure",
+    "requirements",
+    "deliverables",
+    "incidents",
+    "onboarding",
+  ]);
 });
 
-Deno.test("composition rejects cyclic depends_on", () => {
-  assertThrows(
-    () =>
-      resolveProvisioningOrder([
-        { slot: "a", kind: "canvas", ref: "a", depends_on: ["b"] },
-        { slot: "b", kind: "canvas", ref: "b", depends_on: ["a"] },
-      ]),
-    Error,
-    "Cyclic dependency",
-  );
-});
-
-Deno.test("composition rejects unknown depends_on slot", () => {
-  assertThrows(
-    () =>
-      resolveProvisioningOrder([
-        { slot: "a", kind: "canvas", ref: "a", depends_on: ["missing"] },
-      ]),
-    Error,
-    "Unknown dependency",
-  );
-});
-
-Deno.test("slot map populates TesEventContext fields", () => {
+Deno.test("composition canvas steps expose tab opt-in", () => {
   const composition = loadComposition("tes-event");
-  const updated = applySlotIds(baseContext, composition, {
+  const tabbed = composition.steps.filter(
+    (step): step is typeof step & { kind: "canvas"; tab: true } =>
+      step.kind === "canvas" && step.tab === true,
+  );
+
+  assertEquals(tabbed.map((step) => step.id), [
+    "dashboard",
+    "situation_report",
+    "infrastructure",
+  ]);
+  const requirements = composition.steps.find((step) => step.id === "requirements");
+  assertEquals(requirements?.kind, "canvas");
+  assertEquals(requirements && "tab" in requirements ? requirements.tab : undefined, undefined);
+});
+
+Deno.test("composition list steps expose bookmark opt-in", () => {
+  const composition = loadComposition("tes-event");
+  const bookmarked = composition.steps.filter(
+    (step): step is typeof step & { kind: "list"; bookmark: true } =>
+      step.kind === "list" && step.bookmark === true,
+  );
+
+  assertEquals(bookmarked.map((step) => step.id), ["deliverables", "incidents"]);
+});
+
+Deno.test("step id map populates TesEventContext fields", () => {
+  const updated = applyStepIds(baseContext, {
     dashboard: "new-dash",
     requirements: "new-req",
   });
@@ -106,23 +118,83 @@ Deno.test("kind registry loads stable canvas kind", () => {
   assertEquals(isKindProvisionable("canvas"), true);
 });
 
-Deno.test("invalid composition JSON missing runtime throws", () => {
+Deno.test("kind registry skips non-stable kinds for provisioning", () => {
+  resetKindCacheForTests();
+  setKindAvailabilityForTests("canvas", "planned");
+  assertEquals(isKindProvisionable("canvas"), false);
+});
+
+Deno.test("invalid composition JSON missing steps throws", () => {
   assertThrows(
     () =>
       parseCompositionJson(
         JSON.stringify({
           version: "1",
-          channel_type: "tes-event",
-          resources: [{ slot: "a", kind: "canvas", ref: "a" }],
-          navigation: { title: "T", entries: [] },
         }),
       ),
     Error,
-    "runtime",
+    "steps",
   );
 });
 
-Deno.test("navigation entries render pinned index links in order", () => {
+Deno.test("composition rejects canvas step with bookmark flag", () => {
+  assertThrows(
+    () =>
+      parseCompositionJson(
+        JSON.stringify({
+          version: "1",
+          steps: [{
+            id: "bad",
+            kind: "canvas",
+            ref: "dashboard",
+            bookmark: true,
+          }],
+        }),
+      ),
+    Error,
+    "bookmark",
+  );
+});
+
+Deno.test("composition rejects list step with tab flag", () => {
+  assertThrows(
+    () =>
+      parseCompositionJson(
+        JSON.stringify({
+          version: "1",
+          steps: [{
+            id: "bad",
+            kind: "list",
+            ref: "deliverables",
+            tab: true,
+          }],
+        }),
+      ),
+    Error,
+    "tab",
+  );
+});
+
+Deno.test("composition rejects workflow step with ref", () => {
+  assertThrows(
+    () =>
+      parseCompositionJson(
+        JSON.stringify({
+          version: "1",
+          steps: [{
+            id: "bad",
+            kind: "workflow",
+            ref: "onboarding",
+            link: "open_onboarding_workflow",
+          }],
+        }),
+      ),
+    Error,
+    "ref",
+  );
+});
+
+Deno.test("step-derived navigation renders pinned index links in order", () => {
   resetMessageCacheForTests();
   const composition = loadComposition("tes-event");
   const message = renderPinnedIndexMessage(baseContext, composition, navOptions);
@@ -174,31 +246,29 @@ function formatMrkdwn(url: string, label: string): string {
   return `<${url}|${label}>`;
 }
 
-Deno.test("navigation entry with unmapped slot throws", () => {
+Deno.test("navigation entry with unmapped step id throws", () => {
   resetMessageCacheForTests();
   const composition = loadComposition("tes-event");
   const badComposition = {
     ...composition,
-    navigation: {
-      ...composition.navigation,
-      entries: [
-        {
-          slot: "unknown_slot",
-          label: "Broken",
-          link_type: "canvas" as const,
-        },
-      ],
-    },
+    steps: [
+      {
+        id: "unknown_step",
+        kind: "canvas" as const,
+        ref: "dashboard",
+        title: "Broken",
+      },
+    ],
   };
 
   assertThrows(
     () => renderPinnedIndexMessage(baseContext, badComposition, navOptions),
     Error,
-    'slot "unknown_slot" which is not mapped in runtime.context_slot_map',
+    'step id "unknown_step" which is not mapped',
   );
 });
 
-Deno.test("channel provisioner creates resources in dependency order", async () => {
+Deno.test("channel provisioner creates steps in manifest order", async () => {
   resetCompositionCacheForTests();
   resetKindCacheForTests();
   resetMessageCacheForTests();
@@ -207,6 +277,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   const listItemCreates: string[] = [];
   const listCreateParams: Array<Record<string, unknown>> = [];
   const listBookmarkAdds: string[] = [];
+  const listTabApiCalls: string[] = [];
   const canvasEditContents: string[] = [];
   let onboardingTriggerCreates = 0;
   const originalFetch = globalThis.fetch;
@@ -277,6 +348,10 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
         list: async () => ({ items: [] }),
       },
     },
+    apiCall: async (method: string) => {
+      listTabApiCalls.push(method);
+      return { error: "unknown_method" };
+    },
     bookmarks: {
       add: async (params: { title: string; link: string }) => {
         listBookmarkAdds.push(`${params.title}:${params.link}`);
@@ -337,6 +412,7 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
     `Acme Corp Deliverables:https://app.slack.com/lists/${navTeamId}/L-Acme Corp Deliverables`,
     `Acme Corp Incidents:https://app.slack.com/lists/${navTeamId}/L-Acme Corp Incidents`,
   ]);
+  assertEquals(listTabApiCalls.length, 0);
   assertEquals(
     createOrder.indexOf("canvas:Infrastructure") <
       createOrder.indexOf("list:Acme Corp Deliverables"),
@@ -355,3 +431,149 @@ Deno.test("channel provisioner creates resources in dependency order", async () 
   }
 });
 
+Deno.test("channel provisioner skips steps for non-stable kinds", async () => {
+  resetCompositionCacheForTests();
+  resetKindCacheForTests();
+  resetMessageCacheForTests();
+  setKindAvailabilityForTests("canvas", "planned");
+
+  const createOrder: string[] = [];
+  const composition: CompositionManifest = {
+    version: "1.0.0-test",
+    steps: [{
+      id: "dashboard",
+      kind: "canvas",
+      ref: "dashboard",
+      title: "Dashboard",
+      tab: true,
+    }],
+  };
+
+  try {
+    const context = await provisionChannel(
+      {
+        canvases: {
+          create: async (params: { title: string }) => {
+            createOrder.push(`canvas:${params.title}`);
+            return { canvas_id: "C-skipped" };
+          },
+          edit: async () => ({}),
+          sections: { lookup: async () => ({ sections: [] }) },
+        },
+        slackLists: {
+          create: async () => ({ list_id: "L-unused" }),
+          access: { set: async () => ({ ok: true }) },
+          items: {
+            create: async () => ({ item: { id: "item1" } }),
+            list: async () => ({ items: [] }),
+          },
+        },
+        chat: { postMessage: async () => ({ ts: "1.0" }) },
+        pins: { add: async () => ({}) },
+        files: {
+          getUploadURLExternal: async () => ({
+            ok: true,
+            upload_url: "https://upload.example.test",
+            file_id: "F1",
+          }),
+          completeUploadExternal: async () => ({
+            ok: true,
+            files: [{ permalink: "https://example.test/banner.png" }],
+          }),
+          info: async () => ({ ok: true, file: { permalink: "unused" } }),
+        },
+        workflows: {
+          triggers: {
+            create: async () => ({ ok: true, trigger: { id: "Ft1" } }),
+            permissions: { add: async () => ({ ok: true }) },
+          },
+        },
+      },
+      {
+        channel_id: "C-planned",
+        project_name: "Demo",
+        env: { SLACK_TEAM_ID: navTeamId },
+      },
+      "tes-event",
+      composition,
+    );
+
+    assertEquals(createOrder.length, 0);
+    assertEquals(context.dashboardCanvasId, "");
+  } finally {
+    resetKindCacheForTests();
+  }
+});
+
+Deno.test("channel provisioner creates list without bookmark when flag absent", async () => {
+  resetCompositionCacheForTests();
+  resetKindCacheForTests();
+  resetMessageCacheForTests();
+
+  const listBookmarkAdds: string[] = [];
+  const composition: CompositionManifest = {
+    version: "1.0.0-test",
+    steps: [{
+      id: "deliverables",
+      kind: "list",
+      ref: "deliverables",
+    }],
+  };
+
+  const context = await provisionChannel(
+    {
+      canvases: {
+        create: async () => ({ canvas_id: "C-unused" }),
+        edit: async () => ({}),
+        sections: { lookup: async () => ({ sections: [] }) },
+      },
+      slackLists: {
+        create: async (params: { name: string }) => ({
+          list_id: `L-${params.name}`,
+        }),
+        access: { set: async () => ({ ok: true }) },
+        items: {
+          create: async () => ({ item: { id: "item1" } }),
+          list: async () => ({ items: [] }),
+        },
+      },
+      bookmarks: {
+        add: async (params: { title: string; link: string }) => {
+          listBookmarkAdds.push(`${params.title}:${params.link}`);
+          return { ok: true };
+        },
+      },
+      chat: { postMessage: async () => ({ ts: "1.0" }) },
+      pins: { add: async () => ({}) },
+      files: {
+        getUploadURLExternal: async () => ({
+          ok: true,
+          upload_url: "https://upload.example.test",
+          file_id: "F1",
+        }),
+        completeUploadExternal: async () => ({
+          ok: true,
+          files: [{ permalink: "https://example.test/banner.png" }],
+        }),
+        info: async () => ({ ok: true, file: { permalink: "unused" } }),
+      },
+      workflows: {
+        triggers: {
+          create: async () => ({ ok: true, trigger: { id: "Ft1" } }),
+          permissions: { add: async () => ({ ok: true }) },
+        },
+      },
+    },
+    {
+      channel_id: "C-list",
+      project_name: "Demo",
+      account_name: "Acme Corp",
+      env: { SLACK_TEAM_ID: navTeamId },
+    },
+    "tes-event",
+    composition,
+  );
+
+  assertEquals(context.deliverablesListId, "L-Acme Corp Deliverables");
+  assertEquals(listBookmarkAdds.length, 0);
+});

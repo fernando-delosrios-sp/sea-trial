@@ -188,6 +188,30 @@ Deno.test("provisionWorkflowChannelAssociation resolves shared trigger for featu
   assertEquals(featuredPayloads.length, 1);
 });
 
+Deno.test("provisionWorkflowChannelAssociation continues when featured.add fails for bookmark", async () => {
+  const { client } = buildClient({
+    create: async () => ({
+      ok: true,
+      trigger: { id: "FtCHANNEL123" },
+    }),
+    set: async () => ({ ok: false, error: "not_allowed" }),
+    add: async () => ({ ok: true }),
+    featured: async () => ({ ok: false, error: "not_allowed" }),
+  });
+
+  const url = await provisionWorkflowChannelAssociation(
+    client,
+    "C999",
+    "open_onboarding_workflow",
+    { bookmark: true },
+    undefined,
+    undefined,
+    dashboardCanvasId,
+  );
+
+  assertEquals(url, "https://slack.com/shortcuts/FtCHANNEL123");
+});
+
 Deno.test("provisionWorkflowChannelAssociation throws when trigger create fails", async () => {
   const { client } = buildClient({
     create: async () => ({ ok: false, error: "invalid_inputs" }),

@@ -90,30 +90,36 @@ async function callWorkflowApi(
 }
 
 /**
- * Restricts a trigger to named entities and grants the channel run access.
- * Populates the Workflows tab bookmarked list for link triggers.
+ * Restricts a trigger to named entities when the platform allows it.
+ * Best-effort: some tenants reject permissions.set on runtime-created triggers.
  */
-async function grantChannelTriggerAccess(
+async function trySetNamedEntityPermissions(
   client: WorkflowTriggerClient,
   triggerId: string,
-  channelId: string,
 ): Promise<void> {
-  const setResponse = await callWorkflowApi(
+  const response = await callWorkflowApi(
     client,
     "workflows.triggers.permissions.set",
     {
       trigger_id: triggerId,
       permission_type: "named_entities",
     },
-  );
+  ).catch(() => ({ ok: false }));
 
-  if (!setResponse.ok) {
-    throw new Error(
-      `Failed to set workflow trigger permissions for ${triggerId}${
-        setResponse.error ? `: ${setResponse.error}` : ""
-      }`,
-    );
+  if (response.ok !== true) {
+    return;
   }
+}
+
+/**
+ * Grants channel run access for a trigger. Required for Workflows tab surfacing.
+ */
+async function grantChannelTriggerAccess(
+  client: WorkflowTriggerClient,
+  triggerId: string,
+  channelId: string,
+): Promise<void> {
+  await trySetNamedEntityPermissions(client, triggerId);
 
   const accessResponse = await callWorkflowApi(
     client,
@@ -134,35 +140,27 @@ async function grantChannelTriggerAccess(
 }
 
 /**
- * Ensures the channel Workflows header tab exists and lists the trigger.
- * Slack exposes no bookmark-only tab API; featured.add creates the tab surface.
+ * Attempts to create the channel Workflows header tab via featured.add.
+ * Best-effort: bot tokens may be rejected on some tenants; seeding must continue.
  */
-async function ensureWorkflowsChannelTab(
+async function tryEnsureWorkflowsChannelTab(
   client: WorkflowTriggerClient,
   channelId: string,
   triggerId: string,
 ): Promise<void> {
-  const featuredResponse = await callWorkflowApi(
+  await callWorkflowApi(
     client,
     "workflows.featured.add",
     {
       channel_id: channelId,
       trigger_ids: [triggerId],
     },
-  );
-
-  if (!featuredResponse.ok) {
-    throw new Error(
-      `Failed to add workflow trigger ${triggerId} to channel ${channelId} Workflows tab${
-        featuredResponse.error ? `: ${featuredResponse.error}` : ""
-      }`,
-    );
-  }
+  ).catch(() => ({ ok: false }));
 }
 
 /**
- * Creates a channel-scoped onboarding shortcut, grants access, and surfaces
- * it in the channel Workflows tab.
+ * Creates a channel-scoped onboarding shortcut, grants access, and attempts
+ * to surface it in the channel Workflows tab.
  */
 async function createChannelOnboardingTrigger(
   client: WorkflowTriggerClient,
@@ -198,7 +196,7 @@ async function createChannelOnboardingTrigger(
 
   const triggerId = triggerResponse.trigger.id;
   await grantChannelTriggerAccess(client, triggerId, channelId);
-  await ensureWorkflowsChannelTab(client, channelId, triggerId);
+  await tryEnsureWorkflowsChannelTab(client, channelId, triggerId);
 
   const shareUrl = resolveTriggerShareUrl(triggerResponse.trigger);
   if (!shareUrl) {
@@ -222,11 +220,25 @@ export async function associateWorkflowWithChannel(
 ): Promise<string | undefined> {
   if (options.bookmark === true) {
     await grantChannelTriggerAccess(client, triggerId, channelId);
-    await ensureWorkflowsChannelTab(client, channelId, triggerId);
+    await tryEnsureWorkflowsChannelTab(client, channelId, triggerId);
   }
 
   if (options.featured === true) {
-    await ensureWorkflowsChannelTab(client, channelId, triggerId);
+    const featuredResponse = await callWorkflowApi(
+      client,
+      "workflows.featured.add",
+      {
+        channel_id: channelId,
+        trigger_ids: [triggerId],
+      },
+    );
+    if (!featuredResponse.ok) {
+      throw new Error(
+        `Failed to feature workflow trigger ${triggerId} in channel ${channelId}${
+          featuredResponse.error ? `: ${featuredResponse.error}` : ""
+        }`,
+      );
+    }
   }
 
   return resolveWorkflowTriggerShareUrl(triggerId);

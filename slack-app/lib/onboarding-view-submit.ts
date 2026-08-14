@@ -110,7 +110,12 @@ export async function loadDashboardContentForButton(
   if (!buttonValue) return fallbackContent;
 
   try {
-    const parsed = JSON.parse(buttonValue) as { dashboard_canvas_id?: string };
+    const parsed = JSON.parse(buttonValue) as {
+      dashboard_canvas_id?: string;
+      dashboard_canvas_content?: string;
+    };
+    const snapshot = parsed.dashboard_canvas_content?.trim();
+    if (snapshot) return snapshot;
     if (parsed.dashboard_canvas_id) {
       return await readCanvasMarkdown(client, parsed.dashboard_canvas_id);
     }

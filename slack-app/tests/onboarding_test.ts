@@ -59,7 +59,8 @@ Deno.test("Open onboarding form — Account is pre-filled from TesEventContext.a
   };
   assertEquals(metadata.channel_id, "C1");
   assertEquals(metadata.dashboard_canvas_id, "dash-1");
-  assertEquals(metadata.dashboard_canvas_content, undefined);
+  assertStringIncludes(metadata.dashboard_canvas_content ?? "", "dash-1");
+  assertStringIncludes(metadata.dashboard_canvas_content ?? "", "Acme Corp");
   assertEquals(view.private_metadata.length <= 3000, true);
 });
 

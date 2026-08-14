@@ -16,6 +16,14 @@ The system SHALL allow a TES team member to create a new TES Event Channel via a
 - **AND** all members selected in the creation modal SHALL be invited
 - **AND** the trigger user SHALL be invited if not already in the member list
 
+#### Scenario: Channel slug suffix when base name unavailable
+
+- **GIVEN** a user submits project name `Acme`
+- **AND** `#proj-acme-tes` is reserved but not available to reuse (e.g. deleted channel)
+- **WHEN** the provisioning workflow creates the channel
+- **THEN** the system SHALL create `#proj-acme1-tes` (or the next available numeric suffix before `-tes`)
+- **AND** the workflow output `channel_name` SHALL reflect the created name
+
 #### Scenario: Invalid project name
 
 - **GIVEN** a TES user invokes the provisioning shortcut
@@ -52,14 +60,14 @@ The "Create TES Event" shortcut trigger SHALL be provisioned as part of the stan
 
 ### Requirement: Unique display names on provision collision
 
-When creating a Slack canvas, list, or channel bookmark during TES Event Channel seeding, the system SHALL NOT retry creation with the same display name after Slack reports a name collision. The system SHALL append numeric suffixes `-1`, `-2`, … to the base display name until creation succeeds or a configured retry limit is reached.
+When creating a Slack canvas, list, or channel bookmark during TES Event Channel seeding, the system SHALL NOT retry creation with the same display name after Slack reports a name collision. The system SHALL append numeric suffixes `1`, `2`, … to the base display name until creation succeeds or a configured retry limit is reached.
 
 #### Scenario: Canvas title collision on seed
 
 - **GIVEN** a canvas step requests title `Dashboard`
 - **AND** a workspace canvas titled `Dashboard` already exists
 - **WHEN** channel seeding creates the canvas
-- **THEN** the system SHALL create the canvas with title `Dashboard-1` (or the next available suffix)
+- **THEN** the system SHALL create the canvas with title `Dashboard1` (or the next available suffix)
 - **AND** seeding SHALL complete successfully with the new canvas ID stored in `TesEventContext`
 
 #### Scenario: List name collision on seed
@@ -67,7 +75,7 @@ When creating a Slack canvas, list, or channel bookmark during TES Event Channel
 - **GIVEN** a list step resolves display name `Acme Deliverables`
 - **AND** a Slack List with that name already exists in the workspace
 - **WHEN** channel seeding creates the list
-- **THEN** the system SHALL create the list with name `Acme Deliverables-1` (or the next available suffix)
+- **THEN** the system SHALL create the list with name `Acme Deliverables1` (or the next available suffix)
 - **AND** a bookmark step with `bookmark: true` SHALL use the same allocated list display name
 
 #### Scenario: Base name used when no collision
@@ -78,7 +86,7 @@ When creating a Slack canvas, list, or channel bookmark during TES Event Channel
 
 #### Scenario: Retry limit exhausted
 
-- **GIVEN** display names `Title`, `Title-1`, … through the retry limit are all taken
+- **GIVEN** display names `Title`, `Title1`, … through the retry limit are all taken
 - **WHEN** channel seeding attempts to create the resource
 - **THEN** the system SHALL fail with an error identifying the base name and collision exhaustion
 - **AND** seeding SHALL NOT report partial success as complete

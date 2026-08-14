@@ -56,7 +56,7 @@ Deno.test("Create canvas retries with suffix on name collision", async () => {
   });
 
   assertEquals(id, "canvas-suffixed");
-  assertEquals(titles, ["Dashboard", "Dashboard-1"]);
+  assertEquals(titles, ["Dashboard", "Dashboard1"]);
 });
 
 Deno.test("Create canvas includes API error in message", async () => {

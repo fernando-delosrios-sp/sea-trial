@@ -1,8 +1,7 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
 import {
   buildInviteUserIds,
-  findPublicChannelByName,
-  unarchiveChannelIfNeeded,
+  createTesEventChannel,
   validateChannelName,
 } from "../../lib/channel.ts";
 
@@ -39,37 +38,24 @@ export default SlackFunction(
   ProvisionChannelFunction,
   async ({ inputs, client }) => {
     const validation = validateChannelName(inputs.project_name);
-    if (!validation.valid || !validation.channelName) {
+    if (!validation.valid) {
       return {
         error: validation.error ?? "Invalid project name",
       };
     }
 
-    const createResult = await client.conversations.create({
-      name: validation.channelName,
-      is_private: false,
-    });
+    let channelId: string;
+    let channelName: string;
 
-    let channelId = createResult.channel?.id;
-
-    if (!createResult.ok || !channelId) {
-      if (createResult.error !== "name_taken") {
-        return { error: createResult.error ?? "Failed to create channel" };
-      }
-
-      const existing = await findPublicChannelByName(
+    try {
+      ({ channelId, channelName } = await createTesEventChannel(
         client,
-        validation.channelName,
-      );
-      if (!existing?.id) {
-        return {
-          error:
-            `Channel #${validation.channelName} already exists but could not be found — try a different project name`,
-        };
-      }
-
-      await unarchiveChannelIfNeeded(client, existing);
-      channelId = existing.id;
+        inputs.project_name,
+      ));
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : "Failed to create channel",
+      };
     }
 
     const inviteUserIds = buildInviteUserIds(
@@ -85,10 +71,8 @@ export default SlackFunction(
     return {
       outputs: {
         channel_id: channelId,
-        channel_name: validation.channelName,
+        channel_name: channelName,
       },
     };
   },
 );
-
-

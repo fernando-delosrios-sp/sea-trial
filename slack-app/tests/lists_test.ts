@@ -302,13 +302,13 @@ Deno.test("createDeliverablesList retries with suffix on name collision", async 
   });
 
   assertEquals(listId, "F-deliverables-1");
-  assertEquals(displayName, "Acme Corp Deliverables-1");
+  assertEquals(displayName, "Acme Corp Deliverables1");
   assertEquals(createAttempts, 2);
   assertEquals(createNames, [
     "Acme Corp Deliverables",
-    "Acme Corp Deliverables-1",
+    "Acme Corp Deliverables1",
   ]);
-  assertEquals(bookmarkParams[0]?.title, "Acme Corp Deliverables-1");
+  assertEquals(bookmarkParams[0]?.title, "Acme Corp Deliverables1");
 });
 
 Deno.test("createDeliverablesList retries tab create with suffix on name collision", async () => {
@@ -332,7 +332,7 @@ Deno.test("createDeliverablesList retries tab create with suffix on name collisi
   });
 
   assertEquals(listId, "F-tabbed-1");
-  assertEquals(displayName, "Deliverables-1");
-  assertEquals(tabCreateNames, ["Deliverables", "Deliverables-1"]);
+  assertEquals(displayName, "Deliverables1");
+  assertEquals(tabCreateNames, ["Deliverables", "Deliverables1"]);
   assertEquals(createParams.length, 0);
 });

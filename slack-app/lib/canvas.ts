@@ -80,7 +80,7 @@ export interface CanvasSectionsClient {
 
 /**
  * Creates a new Slack canvas in a channel.
- * When the title already exists workspace-wide, retries with `-1`, `-2`, … suffixes.
+ * When the title already exists workspace-wide, retries with `1`, `2`, … suffixes (no separator).
  * @param client - Slack API client with canvas scopes
  * @param params - Channel ID, title, and markdown content
  * @returns Created canvas ID

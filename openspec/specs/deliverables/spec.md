@@ -146,7 +146,7 @@ When creating a delivery canvas for an accepted deliverable, the system SHALL ap
 - **GIVEN** a deliverable row with task ID `TASK-42`
 - **AND** a canvas titled `Delivery: TASK-42` already exists in the workspace
 - **WHEN** the delivery canvas orchestrator creates a new canvas for that row
-- **THEN** the system SHALL create the canvas with title `Delivery: TASK-42-1` (or the next available suffix)
+- **THEN** the system SHALL create the canvas with title `Delivery: TASK-421` (or the next available suffix)
 - **AND** the deliverable list item SHALL reference the newly created canvas ID
 
 #### Scenario: Delivery canvas uses base title when available

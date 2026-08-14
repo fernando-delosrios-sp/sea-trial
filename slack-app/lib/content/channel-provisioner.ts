@@ -165,16 +165,23 @@ async function provisionWorkflowStep(
   client: ChannelProvisionClient,
   step: CompositionStep & { kind: "workflow" },
   channelId: string,
-  dashboardCanvasId: string,
+  context: TesEventContext,
 ): Promise<string | undefined> {
   if (step.link !== "open_onboarding_workflow") {
     throw new Error(`Unknown workflow link "${step.link}" for step "${step.id}"`);
   }
 
+  if (!context.dashboardCanvasId) {
+    throw new Error(
+      `Workflow step "${step.id}" requires dashboard canvas to be provisioned first`,
+    );
+  }
+
   return await provisionOnboardingChannelShortcut(
     client,
     channelId,
-    dashboardCanvasId,
+    context.dashboardCanvasId,
+    serializeEventContext(context),
   );
 }
 
@@ -288,16 +295,11 @@ export async function provisionChannel(
         break;
       }
       case "workflow": {
-        if (!context.dashboardCanvasId) {
-          throw new Error(
-            `Workflow step "${step.id}" requires dashboard canvas to be provisioned first`,
-          );
-        }
         onboardingShortcutUrl = await provisionWorkflowStep(
           client,
           step,
           inputs.channel_id,
-          context.dashboardCanvasId,
+          context,
         ) ?? onboardingShortcutUrl;
         break;
       }

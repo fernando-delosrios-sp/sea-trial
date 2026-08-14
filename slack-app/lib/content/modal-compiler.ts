@@ -1,4 +1,4 @@
-import { deserializeEventContext } from "../event-context.ts";
+import { deserializeEventContext, serializeEventContext } from "../event-context.ts";
 import {
   validateModalBlocks,
   validateModalDynamicOverlay,
@@ -201,7 +201,12 @@ export function buildOnboardingModalView(
   applyDynamicOverlay(blocks, modal.dynamic, params);
 
   const context = deserializeEventContext(params.dashboardCanvasContent);
-  const dashboardCanvasId = context?.dashboardCanvasId?.trim();
+  if (!context) {
+    throw new Error(
+      "Dashboard canvas ID missing from TesEventContext — cannot open onboarding modal",
+    );
+  }
+  const dashboardCanvasId = context.dashboardCanvasId?.trim();
   if (!dashboardCanvasId) {
     throw new Error(
       "Dashboard canvas ID missing from TesEventContext — cannot open onboarding modal",
@@ -214,6 +219,7 @@ export function buildOnboardingModalView(
     private_metadata: JSON.stringify({
       channel_id: params.channelId,
       dashboard_canvas_id: dashboardCanvasId,
+      dashboard_canvas_content: serializeEventContext(context),
     }),
     title: modal.title,
     submit: modal.submit,

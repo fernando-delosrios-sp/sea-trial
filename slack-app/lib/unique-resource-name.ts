@@ -10,11 +10,11 @@ export class NameCollisionError extends Error {
 
 /**
  * Formats a candidate display name for a collision retry attempt.
- * Attempt 0 returns the base name; attempt N returns `{base}-{N}`.
+ * Attempt 0 returns the base name; attempt N returns `{base}{N}` (no separator).
  */
 export function formatSuffixedName(baseName: string, attemptIndex: number): string {
   if (attemptIndex <= 0) return baseName;
-  return `${baseName}-${attemptIndex}`;
+  return `${baseName}${attemptIndex}`;
 }
 
 /** Returns true when a Slack error indicates a display-name collision. */
@@ -36,7 +36,7 @@ export interface AllocateUniqueNameResult<T> {
 }
 
 /**
- * Attempts create with the base name, then `-1`, `-2`, … until success or cap.
+ * Attempts create with the base name, then `1`, `2`, … suffixes until success or cap.
  */
 export async function allocateUniqueName<T>(
   baseName: string,

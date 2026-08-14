@@ -11,6 +11,8 @@ Deno.test("slugifyProjectName converts to lowercase slug", () => {
 
 Deno.test("buildChannelName produces proj-{slug}-tes format", () => {
   assertEquals(buildChannelName("Acme Corp"), "proj-acme-corp-tes");
+  assertEquals(buildChannelName("Acme Corp", 1), "proj-acme-corp1-tes");
+  assertEquals(buildChannelName("Acme Corp", 2), "proj-acme-corp2-tes");
 });
 
 Deno.test("validateChannelName accepts valid project name", () => {

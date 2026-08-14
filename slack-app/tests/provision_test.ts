@@ -2,6 +2,7 @@ import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   buildChannelName,
   buildInviteUserIds,
+  createTesEventChannel,
   findPublicChannelByName,
   unarchiveChannelIfNeeded,
   validateChannelName,
@@ -95,6 +96,56 @@ Deno.test("unarchiveChannelIfNeeded unarchives archived channels", async () => {
     is_archived: true,
   });
 
+  assertEquals(unarchived, true);
+});
+
+Deno.test("createTesEventChannel retries slug suffix when base name is ghost-taken", async () => {
+  const createAttempts: string[] = [];
+  const client = {
+    conversations: {
+      create: async (params: { name: string }) => {
+        createAttempts.push(params.name);
+        if (params.name === "proj-acme-tes") {
+          return { ok: false, error: "name_taken" };
+        }
+        if (params.name === "proj-acme1-tes") {
+          return { ok: true, channel: { id: "C_ACME1" } };
+        }
+        return { ok: false, error: "invalid_name" };
+      },
+      list: async () => ({ ok: true, channels: [] }),
+    },
+  };
+
+  const result = await createTesEventChannel(client, "Acme");
+  assertEquals(result.channelId, "C_ACME1");
+  assertEquals(result.channelName, "proj-acme1-tes");
+  assertEquals(createAttempts, ["proj-acme-tes", "proj-acme1-tes"]);
+});
+
+Deno.test("createTesEventChannel reuses existing channel when name_taken and channel found", async () => {
+  let unarchived = false;
+  const client = {
+    conversations: {
+      create: async () => ({ ok: false, error: "name_taken" }),
+      list: async () => ({
+        ok: true,
+        channels: [{
+          id: "C_EXISTING",
+          name: "proj-acme-tes",
+          is_archived: true,
+        }],
+      }),
+      unarchive: async () => {
+        unarchived = true;
+        return { ok: true };
+      },
+    },
+  };
+
+  const result = await createTesEventChannel(client, "Acme");
+  assertEquals(result.channelId, "C_EXISTING");
+  assertEquals(result.channelName, "proj-acme-tes");
   assertEquals(unarchived, true);
 });
 

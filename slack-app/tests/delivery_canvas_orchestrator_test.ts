@@ -62,7 +62,7 @@ Deno.test("ensureDeliveryCanvasForValidationRequired suffixes title on collision
 
     assertEquals(result.created, true);
     assertEquals(result.canvasId, "canvas-delivery-1");
-    assertEquals(titles, ["Delivery: TASK-42", "Delivery: TASK-42-1"]);
+    assertEquals(titles, ["Delivery: TASK-42", "Delivery: TASK-421"]);
   } finally {
     globalThis.fetch = originalFetch;
   }

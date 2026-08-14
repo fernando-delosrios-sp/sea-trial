@@ -438,7 +438,7 @@ export async function fetchDeliverablesListRows(
 
 /**
  * Creates the Deliverables list with core schema columns from declarative JSON.
- * When the list name already exists workspace-wide, retries with `-1`, `-2`, … suffixes.
+ * When the list name already exists workspace-wide, retries with `1`, `2`, … suffixes (no separator).
  */
 export async function createDeliverablesList(
   client: SlackListClient,
@@ -450,7 +450,7 @@ export async function createDeliverablesList(
 
 /**
  * Creates the Incidents list with core schema columns from declarative JSON.
- * When the list name already exists workspace-wide, retries with `-1`, `-2`, … suffixes.
+ * When the list name already exists workspace-wide, retries with `1`, `2`, … suffixes (no separator).
  */
 export async function createIncidentsList(
   client: SlackListClient,

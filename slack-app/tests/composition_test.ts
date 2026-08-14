@@ -512,16 +512,16 @@ Deno.test("channel provisioner suffixes canvas and list names on collision", asy
       },
     );
 
-    assertEquals(context.dashboardCanvasId, "C-Dashboard-1");
-    assertEquals(context.deliverablesListId, "L-Acme Corp Deliverables-1");
-    assertEquals(canvasTitles.slice(0, 2), ["Dashboard", "Dashboard-1"]);
+    assertEquals(context.dashboardCanvasId, "C-Dashboard1");
+    assertEquals(context.deliverablesListId, "L-Acme Corp Deliverables1");
+    assertEquals(canvasTitles.slice(0, 2), ["Dashboard", "Dashboard1"]);
     assertEquals(listNames.slice(0, 2), [
       "Acme Corp Deliverables",
-      "Acme Corp Deliverables-1",
+      "Acme Corp Deliverables1",
     ]);
     assertEquals(
       listBookmarkAdds.some((entry) =>
-        entry.startsWith("Acme Corp Deliverables-1:")
+        entry.startsWith("Acme Corp Deliverables1:")
       ),
       true,
     );

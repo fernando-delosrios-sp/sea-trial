@@ -1,4 +1,5 @@
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
+import { serializeEventContext } from "../event-context.ts";
 import {
   getContextFieldForStepId,
   loadComposition,
@@ -138,6 +139,7 @@ export function renderPinnedIndexBlocks(
     onboardingComplete: context.onboardingComplete,
     buttonValueJson: {
       dashboard_canvas_id: context.dashboardCanvasId,
+      dashboard_canvas_content: serializeEventContext(context),
     },
     publishButtonValueJson: {
       dashboard_canvas_id: context.dashboardCanvasId,

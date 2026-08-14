@@ -58,6 +58,26 @@ Deno.test("readCanvasMarkdown includes metadata section outside headers", async 
   assertStringIncludes(content, "Acme Corp");
 });
 
+Deno.test("loadDashboardContentForButton uses snapshot in button value without canvas lookup", async () => {
+  const snapshot = serializeEventContext(baseContext);
+  const client = mockCanvasClient([]);
+  client.canvases.sections.lookup = async () => {
+    throw new Error("should not read canvas when snapshot is present");
+  };
+
+  const content = await loadDashboardContentForButton(
+    client,
+    JSON.stringify({
+      dashboard_canvas_id: "dash-1",
+      dashboard_canvas_content: snapshot,
+    }),
+    "",
+  );
+
+  assertStringIncludes(content, METADATA_MARKER);
+  assertStringIncludes(content, "Acme Corp");
+});
+
 Deno.test("loadDashboardContentForButton reads canvas via button value", async () => {
   const metadata = serializeEventContext(baseContext);
   const client = mockCanvasClient([

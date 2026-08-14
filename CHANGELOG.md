@@ -4,7 +4,8 @@
 
 ### Fixed
 
-- **Slack resource provisioning** — When a canvas or list display name already exists in the workspace, provisioning retries with `-1`, `-2`, … suffixes instead of failing; applies to channel seeding (canvases, lists, bookmarks) and delivery canvas creation
+- **Slack resource provisioning** — When a canvas or list display name already exists in the workspace, provisioning retries with `1`, `2`, … suffixes (no separator) instead of failing; applies to channel seeding (canvases, lists, bookmarks) and delivery canvas creation
+- **TES event channel slug** — When `#proj-{slug}-tes` is taken by an unavailable deleted channel, retry with `#proj-{slug}1-tes`, `#proj-{slug}2-tes`, … instead of failing
 
 ---
 

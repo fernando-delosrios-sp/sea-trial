@@ -40,6 +40,7 @@ export async function provisionOnboardingChannelShortcut(
   client: OnboardingTriggerClient,
   channelId: string,
   dashboardCanvasId: string,
+  dashboardCanvasContent = "",
 ): Promise<string | undefined> {
   const triggerResponse = await client.workflows.triggers.create({
     type: TriggerTypes.Shortcut,
@@ -52,7 +53,7 @@ export async function provisionOnboardingChannelShortcut(
         value: TriggerContextData.Shortcut.interactivity,
       },
       channel_id: { value: channelId },
-      dashboard_canvas_content: { value: "" },
+      dashboard_canvas_content: { value: dashboardCanvasContent },
       dashboard_canvas_id: { value: dashboardCanvasId },
     },
   });

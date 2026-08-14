@@ -84,9 +84,14 @@ export default SlackFunction(
       return { error: "Missing channel context for onboarding button." };
     }
 
+    const buttonValue = typeof action.value === "string"
+      ? action.value
+      : action.value != null
+      ? JSON.stringify(action.value)
+      : undefined;
     const dashboardCanvasContent = await loadDashboardContentForButton(
       client as unknown as CanvasSectionsClient,
-      typeof action.value === "string" ? action.value : undefined,
+      buttonValue,
       "",
     );
     if (!dashboardCanvasContent) {

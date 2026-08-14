@@ -105,11 +105,31 @@ Deno.test("pinnedIndexBlocks includes a Complete onboarding button when onboardi
   const blocks = pinnedIndexBlocks(baseContext, navOptions);
   const actionsBlock = blocks.find(
     (block) => (block as { type: string }).type === "actions",
-  ) as { elements: Array<{ action_id: string; text: { text: string } }> };
+  ) as {
+    elements: Array<{
+      action_id: string;
+      text: { text: string };
+      value: string | Record<string, unknown>;
+    }>;
+  };
 
   assertEquals(actionsBlock.elements.length, 1);
   assertEquals(actionsBlock.elements[0].action_id, "complete_onboarding");
   assertEquals(actionsBlock.elements[0].text.text, "Complete onboarding");
+  const rawValue = actionsBlock.elements[0].value;
+  const encoded = typeof rawValue === "string" ? rawValue : JSON.stringify(rawValue);
+  const buttonValue = (typeof rawValue === "string"
+    ? JSON.parse(rawValue)
+    : rawValue) as {
+      dashboard_canvas_id: string;
+      dashboard_canvas_content?: string;
+    };
+  assertEquals(buttonValue.dashboard_canvas_id, baseContext.dashboardCanvasId);
+  assertEquals(
+    Boolean(buttonValue.dashboard_canvas_content?.includes("Acme")),
+    true,
+  );
+  assertEquals(encoded.length <= 2000, true);
 });
 
 Deno.test("pinnedIndexBlocks shows Publish situation report when onboarding is complete", () => {

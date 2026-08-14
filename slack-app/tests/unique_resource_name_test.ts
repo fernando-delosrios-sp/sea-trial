@@ -15,8 +15,8 @@ Deno.test("formatSuffixedName returns base name for attempt zero", () => {
 });
 
 Deno.test("formatSuffixedName appends numeric suffix from one", () => {
-  assertEquals(formatSuffixedName("Dashboard", 1), "Dashboard-1");
-  assertEquals(formatSuffixedName("Dashboard", 2), "Dashboard-2");
+  assertEquals(formatSuffixedName("Dashboard", 1), "Dashboard1");
+  assertEquals(formatSuffixedName("Dashboard", 2), "Dashboard2");
 });
 
 Deno.test("isNameCollisionError detects known Slack collision codes", () => {
@@ -48,9 +48,9 @@ Deno.test("allocateUniqueName retries with suffix after collision", async () => 
     return "canvas-2";
   });
 
-  assertEquals(name, "Dashboard-1");
+  assertEquals(name, "Dashboard1");
   assertEquals(result, "canvas-2");
-  assertEquals(attempts, ["Dashboard", "Dashboard-1"]);
+  assertEquals(attempts, ["Dashboard", "Dashboard1"]);
 });
 
 Deno.test("allocateUniqueName throws when retry cap exhausted", async () => {

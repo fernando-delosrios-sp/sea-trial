@@ -1,3 +1,5 @@
+import { MAX_NAME_COLLISION_ATTEMPTS } from "./unique-resource-name.ts";
+
 /** Maximum Slack channel name length (includes # prefix in display, not in API name). */
 const MAX_CHANNEL_NAME_LENGTH = 80;
 
@@ -21,11 +23,16 @@ export function slugifyProjectName(projectName: string): string {
 /**
  * Builds the full TES event channel name from a project name.
  * @param projectName - User-provided project name
- * @returns Channel name without leading `#`, e.g. `proj-acme-corp-tes`
+ * @param suffixAttempt - 0 for base name; 1+ appends counter to slug before `-tes` (e.g. `proj-acme1-tes`)
+ * @returns Channel name without leading `#`, e.g. `proj-acme-corp-tes` or `proj-acme-corp1-tes`
  */
-export function buildChannelName(projectName: string): string {
+export function buildChannelName(
+  projectName: string,
+  suffixAttempt = 0,
+): string {
   const slug = slugifyProjectName(projectName);
-  return `proj-${slug}-tes`;
+  const counter = suffixAttempt > 0 ? String(suffixAttempt) : "";
+  return `proj-${slug}${counter}-tes`;
 }
 
 export interface ChannelNameValidation {
@@ -112,6 +119,14 @@ export interface SlackChannelListClient {
       response_metadata?: { next_cursor?: string };
       error?: string;
     }>;
+    create?: (params: {
+      name: string;
+      is_private: boolean;
+    }) => Promise<{
+      ok?: boolean;
+      error?: string;
+      channel?: { id?: string };
+    }>;
     unarchive?: (params: { channel: string }) => Promise<{
       ok?: boolean;
       error?: string;
@@ -171,5 +186,60 @@ export async function unarchiveChannelIfNeeded(
       `Failed to unarchive #${channel.name}${response.error ? `: ${response.error}` : ""}`,
     );
   }
+}
+
+/**
+ * Creates a TES event channel, reusing an existing public channel when found,
+ * or trying `proj-{slug}1-tes`, `proj-{slug}2-tes`, … when the base name is
+ * taken by a deleted (unlistable) channel.
+ */
+export async function createTesEventChannel(
+  client: SlackChannelListClient,
+  projectName: string,
+): Promise<{ channelId: string; channelName: string }> {
+  const validation = validateChannelName(projectName);
+  if (!validation.valid) {
+    throw new Error(validation.error ?? "Invalid project name");
+  }
+
+  for (let attempt = 0; attempt < MAX_NAME_COLLISION_ATTEMPTS; attempt++) {
+    const channelName = buildChannelName(projectName, attempt);
+
+    if (channelName.length > MAX_CHANNEL_NAME_LENGTH) {
+      throw new Error(
+        `Channel name is too long after ${attempt} collision retries. Shorten the project name.`,
+      );
+    }
+
+    const create = client.conversations.create;
+    if (typeof create !== "function") {
+      throw new Error("Client does not support conversations.create");
+    }
+
+    const createResult = await create({
+      name: channelName,
+      is_private: false,
+    });
+
+    if (createResult.ok && createResult.channel?.id) {
+      return { channelId: createResult.channel.id, channelName };
+    }
+
+    if (createResult.error !== "name_taken") {
+      throw new Error(createResult.error ?? "Failed to create channel");
+    }
+
+    const existing = await findPublicChannelByName(client, channelName);
+    if (existing?.id) {
+      await unarchiveChannelIfNeeded(client, existing);
+      return { channelId: existing.id, channelName };
+    }
+
+    // Name reserved (e.g. deleted channel) — try proj-{slug}1-tes, proj-{slug}2-tes, …
+  }
+
+  throw new Error(
+    `Failed to create channel for "${projectName.trim()}" after ${MAX_NAME_COLLISION_ATTEMPTS} name attempts`,
+  );
 }
 

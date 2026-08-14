@@ -179,6 +179,37 @@ Deno.test("createTesEventChannel suffixes when unarchive fails on archived chann
   assertEquals(createAttempts, ["proj-acme-tes", "proj-acme1-tes"]);
 });
 
+Deno.test("createTesEventChannel suffixes when active channel already exists", async () => {
+  const createAttempts: string[] = [];
+  const client = {
+    conversations: {
+      create: async (params: { name: string }) => {
+        createAttempts.push(params.name);
+        if (params.name === "proj-acme-tes") {
+          return { ok: false, error: "name_taken" };
+        }
+        if (params.name === "proj-acme1-tes") {
+          return { ok: true, channel: { id: "C_ACME1" } };
+        }
+        return { ok: false, error: "invalid_name" };
+      },
+      list: async () => ({
+        ok: true,
+        channels: [{
+          id: "C_EXISTING",
+          name: "proj-acme-tes",
+          is_archived: false,
+        }],
+      }),
+    },
+  };
+
+  const result = await createTesEventChannel(client, "Acme");
+  assertEquals(result.channelId, "C_ACME1");
+  assertEquals(result.channelName, "proj-acme1-tes");
+  assertEquals(createAttempts, ["proj-acme-tes", "proj-acme1-tes"]);
+});
+
 Deno.test("createTesEventChannel reuses existing channel when name_taken and channel found", async () => {
   let unarchived = false;
   const client = {

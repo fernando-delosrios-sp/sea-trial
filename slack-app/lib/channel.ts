@@ -259,7 +259,7 @@ export async function createTesEventChannel(
     }
 
     const existing = await findReusableChannelByName(client, channelName);
-    if (existing?.id) {
+    if (existing?.id && existing.is_archived) {
       try {
         await unarchiveChannelIfNeeded(client, existing);
         return { channelId: existing.id, channelName };

@@ -32,9 +32,10 @@ import {
 import { isKindProvisionable } from "./kind-registry.ts";
 import { buildOnboardingCanvasLink } from "../onboarding-canvas-link.ts";
 import {
-  provisionOnboardingChannelShortcut,
-  type OnboardingTriggerClient,
+  provisionWorkflowChannelAssociation,
+  type WorkflowTriggerClient,
 } from "../onboarding-channel-trigger.ts";
+import type { ListedTrigger } from "../triggers-config.ts";
 
 function resolveProvisionTeamId(
   env?: Record<string, string | undefined>,
@@ -56,11 +57,13 @@ export interface ProvisionInputs {
   member_user_ids?: string[];
   context_notes?: string;
   env?: Record<string, string | undefined>;
+  /** Optional deploy-time trigger list fallback when env trigger ID is unset. */
+  listed_triggers?: ListedTrigger[];
 }
 
 export interface ChannelProvisionClient
   extends SlackCanvasClient, SlackListClient, CanvasAssetUploadClient,
-    OnboardingTriggerClient {
+    WorkflowTriggerClient {
   chat: {
     postMessage: (params: {
       channel: string;
@@ -166,22 +169,25 @@ async function provisionWorkflowStep(
   step: CompositionStep & { kind: "workflow" },
   channelId: string,
   context: TesEventContext,
+  env?: Record<string, string | undefined>,
+  listedTriggers?: ListedTrigger[],
 ): Promise<string | undefined> {
-  if (step.link !== "open_onboarding_workflow") {
-    throw new Error(`Unknown workflow link "${step.link}" for step "${step.id}"`);
-  }
-
   if (!context.dashboardCanvasId) {
     throw new Error(
       `Workflow step "${step.id}" requires dashboard canvas to be provisioned first`,
     );
   }
 
-  return await provisionOnboardingChannelShortcut(
+  return await provisionWorkflowChannelAssociation(
     client,
     channelId,
-    context.dashboardCanvasId,
-    serializeEventContext(context),
+    step.link,
+    {
+      bookmark: step.bookmark,
+      featured: step.featured,
+    },
+    env,
+    listedTriggers,
   );
 }
 
@@ -300,6 +306,8 @@ export async function provisionChannel(
           step,
           inputs.channel_id,
           context,
+          inputs.env,
+          inputs.listed_triggers,
         ) ?? onboardingShortcutUrl;
         break;
       }

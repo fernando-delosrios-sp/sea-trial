@@ -6,7 +6,7 @@ AE/SE onboarding flow, suite-to-components mapping, and agent gate control.
 ## Requirements
 ### Requirement: Onboarding modal
 
-The system SHALL provide an onboarding modal accessible from the Complete onboarding button on the pinned index message. Modal Block Kit content SHALL be loaded from `slack-app/content/modals/onboarding.json` with dynamic overlay for Account prefill and SailPoint suite options from domain JSON. The Account field SHALL be pre-filled from creation context and SHALL remain editable.
+The system SHALL provide an onboarding modal accessible from the Complete onboarding button on the pinned index message and from the onboarding workflow when bookmarked in the channel Workflows tab. Modal Block Kit content SHALL be loaded from `slack-app/content/modals/onboarding.json` with dynamic overlay for Account prefill and SailPoint suite options from domain JSON. The Account field SHALL be pre-filled from creation context and SHALL remain editable.
 
 #### Scenario: Open onboarding form
 
@@ -14,6 +14,12 @@ The system SHALL provide an onboarding modal accessible from the Complete onboar
 - **WHEN** a user clicks the Complete onboarding button on the pinned index
 - **THEN** a modal SHALL open with all required onboarding fields from declarative JSON
 - **AND** the Account field SHALL be pre-filled with the value from `TesEventContext.accountName`
+
+#### Scenario: Open onboarding from Workflows tab
+
+- **GIVEN** a TES Event Channel with incomplete onboarding and onboarding workflow bookmarked in the Workflows tab
+- **WHEN** a channel member starts the bookmarked Complete Onboarding workflow from the Workflows tab
+- **THEN** the onboarding modal SHALL open for that channel
 
 #### Scenario: Submit onboarding
 

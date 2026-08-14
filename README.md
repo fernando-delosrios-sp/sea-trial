@@ -64,7 +64,7 @@ Import from `slack-app/lib/content/loader.ts` for the full public surface. JSON 
 
 #### Channel composition
 
-TES Event Channel structure — which objects are seeded, in what order, and how they surface — is declared in `slack-app/content/channels/tes-event.json` as an ordered `steps[]` array. Each step has an `id`, a `kind` (`canvas`, `list`, or `workflow`), and kind-specific fields. Canvases opt in to channel tabs with `"tab": true`; lists opt in to Bookmarks bar links with `"bookmark": true`. The kind registry under `slack-app/content/kinds/*.v1.json` defines extensible object types with `api_availability` gating. Loaders:
+TES Event Channel structure — which objects are seeded, in what order, and how they surface — is declared in `slack-app/content/channels/tes-event.json` as an ordered `steps[]` array. Each step has an `id`, a `kind` (`canvas`, `list`, or `workflow`), and kind-specific fields. Canvases opt in to channel tabs with `"tab": true`; lists opt in to Bookmarks bar links with `"bookmark": true`; workflow steps opt in to Workflows tab surfacing with `"bookmark": true` (bookmarked list) and/or `"featured": true` (featured composer button). The kind registry under `slack-app/content/kinds/*.v1.json` defines extensible object types with `api_availability` gating. Loaders:
 
 | Module | Purpose |
 |--------|---------|
@@ -81,7 +81,7 @@ The GitHub Actions deploy workflow provisions Slack triggers after `slack deploy
 | Trigger | Default scope | Purpose |
 |---------|---------------|---------|
 | **Create TES Event** | global (enabled) | Creation modal → provision workflow |
-| **Complete Onboarding** | global (disabled) | Optional link trigger — pinned index block action is primary |
+| **Complete Onboarding** | global (enabled) | Shared link trigger — channel provision grants run access per channel |
 | **TES Onboard** | channel (disabled) | Optional legacy channel shortcut |
 
 Configure scope and channel lists in `slack-app/triggers.config.yaml`:
@@ -120,6 +120,8 @@ Configuration is stored in GitHub Secrets and Variables. A manual workflow deplo
 | `LLM_MODEL` | Model name (e.g. `gpt-4o`) |
 | `RENDER_SERVICE_ID` | Render web service ID for agent-service |
 | `SLACK_TEAM_ID` | Slack workspace ID (T…) for pinned index navigation links and delivery canvas URLs |
+| `SLACK_ONBOARDING_TRIGGER_ID` | Shared "Complete Onboarding" link trigger ID (Ft…) — set after deploy provisions `complete-onboarding`; channel seeding resolves this before falling back to trigger list lookup |
+| `SLACK_ONBOARDING_TRIGGER_URL` | Optional shortcut URL for dashboard onboarding CTA (overrides default `https://slack.com/shortcuts/{id}`) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Grafana Cloud OTLP base URL (e.g. `https://otlp-gateway-prod-eu-west-6.grafana.net/otlp`) |
 | `OTEL_LOGS_ENABLED` | Set to `true` to push structured logs from both services (`false` by default) |
 | `SLACK_TRIGGER_CHANNEL_IDS` | Optional comma-separated Slack channel IDs for channel-scoped triggers (see `slack-app/triggers.config.yaml`) |

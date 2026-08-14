@@ -1,75 +1,124 @@
-import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/mod.ts";
-import OpenOnboardingWorkflow from "../workflows/open_onboarding.ts";
+import type { ListedTrigger } from "./triggers-config.ts";
+import {
+  isKnownWorkflowLink,
+  resolveWorkflowTriggerId,
+  resolveWorkflowTriggerShareUrl,
+} from "./workflow-trigger-registry.ts";
 
-export interface OnboardingTriggerClient {
+export interface WorkflowAssociationOptions {
+  bookmark?: true;
+  featured?: true;
+}
+
+export interface WorkflowTriggerClient {
   workflows: {
     triggers: {
-      create: (payload: Record<string, unknown>) => Promise<{
-        ok?: boolean;
-        error?: string;
-        trigger?: {
-          id?: string;
-          share_url?: string;
-          shortcut_url?: string;
-        };
-      }>;
       permissions: {
+        set?: (payload: {
+          trigger_id: string;
+          permission_type?: string;
+        }) => Promise<{ ok?: boolean; error?: string }>;
         add: (payload: {
           trigger_id: string;
           channel_ids?: string[];
         }) => Promise<{ ok?: boolean; error?: string }>;
       };
     };
+    featured?: {
+      add: (payload: {
+        channel_id: string;
+        trigger_ids: string[];
+      }) => Promise<{ ok?: boolean; error?: string }>;
+    };
   };
 }
 
-function resolveTriggerShareUrl(
-  trigger: { id?: string; share_url?: string; shortcut_url?: string },
-): string | undefined {
-  const direct = trigger.share_url?.trim() || trigger.shortcut_url?.trim();
-  if (direct) return direct;
-  if (trigger.id) return `https://slack.com/shortcuts/${trigger.id}`;
-  return undefined;
+/**
+ * Grants a shared deploy-time workflow trigger channel-scoped run access and
+ * optional Workflows tab surfacing.
+ */
+export async function associateWorkflowWithChannel(
+  client: WorkflowTriggerClient,
+  channelId: string,
+  triggerId: string,
+  options: WorkflowAssociationOptions = {},
+): Promise<string | undefined> {
+  if (options.bookmark === true) {
+    if (client.workflows.triggers.permissions.set) {
+      const basePermissions = await client.workflows.triggers.permissions.set({
+        trigger_id: triggerId,
+        permission_type: "named_entities",
+      });
+      if (!basePermissions.ok) {
+        return undefined;
+      }
+    }
+
+    const accessResponse = await client.workflows.triggers.permissions.add({
+      trigger_id: triggerId,
+      channel_ids: [channelId],
+    });
+
+    if (!accessResponse.ok) {
+      return undefined;
+    }
+  }
+
+  if (options.featured === true && client.workflows.featured?.add) {
+    const featuredResponse = await client.workflows.featured.add({
+      channel_id: channelId,
+      trigger_ids: [triggerId],
+    });
+    if (!featuredResponse.ok) {
+      return undefined;
+    }
+  }
+
+  return resolveWorkflowTriggerShareUrl(triggerId);
 }
 
 /**
- * Creates a channel-scoped "Complete onboarding" shortcut and grants access
- * to the provisioned TES Event Channel.
+ * Resolves a workflow step link to the shared deploy-time trigger and associates
+ * it with the provisioned channel.
  */
-export async function provisionOnboardingChannelShortcut(
-  client: OnboardingTriggerClient,
+export async function provisionWorkflowChannelAssociation(
+  client: WorkflowTriggerClient,
   channelId: string,
-  dashboardCanvasId: string,
-  dashboardCanvasContent = "",
+  link: string,
+  options: WorkflowAssociationOptions = {},
+  env?: Record<string, string | undefined>,
+  listedTriggers?: ListedTrigger[],
 ): Promise<string | undefined> {
-  const triggerResponse = await client.workflows.triggers.create({
-    type: TriggerTypes.Shortcut,
-    name: "Complete Onboarding",
-    description: `Open onboarding for TES Event Channel ${channelId}`,
-    workflow:
-      `#/workflows/${OpenOnboardingWorkflow.definition.callback_id}`,
-    inputs: {
-      interactivity: {
-        value: TriggerContextData.Shortcut.interactivity,
-      },
-      channel_id: { value: channelId },
-      dashboard_canvas_content: { value: dashboardCanvasContent },
-      dashboard_canvas_id: { value: dashboardCanvasId },
-    },
-  });
+  if (!isKnownWorkflowLink(link)) {
+    throw new Error(`Unknown workflow link "${link}"`);
+  }
 
-  if (!triggerResponse.ok || !triggerResponse.trigger?.id) {
+  const triggerId = resolveWorkflowTriggerId(link, env, listedTriggers);
+  if (!triggerId) {
     return undefined;
   }
 
-  const accessResponse = await client.workflows.triggers.permissions.add({
-    trigger_id: triggerResponse.trigger.id,
-    channel_ids: [channelId],
-  });
+  return await associateWorkflowWithChannel(
+    client,
+    channelId,
+    triggerId,
+    options,
+  );
+}
 
-  if (!accessResponse.ok) {
-    return undefined;
-  }
-
-  return resolveTriggerShareUrl(triggerResponse.trigger);
+/** @deprecated Use provisionWorkflowChannelAssociation. */
+export async function provisionOnboardingChannelShortcut(
+  client: WorkflowTriggerClient,
+  channelId: string,
+  _dashboardCanvasId: string,
+  _dashboardCanvasContent = "",
+  env?: Record<string, string | undefined>,
+): Promise<string | undefined> {
+  return await provisionWorkflowChannelAssociation(
+    client,
+    channelId,
+    "open_onboarding_workflow",
+    { bookmark: true },
+    env,
+  );
 }

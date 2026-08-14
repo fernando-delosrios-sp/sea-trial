@@ -1,8 +1,5 @@
-# channel-composition Specification
+## MODIFIED Requirements
 
-## Purpose
-Declarative blueprint for TES Event Channel structure — which Slack objects compose a channel, provisioning order, step linking, and navigation.
-## Requirements
 ### Requirement: Channel composition manifest
 
 The slack-app SHALL define channel structure in a versioned JSON manifest under `slack-app/content/channels/`. The manifest SHALL declare an ordered `steps` array. Each step SHALL have a stable `id`, a `kind` (`canvas`, `list`, or `workflow`), and kind-specific fields validated by JSON Schema. Canvas and list steps SHALL reference content templates via `ref`. Workflow steps SHALL reference deploy-time app workflows via `link`. Optional `title` MAY label a step for pinned index derivation. Workflow steps MAY declare opt-in `bookmark: true` for Workflows tab bookmarked surfacing and opt-in `featured: true` for Workflows tab featured surfacing. The `tes-event` manifest SHALL include a `situation_report` canvas step.
@@ -43,32 +40,6 @@ The slack-app SHALL define channel structure in a versioned JSON manifest under 
 - **WHEN** the resolver supplies steps to the provisioner
 - **THEN** steps SHALL be executed in manifest array order
 - **AND** cyclic or unknown `after` dependencies SHALL be rejected with a clear error when `after` is introduced in a future manifest version
-
-### Requirement: Kind registry
-
-The slack-app SHALL maintain an open kind registry under `slack-app/content/kinds/*.v1.json`. Each kind SHALL declare `api_availability` (`stable`, `preview`, `planned`). Only kinds with `api_availability: stable` SHALL be provisioned.
-
-#### Scenario: Stable kinds are provisioned
-
-- **GIVEN** a composition step references kind `canvas` with registry `api_availability: stable`
-- **WHEN** channel provisioning runs
-- **THEN** the canvas provision handler SHALL execute
-
-#### Scenario: Unstable kinds are skipped
-
-- **GIVEN** a composition step references a kind with `api_availability: planned`
-- **WHEN** channel provisioning runs
-- **THEN** the step SHALL be skipped without error
-
-### Requirement: Slot-based context linking
-
-Object IDs provisioned during channel create SHALL be stored using step `id` identifiers. The provisioner SHALL bridge step IDs to flat `TesEventContext` fields for backward compatibility using an internal id-to-field map maintained in code (not in the manifest).
-
-#### Scenario: Slot map populates context fields
-
-- **GIVEN** provisioning completes for steps `dashboard`, `requirements`, and `deliverables`
-- **WHEN** context is serialized to Dashboard metadata
-- **THEN** `dashboardCanvasId`, `requirementsCanvasId`, and `deliverablesListId` SHALL contain the provisioned Slack IDs
 
 ### Requirement: Opt-in channel surfacing
 
@@ -113,6 +84,8 @@ The channel provisioner SHALL apply channel surfacing only when declared on a st
 - **WHEN** channel provisioning runs
 - **THEN** the provisioner SHALL call `workflows.featured.add` with the channel ID and shared trigger ID
 
+## ADDED Requirements
+
 ### Requirement: Shared workflow trigger registry
 
 The slack-app SHALL resolve workflow step `link` values to deploy-time trigger IDs without creating new triggers during channel provision. The onboarding link `open_onboarding_workflow` SHALL map to a single link trigger installed at deploy time.
@@ -129,21 +102,3 @@ The slack-app SHALL resolve workflow step `link` values to deploy-time trigger I
 - **GIVEN** a workflow step references an unknown `link`
 - **WHEN** channel provisioning runs
 - **THEN** provisioning SHALL fail with a clear error
-
-### Requirement: Pinned index from steps
-
-The pinned index message SHALL derive navigable object links from manifest `steps` that have a `title` and a provisioned object ID, in `steps` order, rather than from a separate `navigation` block.
-
-#### Scenario: Pinned index follows step order
-
-- **GIVEN** a seeded channel with all titled steps populated
-- **WHEN** the pinned index message is rendered
-- **THEN** link lines SHALL follow `steps` order for steps with `title`
-- **AND** each link SHALL reference the correct Slack object ID for its step `id`
-
-#### Scenario: Situation report appears in pinned index
-
-- **GIVEN** `tes-event.json` includes a titled `situation_report` canvas step
-- **WHEN** the pinned index message is rendered
-- **THEN** a link to the Situation Report canvas SHALL be present
-

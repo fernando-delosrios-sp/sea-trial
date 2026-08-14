@@ -45,7 +45,8 @@
     {
       "id": "onboarding",
       "kind": "workflow",
-      "link": "open_onboarding_workflow"
+      "link": "open_onboarding_workflow",
+      "bookmark": true
     }
   ]
 }

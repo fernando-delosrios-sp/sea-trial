@@ -2,8 +2,8 @@ import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/mod.ts";
 import OpenOnboardingWorkflow from "../workflows/open_onboarding.ts";
 
 /**
- * Global shortcut fallback for opening onboarding (channel shortcuts are
- * provisioned per TES Event Channel at create time).
+ * Shared deploy-time link trigger for opening onboarding. Channel context comes
+ * from TriggerContextData at invoke time; channel provision grants run access.
  */
 const completeOnboardingTrigger = {
   type: TriggerTypes.Shortcut,

@@ -21,7 +21,7 @@ triggers:
     trigger_def: triggers/complete_onboarding.ts
     scope: global
     channels: []
-    enabled: false  # per-channel shortcuts are provisioned at channel create; global remains optional
+    enabled: true  # shared deploy-time link trigger; channel provision grants access via permissions
 
   - id: tes-onboard
     trigger_def: triggers/tes_onboard.ts

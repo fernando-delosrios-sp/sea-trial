@@ -21,6 +21,8 @@ export interface WorkflowStep {
   id: string;
   kind: "workflow";
   link: string;
+  bookmark?: true;
+  featured?: true;
 }
 
 export type CompositionStep = CanvasStep | ListStep | WorkflowStep;
@@ -76,6 +78,9 @@ function parseStep(entry: unknown, index: number, source: string): CompositionSt
     if (row.bookmark !== undefined) {
       throw new Error(`${label} canvas step must not contain bookmark`);
     }
+    if (row.featured !== undefined) {
+      throw new Error(`${label} canvas step must not contain featured`);
+    }
     if (row.tab !== undefined && row.tab !== true) {
       throw new Error(`${label}.tab must be true when present`);
     }
@@ -96,6 +101,9 @@ function parseStep(entry: unknown, index: number, source: string): CompositionSt
     if (row.tab !== undefined) {
       throw new Error(`${label} list step must not contain tab`);
     }
+    if (row.featured !== undefined) {
+      throw new Error(`${label} list step must not contain featured`);
+    }
     if (row.bookmark !== undefined && row.bookmark !== true) {
       throw new Error(`${label}.bookmark must be true when present`);
     }
@@ -113,10 +121,22 @@ function parseStep(entry: unknown, index: number, source: string): CompositionSt
     if (row.ref !== undefined) {
       throw new Error(`${label} workflow step must not contain ref`);
     }
-    if (row.tab !== undefined || row.bookmark !== undefined) {
-      throw new Error(`${label} workflow step must not contain tab or bookmark`);
+    if (row.tab !== undefined) {
+      throw new Error(`${label} workflow step must not contain tab`);
     }
-    return { id, kind: "workflow", link };
+    if (row.bookmark !== undefined && row.bookmark !== true) {
+      throw new Error(`${label}.bookmark must be true when present`);
+    }
+    if (row.featured !== undefined && row.featured !== true) {
+      throw new Error(`${label}.featured must be true when present`);
+    }
+    return {
+      id,
+      kind: "workflow",
+      link,
+      bookmark: row.bookmark === true ? true : undefined,
+      featured: row.featured === true ? true : undefined,
+    };
   }
 
   throw new Error(`${label}.kind must be canvas, list, or workflow`);

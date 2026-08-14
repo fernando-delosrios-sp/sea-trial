@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-14 — Workflow channel surfacing
+
+### Changed
+
+- **Workflow step surfacing** — Workflow steps in `tes-event.json` may declare `"bookmark": true` (Workflows tab bookmarked list) and/or `"featured": true` (Workflows tab featured via `workflows.featured.add`); list `"bookmark": true` remains header Bookmarks bar only
+- **Shared onboarding trigger** — Replace per-channel `triggers.create` with one deploy-time "Complete Onboarding" link trigger; channel provision resolves `SLACK_ONBOARDING_TRIGGER_ID` and grants channel-scoped run access via trigger permissions
+- **Onboarding manifest** — TES event onboarding workflow step declares `"bookmark": true`
+
+### Fixed
+
+- **Duplicate onboarding shortcuts** — Provisioning a second TES Event channel no longer creates another global "Complete Onboarding" shortcut entry
+
+---
+
 ## 2026-08-14 — Resource name collision suffix
 
 ### Fixed

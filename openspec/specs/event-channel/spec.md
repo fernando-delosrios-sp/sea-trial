@@ -95,7 +95,7 @@ When creating a Slack canvas, list, or channel bookmark during TES Event Channel
 
 ### Requirement: Channel object seeding
 
-On channel creation, the system SHALL seed all required Slack objects by executing the channel composition manifest for `tes-event`, write creation fields to the Dashboard `## Project` section, and post a pinned index with an onboarding button. Canvas, list, and message content SHALL be loaded from declarative content files under `slack-app/content/`, not inline TypeScript templates. Object IDs SHALL be mapped to step `id` values in the composition manifest and bridged to flat `TesEventContext` fields by the provisioner. Seeding SHALL include a Situation Report canvas initialized from `situation-report.hbs.md`. Display names for created canvases and lists SHALL be disambiguated per the Unique display names on provision collision requirement when workspace name collisions occur; manifest step `id` values and context field mapping SHALL remain unchanged regardless of suffix.
+On channel creation, the system SHALL seed all required Slack objects by executing the channel composition manifest for `tes-event`, write creation fields to the Dashboard `## Project` section, and post a pinned index with an onboarding button. Canvas, list, and message content SHALL be loaded from declarative content files under `slack-app/content/`, not inline TypeScript templates. Object IDs SHALL be mapped to step `id` values in the composition manifest and bridged to flat `TesEventContext` fields by the provisioner. Seeding SHALL include a Situation Report canvas initialized from `situation-report.hbs.md`. Display names for created canvases and lists SHALL be disambiguated per the Unique display names on provision collision requirement when workspace name collisions occur; manifest step `id` values and context field mapping SHALL remain unchanged regardless of suffix. Workflow steps with `bookmark: true` SHALL surface via the shared deploy-time trigger and channel-scoped permissions, not per-channel trigger creation.
 
 #### Scenario: Objects seeded on creation
 
@@ -103,7 +103,8 @@ On channel creation, the system SHALL seed all required Slack objects by executi
 - **WHEN** seeding completes via the channel provisioner
 - **THEN** Dashboard, Requirements, Infrastructure, and Situation Report canvases SHALL exist
 - **AND** Deliverables and Incidents lists SHALL exist with core column schemas from list JSON
-- **AND** Deliverables and Incidents lists with `bookmark: true` SHALL be attached to the channel as bookmarks per the List channel attachment requirement
+- **AND** Deliverables and Incidents lists with `bookmark: true` SHALL be attached to the channel as header bookmarks per the List channel attachment requirement
+- **AND** the onboarding workflow step with `bookmark: true` SHALL be associated with the channel Workflows tab without creating a duplicate global shortcut per channel
 - **AND** object IDs SHALL be stored in Dashboard canvas metadata as `TesEventContext`
 - **AND** a pinned index message SHALL link all titled steps with a Complete onboarding button
 - **AND** `TesEventContext` SHALL contain `situationReportCanvasId`

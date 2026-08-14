@@ -1,4 +1,7 @@
-import { MAX_NAME_COLLISION_ATTEMPTS } from "./unique-resource-name.ts";
+import {
+  isNameCollisionError,
+  MAX_NAME_COLLISION_ATTEMPTS,
+} from "./unique-resource-name.ts";
 
 /** Maximum Slack channel name length (includes # prefix in display, not in API name). */
 const MAX_CHANNEL_NAME_LENGTH = 80;
@@ -122,16 +125,26 @@ export interface SlackChannelListClient {
     create?: (params: {
       name: string;
       is_private: boolean;
-    }) => Promise<{
-      ok?: boolean;
-      error?: string;
-      channel?: { id?: string };
-    }>;
+    }) => Promise<CreateChannelResponse>;
     unarchive?: (params: { channel: string }) => Promise<{
       ok?: boolean;
       error?: string;
     }>;
   };
+}
+
+export interface CreateChannelResponse {
+  ok?: boolean;
+  error?: string;
+  channel?: { id?: string };
+  channel_id?: string;
+}
+
+/** Extracts a channel ID from a conversations.create response. */
+export function extractChannelId(
+  response: CreateChannelResponse,
+): string | undefined {
+  return response.channel?.id ?? response.channel_id;
 }
 
 /** Finds a public channel by exact name, including archived channels. */
@@ -164,6 +177,21 @@ export async function findPublicChannelByName(
   } while (cursor);
 
   return undefined;
+}
+
+/**
+ * Looks up a reusable channel by name. Returns undefined when not found or when
+ * listing fails (e.g. transient API errors — treat as ghost-taken and suffix).
+ */
+async function findReusableChannelByName(
+  client: SlackChannelListClient,
+  channelName: string,
+): Promise<SlackChannelSummary | undefined> {
+  try {
+    return await findPublicChannelByName(client, channelName);
+  } catch {
+    return undefined;
+  }
 }
 
 /** Unarchives a channel when the Slack API supports it. */
@@ -221,18 +249,24 @@ export async function createTesEventChannel(
       is_private: false,
     });
 
-    if (createResult.ok && createResult.channel?.id) {
-      return { channelId: createResult.channel.id, channelName };
+    const createdChannelId = extractChannelId(createResult);
+    if (createdChannelId && createResult.ok !== false) {
+      return { channelId: createdChannelId, channelName };
     }
 
-    if (createResult.error !== "name_taken") {
+    if (!isNameCollisionError(createResult.error)) {
       throw new Error(createResult.error ?? "Failed to create channel");
     }
 
-    const existing = await findPublicChannelByName(client, channelName);
+    const existing = await findReusableChannelByName(client, channelName);
     if (existing?.id) {
-      await unarchiveChannelIfNeeded(client, existing);
-      return { channelId: existing.id, channelName };
+      try {
+        await unarchiveChannelIfNeeded(client, existing);
+        return { channelId: existing.id, channelName };
+      } catch {
+        // Archived channel cannot be reused — try proj-{slug}1-tes, …
+        continue;
+      }
     }
 
     // Name reserved (e.g. deleted channel) — try proj-{slug}1-tes, proj-{slug}2-tes, …

@@ -63,10 +63,29 @@ export default SlackFunction(
       inputs.submitting_user_id,
     );
 
-    await client.conversations.invite({
-      channel: channelId,
-      users: inviteUserIds.join(","),
-    });
+    try {
+      const inviteResult = await client.conversations.invite({
+        channel: channelId,
+        users: inviteUserIds.join(","),
+      });
+
+      if (
+        inviteResult.ok === false &&
+        inviteResult.error !== "already_in_channel"
+      ) {
+        return {
+          error: `Channel created as #${channelName} but failed to invite members${
+            inviteResult.error ? `: ${inviteResult.error}` : ""
+          }`,
+        };
+      }
+    } catch (error) {
+      return {
+        error: error instanceof Error
+          ? error.message
+          : `Channel created as #${channelName} but failed to invite members`,
+      };
+    }
 
     return {
       outputs: {

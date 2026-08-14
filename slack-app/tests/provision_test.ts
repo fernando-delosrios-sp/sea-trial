@@ -123,6 +123,62 @@ Deno.test("createTesEventChannel retries slug suffix when base name is ghost-tak
   assertEquals(createAttempts, ["proj-acme-tes", "proj-acme1-tes"]);
 });
 
+Deno.test("createTesEventChannel suffixes when channel list fails on name_taken", async () => {
+  const createAttempts: string[] = [];
+  const client = {
+    conversations: {
+      create: async (params: { name: string }) => {
+        createAttempts.push(params.name);
+        if (params.name === "proj-acme-tes") {
+          return { ok: false, error: "name_taken" };
+        }
+        if (params.name === "proj-acme1-tes") {
+          return { channel_id: "C_ACME1" };
+        }
+        return { ok: false, error: "invalid_name" };
+      },
+      list: async () => ({ ok: false, error: "missing_scope" }),
+    },
+  };
+
+  const result = await createTesEventChannel(client, "Acme");
+  assertEquals(result.channelId, "C_ACME1");
+  assertEquals(result.channelName, "proj-acme1-tes");
+  assertEquals(createAttempts, ["proj-acme-tes", "proj-acme1-tes"]);
+});
+
+Deno.test("createTesEventChannel suffixes when unarchive fails on archived channel", async () => {
+  const createAttempts: string[] = [];
+  const client = {
+    conversations: {
+      create: async (params: { name: string }) => {
+        createAttempts.push(params.name);
+        if (params.name === "proj-acme-tes") {
+          return { ok: false, error: "name_taken" };
+        }
+        if (params.name === "proj-acme1-tes") {
+          return { ok: true, channel: { id: "C_ACME1" } };
+        }
+        return { ok: false, error: "invalid_name" };
+      },
+      list: async () => ({
+        ok: true,
+        channels: [{
+          id: "C_ARCHIVED",
+          name: "proj-acme-tes",
+          is_archived: true,
+        }],
+      }),
+      unarchive: async () => ({ ok: false, error: "restricted_action" }),
+    },
+  };
+
+  const result = await createTesEventChannel(client, "Acme");
+  assertEquals(result.channelId, "C_ACME1");
+  assertEquals(result.channelName, "proj-acme1-tes");
+  assertEquals(createAttempts, ["proj-acme-tes", "proj-acme1-tes"]);
+});
+
 Deno.test("createTesEventChannel reuses existing channel when name_taken and channel found", async () => {
   let unarchived = false;
   const client = {

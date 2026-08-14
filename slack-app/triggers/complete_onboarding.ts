@@ -17,9 +17,6 @@ const completeOnboardingTrigger = {
     interactivity: {
       value: TriggerContextData.Shortcut.interactivity,
     },
-    dashboard_canvas_content: {
-      value: "",
-    },
   },
 };
 

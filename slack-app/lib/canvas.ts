@@ -11,6 +11,11 @@ export interface UpdateCanvasSectionParams {
 }
 
 import { METADATA_MARKER } from "./event-context.ts";
+import {
+  allocateUniqueName,
+  isNameCollisionError,
+  NameCollisionError,
+} from "./unique-resource-name.ts";
 
 export interface SlackCanvasCreateResponse {
   ok?: boolean;
@@ -75,6 +80,7 @@ export interface CanvasSectionsClient {
 
 /**
  * Creates a new Slack canvas in a channel.
+ * When the title already exists workspace-wide, retries with `-1`, `-2`, … suffixes.
  * @param client - Slack API client with canvas scopes
  * @param params - Channel ID, title, and markdown content
  * @returns Created canvas ID
@@ -83,17 +89,27 @@ export async function createCanvas(
   client: SlackCanvasClient,
   params: CreateCanvasParams,
 ): Promise<string> {
-  const response = await client.canvases.create({
-    ...(params.channelId ? { channel_id: params.channelId } : {}),
-    title: params.title,
-    document_content: { type: "markdown", markdown: params.content },
-  });
+  const { result: canvasId } = await allocateUniqueName(
+    params.title,
+    async (title) => {
+      const response = await client.canvases.create({
+        ...(params.channelId ? { channel_id: params.channelId } : {}),
+        title,
+        document_content: { type: "markdown", markdown: params.content },
+      });
 
-  const canvasId = response.canvas_id ?? response.canvas?.id;
-  if (!canvasId) {
-    const detail = response.error ? `: ${response.error}` : "";
-    throw new Error(`Failed to create canvas "${params.title}"${detail}`);
-  }
+      const id = response.canvas_id ?? response.canvas?.id;
+      if (!id) {
+        if (isNameCollisionError(response.error)) {
+          throw new NameCollisionError(response.error!);
+        }
+        const detail = response.error ? `: ${response.error}` : "";
+        throw new Error(`Failed to create canvas "${title}"${detail}`);
+      }
+      return id;
+    },
+  );
+
   return canvasId;
 }
 

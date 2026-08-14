@@ -10,6 +10,11 @@ import {
 } from "./content/slack-list-schema.ts";
 import { getDeliverableStatusChoices } from "./content/domain.ts";
 import { buildObjectLinkUrl } from "./content/message-renderer.ts";
+import {
+  allocateUniqueName,
+  isNameCollisionError,
+  NameCollisionError,
+} from "./unique-resource-name.ts";
 export interface SlackListCreateResponse {
   ok?: boolean;
   error?: string;
@@ -50,6 +55,11 @@ export interface CreateListInChannelOptions {
   attachToChannel?: boolean;
   teamId?: string;
   accountName?: string;
+}
+
+export interface CreateListResult {
+  listId: string;
+  displayName: string;
 }
 
 export interface SlackListApiCallResponse {
@@ -208,6 +218,10 @@ async function createListChannelTab(
 
   if (response.error === "unknown_method") return undefined;
 
+  if (isNameCollisionError(response.error)) {
+    throw new NameCollisionError(response.error!);
+  }
+
   const detail = response.error ? `: ${response.error}` : "";
   throw new Error(`Failed to create ${listName} list channel tab${detail}`);
 }
@@ -278,9 +292,12 @@ export async function attachListInChannel(
   channelId: string,
   listRef: string,
   listId: string,
-  options: Pick<CreateListInChannelOptions, "accountName" | "teamId">,
+  options: Pick<CreateListInChannelOptions, "accountName" | "teamId"> & {
+    displayName?: string;
+  },
 ): Promise<void> {
-  const listName = formatScopedListName(listRef, options.accountName);
+  const listName = options.displayName ??
+    formatScopedListName(listRef, options.accountName);
   const tabAttached = await attachListChannelTab(
     client,
     channelId,
@@ -301,15 +318,14 @@ export async function attachListInChannel(
   });
 }
 
-async function createListInChannel(
+async function createListWithDisplayName(
   client: SlackListClient,
   channelId: string,
   listRef: string,
-  options: CreateListInChannelOptions = {},
+  listName: string,
+  schema: SlackListSchemaColumn[],
+  options: CreateListInChannelOptions,
 ): Promise<string> {
-  const listName = formatScopedListName(listRef, options.accountName);
-  const schema = getSlackListSchema(listRef);
-
   let listId: string | undefined;
   let attachedAsTab = false;
 
@@ -326,6 +342,9 @@ async function createListInChannel(
 
     listId = resolveListId(response);
     if (!listId) {
+      if (isNameCollisionError(response.error)) {
+        throw new NameCollisionError(response.error!);
+      }
       console.error(formatListCreateFailure(listName, response, schema));
       throw new Error(formatListCreateFailure(listName, response, schema));
     }
@@ -346,15 +365,41 @@ async function createListInChannel(
     await attachListInChannel(client, channelId, listRef, listId, {
       accountName: options.accountName,
       teamId: options.teamId,
+      displayName: listName,
     });
   }
+
+  return listId;
+}
+
+async function createListInChannel(
+  client: SlackListClient,
+  channelId: string,
+  listRef: string,
+  options: CreateListInChannelOptions = {},
+): Promise<CreateListResult> {
+  const baseName = formatScopedListName(listRef, options.accountName);
+  const schema = getSlackListSchema(listRef);
+
+  const { name: displayName, result: listId } = await allocateUniqueName(
+    baseName,
+    async (candidateName) =>
+      await createListWithDisplayName(
+        client,
+        channelId,
+        listRef,
+        candidateName,
+        schema,
+        options,
+      ),
+  );
 
   const seedItems = getListSeedItems(listRef);
   if (seedItems.length > 0) {
     await seedListItems(client, listId, listRef, seedItems);
   }
 
-  return listId;
+  return { listId, displayName };
 }
 
 /** Reads deliverable rows from a Slack List by column key. */
@@ -393,22 +438,24 @@ export async function fetchDeliverablesListRows(
 
 /**
  * Creates the Deliverables list with core schema columns from declarative JSON.
+ * When the list name already exists workspace-wide, retries with `-1`, `-2`, … suffixes.
  */
 export async function createDeliverablesList(
   client: SlackListClient,
   channelId: string,
   options: CreateListInChannelOptions = {},
-): Promise<string> {
+): Promise<CreateListResult> {
   return await createListInChannel(client, channelId, "deliverables", options);
 }
 
 /**
  * Creates the Incidents list with core schema columns from declarative JSON.
+ * When the list name already exists workspace-wide, retries with `-1`, `-2`, … suffixes.
  */
 export async function createIncidentsList(
   client: SlackListClient,
   channelId: string,
   options: CreateListInChannelOptions = {},
-): Promise<string> {
+): Promise<CreateListResult> {
   return await createListInChannel(client, channelId, "incidents", options);
 }

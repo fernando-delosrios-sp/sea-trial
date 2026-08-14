@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-14 — Resource name collision suffix
+
+### Fixed
+
+- **Slack resource provisioning** — When a canvas or list display name already exists in the workspace, provisioning retries with `-1`, `-2`, … suffixes instead of failing; applies to channel seeding (canvases, lists, bookmarks) and delivery canvas creation
+
+---
+
 ## 2026-08-14 — Simplified channel composition
 
 ### Changed

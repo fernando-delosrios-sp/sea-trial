@@ -38,6 +38,27 @@ Deno.test("Create canvas falls back to nested canvas.id", async () => {
   assertEquals(id, "nested-id");
 });
 
+Deno.test("Create canvas retries with suffix on name collision", async () => {
+  const titles: string[] = [];
+  const client = mockClient([]);
+  client.canvases.create = async (params) => {
+    titles.push(params.title);
+    if (params.title === "Dashboard") {
+      return { ok: false, error: "name_taken" };
+    }
+    return { ok: true, canvas_id: "canvas-suffixed" };
+  };
+
+  const id = await createCanvas(client, {
+    channelId: "C1",
+    title: "Dashboard",
+    content: "# Hello",
+  });
+
+  assertEquals(id, "canvas-suffixed");
+  assertEquals(titles, ["Dashboard", "Dashboard-1"]);
+});
+
 Deno.test("Create canvas includes API error in message", async () => {
   const client = mockClient([]);
   client.canvases.create = async () => ({ ok: false, error: "missing_scope" });

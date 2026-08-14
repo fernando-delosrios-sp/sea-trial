@@ -431,6 +431,105 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
   }
 });
 
+Deno.test("channel provisioner suffixes canvas and list names on collision", async () => {
+  resetCompositionCacheForTests();
+  resetKindCacheForTests();
+  resetMessageCacheForTests();
+
+  const canvasTitles: string[] = [];
+  const listNames: string[] = [];
+  const listBookmarkAdds: string[] = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(null, { status: 200 });
+
+  try {
+    const context = await provisionChannel(
+      {
+        files: {
+          getUploadURLExternal: async () => ({
+            ok: true,
+            upload_url: "https://upload.example.test",
+            file_id: "F-banner",
+          }),
+          completeUploadExternal: async () => ({
+            ok: true,
+            files: [{ permalink: "https://example.slack.com/files/U1/F1/banner.png" }],
+          }),
+          info: async () => ({ ok: true, file: { permalink: "unused" } }),
+        },
+        canvases: {
+          create: async (params: { title: string; channel_id?: string }) => {
+            canvasTitles.push(params.title);
+            if (params.title === "Dashboard") {
+              return { ok: false, error: "name_taken" };
+            }
+            return { canvas_id: `C-${params.title}` };
+          },
+          edit: async () => ({}),
+          sections: { lookup: async () => ({ sections: [] }) },
+        },
+        slackLists: {
+          create: async (params: { name: string }) => {
+            listNames.push(params.name);
+            if (params.name === "Acme Corp Deliverables") {
+              return { ok: false, error: "name_taken" };
+            }
+            return { list_id: `L-${params.name}` };
+          },
+          access: { set: async () => ({ ok: true }) },
+          items: {
+            create: async () => ({ item: { id: "item1" } }),
+            list: async () => ({ items: [] }),
+          },
+        },
+        apiCall: async () => ({ error: "unknown_method" }),
+        bookmarks: {
+          add: async (params: { title: string; link: string }) => {
+            listBookmarkAdds.push(`${params.title}:${params.link}`);
+            return { ok: true };
+          },
+        },
+        chat: { postMessage: async () => ({ ts: "1234.5678" }) },
+        pins: { add: async () => ({}) },
+        workflows: {
+          triggers: {
+            create: async () => ({
+              ok: true,
+              trigger: {
+                id: "FtONBOARD123",
+                share_url: "https://slack.com/shortcuts/FtONBOARD123/abc",
+              },
+            }),
+            permissions: { add: async () => ({ ok: true }) },
+          },
+        },
+      },
+      {
+        channel_id: "C999",
+        project_name: "Demo",
+        account_name: "Acme Corp",
+        env: { SLACK_TEAM_ID: navTeamId },
+      },
+    );
+
+    assertEquals(context.dashboardCanvasId, "C-Dashboard-1");
+    assertEquals(context.deliverablesListId, "L-Acme Corp Deliverables-1");
+    assertEquals(canvasTitles.slice(0, 2), ["Dashboard", "Dashboard-1"]);
+    assertEquals(listNames.slice(0, 2), [
+      "Acme Corp Deliverables",
+      "Acme Corp Deliverables-1",
+    ]);
+    assertEquals(
+      listBookmarkAdds.some((entry) =>
+        entry.startsWith("Acme Corp Deliverables-1:")
+      ),
+      true,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 Deno.test("channel provisioner skips steps for non-stable kinds", async () => {
   resetCompositionCacheForTests();
   resetKindCacheForTests();

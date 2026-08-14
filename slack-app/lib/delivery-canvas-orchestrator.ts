@@ -92,6 +92,7 @@ function buildConsolidationRequest(
 
 /**
  * Creates or updates a Delivery Template Canvas when status is Validation required.
+ * Canvas titles are disambiguated with `-1`, `-2`, … suffixes on workspace name collision.
  */
 export async function ensureDeliveryCanvasForValidationRequired(
   client: DeliveryCanvasOrchestratorClient,

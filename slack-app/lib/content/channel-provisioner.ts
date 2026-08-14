@@ -35,7 +35,6 @@ import {
   provisionOnboardingChannelShortcut,
   type OnboardingTriggerClient,
 } from "../onboarding-channel-trigger.ts";
-import { formatScopedListName } from "./list-compiler.ts";
 
 function resolveProvisionTeamId(
   env?: Record<string, string | undefined>,
@@ -135,18 +134,26 @@ async function provisionListStep(
   };
 
   let listId: string;
+  let displayName: string;
   if (step.ref === "deliverables") {
-    listId = await createDeliverablesList(client, channelId, listOptions);
+    ({ listId, displayName } = await createDeliverablesList(
+      client,
+      channelId,
+      listOptions,
+    ));
   } else if (step.ref === "incidents") {
-    listId = await createIncidentsList(client, channelId, listOptions);
+    ({ listId, displayName } = await createIncidentsList(
+      client,
+      channelId,
+      listOptions,
+    ));
   } else {
     throw new Error(`Unknown list ref "${step.ref}"`);
   }
 
   if (step.bookmark === true) {
-    const listTitle = formatScopedListName(step.ref, context.accountName);
     await attachListToChannel(client, channelId, listId, {
-      listTitle,
+      listTitle: displayName,
       teamId: resolveProvisionTeamId(env),
     });
   }

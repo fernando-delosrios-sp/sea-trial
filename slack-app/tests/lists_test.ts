@@ -81,7 +81,7 @@ Deno.test("createDeliverablesList attaches list as channel tab via apiCall", asy
     bookmarkParams,
   } = buildListClient({});
 
-  const listId = await createDeliverablesList(client, "C123", {
+  const { listId } = await createDeliverablesList(client, "C123", {
     attachToChannel: true,
     teamId: "T01234567",
     accountName: "Acme Corp",
@@ -155,7 +155,7 @@ Deno.test("createIncidentsList attaches list as channel tab via apiCall", async 
     },
   };
 
-  const listId = await createIncidentsList(client, "C456", {
+  const { listId } = await createIncidentsList(client, "C456", {
     attachToChannel: true,
     teamId: "T01234567",
   });
@@ -180,7 +180,7 @@ Deno.test("createDeliverablesList uses inline tab create when supported", async 
     },
   });
 
-  const listId = await createDeliverablesList(client, "C123", {
+  const { listId } = await createDeliverablesList(client, "C123", {
     attachToChannel: true,
     teamId: "T01234567",
   });
@@ -278,4 +278,61 @@ Deno.test("createDeliverablesList requires teamId when tab attach unavailable", 
     Error,
     "SLACK_TEAM_ID is required to attach lists to the channel",
   );
+});
+
+Deno.test("createDeliverablesList retries with suffix on name collision", async () => {
+  let createAttempts = 0;
+  const createNames: string[] = [];
+  const { client, bookmarkParams } = buildListClient({
+    apiCall: async () => ({ error: "unknown_method" }),
+    create: async (params) => {
+      createAttempts++;
+      createNames.push(String(params.name));
+      if (params.name === "Acme Corp Deliverables") {
+        return { ok: false, error: "name_taken" };
+      }
+      return { ok: true, list_id: "F-deliverables-1" };
+    },
+  });
+
+  const { listId, displayName } = await createDeliverablesList(client, "C123", {
+    attachToChannel: true,
+    teamId: "T01234567",
+    accountName: "Acme Corp",
+  });
+
+  assertEquals(listId, "F-deliverables-1");
+  assertEquals(displayName, "Acme Corp Deliverables-1");
+  assertEquals(createAttempts, 2);
+  assertEquals(createNames, [
+    "Acme Corp Deliverables",
+    "Acme Corp Deliverables-1",
+  ]);
+  assertEquals(bookmarkParams[0]?.title, "Acme Corp Deliverables-1");
+});
+
+Deno.test("createDeliverablesList retries tab create with suffix on name collision", async () => {
+  const tabCreateNames: string[] = [];
+  const { client, createParams } = buildListClient({
+    apiCall: async (method, params) => {
+      if (method === "conversations.lists.create" && "name" in params) {
+        tabCreateNames.push(String(params.name));
+        if (params.name === "Deliverables") {
+          return { ok: false, error: "name_taken" };
+        }
+        return { ok: true, list_id: "F-tabbed-1" };
+      }
+      return { error: "unknown_method" };
+    },
+  });
+
+  const { listId, displayName } = await createDeliverablesList(client, "C123", {
+    attachToChannel: true,
+    teamId: "T01234567",
+  });
+
+  assertEquals(listId, "F-tabbed-1");
+  assertEquals(displayName, "Deliverables-1");
+  assertEquals(tabCreateNames, ["Deliverables", "Deliverables-1"]);
+  assertEquals(createParams.length, 0);
 });

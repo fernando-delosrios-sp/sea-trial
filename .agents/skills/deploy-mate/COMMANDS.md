@@ -64,7 +64,7 @@ Do **not** paste the full protocol — point to the matching section in this fil
 2. **Loop** — while a next incomplete phase exists:
    1. Execute that phase's protocol from this file (Recon → Survey → Catalog → Arm → Arm-ready → Scaffold → Document → Harvest → Forge proposal → **arm visibility** → Forge artifacts → Inject → Deploy → Verify).
    2. **Stop the loop** when any applies:
-      - **Gate needs user** — Survey sign-off, Arm-ready audit ack, Scaffold ack, Forge proposal sign-off, inject CHECKPOINT, deploy CHECKPOINT
+      - **Gate needs user** — Survey sign-off, Arm-ready audit ack, Scaffold ack, Forge proposal sign-off, inject CHECKPOINT, deploy CHECKPOINT (resolved Ship policy **`on-request`** — default when section missing; see [SHIP-POLICY.md](SHIP-POLICY.md) § Policy resolution)
       - **Harvest** — always stop after **one round** (report table; prompt continue or `harvest finish`)
       - **Pipeline complete** — Verify passed or nothing left
       - **Blocker** — prerequisites unmet for next phase
@@ -72,7 +72,7 @@ Do **not** paste the full protocol — point to the matching section in this fil
    3. If none applied, immediately continue to the next phase **without ending the turn**.
 3. **End turn** with summary: phases completed this run, open gate if any, exact re-invoke hint (`/deploy-mate run` after unblocking).
 
-**Forbidden:** auto-approving sign-offs; skipping gates; marking Harvest finished without user; inject/deploy without CHECKPOINT approval; chaining past a Harvest round in the same run.
+**Forbidden:** auto-approving sign-offs; skipping gates; marking Harvest finished without user; inject without CHECKPOINT approval; deploy without CHECKPOINT unless resolved Ship policy is explicitly **`auto`**; chaining past a Harvest round in the same run.
 
 **Done when:** loop stopped at gate/blocker/completion; user knows what to do next.
 
@@ -82,7 +82,7 @@ Do **not** paste the full protocol — point to the matching section in this fil
 
 1. Run **status** (inline — do not stop for user unless `<env>` is ambiguous).
 2. Execute the **single next incomplete phase** in order: Recon → Survey → Catalog → Arm → Arm-ready → Scaffold → Document → Harvest (**one round only**) → Forge proposal → **arm visibility** → Forge artifacts → Inject (if next) → Deploy → Verify.
-3. **Stop at every gate** — Survey sign-off, Arm-ready audit ack, Scaffold ack, Harvest round end, Forge proposal sign-off, inject checkpoint, deploy confirmation. Do not auto-skip holds.
+3. **Stop at every gate** — Survey sign-off, Arm-ready audit ack, Scaffold ack, Harvest round end, Forge proposal sign-off, inject checkpoint, deploy CHECKPOINT (resolved Ship policy **`on-request`** — default when section missing). Do not auto-skip holds.
 4. After a Harvest round or any gate, **end the turn** and wait for the user.
 
 **Done when:** the current phase (or one Harvest round) completes or a gate blocks further progress.
@@ -299,7 +299,7 @@ Without a subcommand, pick by state:
 
 ### forge proposal
 
-1. **Draft** — invoke `deployment-pipeline-design`. Write `.deploy-mate/<env>/deployment.md` **strategy sections only** (see [ARTIFACTS.md](ARTIFACTS.md)). Include required **Runtime visibility** section — per-component tier-1/tier-2, read chain (**runtime first, CI second**), boot time overrides, tier-2 deferrals with ack.
+1. **Draft** — invoke `deployment-pipeline-design`. Write `.deploy-mate/<env>/deployment.md` **strategy sections only** (see [ARTIFACTS.md](ARTIFACTS.md)). Include required **Runtime visibility** section — per-component tier-1/tier-2, read chain (**runtime first, CI second**), boot time overrides, tier-2 deferrals with ack. Include **Ship policy** — ask user: **`on-request`** (default; user asks to deploy) or **`auto`** (agent deploys + verifies after deployable fixes when gates pass).
 2. Update `architecture.md` → Components **Visibility** column to match the plan.
 3. **Present** — summarize trade-offs and open questions.
 4. **Dialog** — revise until user approves or accepts deferrals (tier-2 deferrals require explicit ack).
@@ -324,7 +324,9 @@ Generate repo files per approved strategy:
 
 List every generated file in `deployment.md` and `<env>/progress.md`. Reference var **names** only. Confirm before overwrite.
 
-**Done when:** `deployment.md` lists all generated files; overwrites confirmed; `<env>/progress.md` marks Forge artifacts generated.
+Copy [SHIP-POLICY.md](SHIP-POLICY.md) to `.deploy-mate/SHIP-POLICY.md` for offline reference. Merge [ARTIFACTS.md](ARTIFACTS.md) § AGENTS.md fragment into project root `AGENTS.md` when present — confirm before overwrite.
+
+**Done when:** `deployment.md` lists all generated files; overwrites confirmed; `<env>/progress.md` marks Forge artifacts generated; AGENTS.md pointer merged or user declined.
 
 ## inject
 
@@ -420,13 +422,14 @@ Runtime visibility tooling is **not** required for Inject — it gates **Deploy*
 1. Run **status** gate checks; stop and name blockers if any fail — including visibility:
    - Tier-1 commands missing from `deployment.md` → Steps → unlock with **`forge artifacts`**
    - Tier-1 Runtime visibility tooling rows not terminal → unlock with **`arm visibility`**
-2. Read `deployment.md` → Steps; summarize deploy plan (names only for secrets).
-3. **CHECKPOINT:** confirm environment, target, rollback path. **Wait for explicit approval.**
+2. Resolve Ship policy per [SHIP-POLICY.md](SHIP-POLICY.md) § Policy resolution (missing → **`on-request`**). Read **Steps**; summarize deploy plan (names only for secrets).
+3. Resolved **`on-request`:** **CHECKPOINT** — confirm environment, target, rollback path. **Wait for explicit approval.**
+   Resolved **`auto`:** proceed when gates pass — no CHECKPOINT.
 4. Execute via Deploy tooling (CLI/MCP/workflow dispatch). Pause for interactive auth when needed.
 5. Record in `<env>/progress.md` → Deploy: date, command/workflow, outcome, link if CI.
 6. On failure: surface rollback steps from `deployment.md` → Rollback; do **not** re-Harvest deploy outputs unless user re-runs **catalog**.
 
-**Forbidden:** deploy during Harvest/Scaffold; deploy to obtain missing vars; deploy without user confirmation or required inject.
+**Forbidden:** deploy during Harvest/Scaffold; deploy to obtain missing vars; deploy without CHECKPOINT unless resolved Ship policy is explicitly **`auto`**; deploy without required inject.
 
 **Done when:** deploy executed or CI triggered; outcome recorded; suggest `/deploy-mate verify`.
 

@@ -1,4 +1,4 @@
-schema: superpowers-bridge
+schema: ferspec
 
 context: |
   Project: Sea Trial — Slack-native TES event delivery platform (MVP).
@@ -47,25 +47,23 @@ rules:
     - "Always use the changelog-generator skill to maintain and enforce a changelog for all changes."
     - "New domain terms MUST be added to openspec/specs/ubiquitous-language/spec.md before archive."
     - "Shared types live in packages/shared; both slack-app and agent-service MUST align with them."
-  brainstorm:
+  discovery:
     - "Capture actors (TES, AE, SE), Slack object model, agent rules, and MVP boundaries."
-    - "Do not write to docs/superpowers/specs/ — output goes to openspec/changes/<name>/brainstorm.md."
+    - "Do not write repo-root CONTEXT.md — output goes to openspec/changes/<name>/discovery.md."
+    - "Mark domain terms draft/conflicts-with-canonical/promote; conflict-check ubiquitous-language spec."
   proposal:
     - "Map capabilities to domain specs: event-channel, onboarding, requirements-agent, deliverables."
     - "List explicit out-of-MVP scope items from the plan."
+    - "Extract from discovery.md — do not re-grill."
   design:
     - "Document Deno Slack SDK vs Node agent-service boundary and Slack-native state model."
     - "Include risks: API limitations on dev tenant, doc processing timeouts, shared types across runtimes."
+    - "Extract from discovery.md — do not re-grill or re-explore."
   specs:
     - "Use Gherkin GIVEN/WHEN/THEN scenarios with SHALL/MUST normative language."
     - "Cover agent gates (onboarding complete, review-before-write, no-merge rule)."
+    - "Promote discovery Language terms marked promote to ubiquitous-language delta spec."
   tasks:
     - "Follow monorepo layout: slack-app/, agent-service/, packages/shared/."
     - "Include Documentation and Changelog closing sections."
-  plan:
-    - "Micro-steps with TDD; record canonical test commands for deno task test and npm test."
-    - "Do not write to docs/superpowers/plans/ — output goes to openspec/changes/<name>/plan.md."
-  verify:
-    - "Map every scenario to an automated test."
-  retrospective:
-    - "Capture skill compliance and promote candidates for workflow improvements."
+    - "Record canonical test commands for deno task test and npm test."

@@ -29,13 +29,21 @@ const baseContext: TesEventContext = {
   contextNotes: "Kickoff scheduled for next week",
 };
 
-Deno.test("dashboardTemplate includes default editorial content from dashboard.md", () => {
+Deno.test("dashboardTemplate includes default editorial content", () => {
   const markdown = dashboardTemplate(baseContext);
 
   assertStringIncludes(markdown, "Welcome to your TES event dashboard!");
   assertStringIncludes(markdown, "Rules of engagement");
   assertStringIncludes(markdown, "../../assets/Sales%20Engineer%20banner.png");
   assertStringIncludes(markdown, "Identify the main stakeholders");
+});
+
+Deno.test("Dashboard canvas does not append TesEventContext JSON dump", () => {
+  const markdown = dashboardTemplate(baseContext);
+
+  assertEquals(markdown.includes("<!-- tes-event-context -->"), false);
+  assertEquals(markdown.includes("```json"), false);
+  assertEquals(markdown.includes('"dashboardCanvasId"'), false);
 });
 
 Deno.test("renderDashboardCanvas substitutes provided asset URLs", () => {
@@ -92,14 +100,38 @@ Deno.test("Dashboard link uses API share URL", () => {
   );
 });
 
-Deno.test("Onboarding section hidden after submit", () => {
+Deno.test("Onboarding CTA replaces the opportunity details task while incomplete", () => {
+  const markdown = renderDashboardCanvas(baseContext, undefined, {
+    onboardingLink: "https://slack.com/shortcuts/FtONBOARD1/secret",
+  });
+
+  assertStringIncludes(
+    markdown,
+    "- [ ] ⏳ **[Complete onboarding](https://slack.com/shortcuts/FtONBOARD1/secret)** — fill in opportunity details to unlock the Requirements Agent.",
+  );
+  assertEquals(markdown.includes("- [ ] Fill in opportunity details"), false);
+  assertEquals(markdown.includes("## Onboarding\n"), false);
+});
+
+Deno.test("Onboarding task stays linked and ticked after submit", () => {
   const markdown = renderDashboardCanvas(
     { ...baseContext, onboardingComplete: true },
     undefined,
     { onboardingLink: "https://slack.com/shortcuts/FtONBOARD1/secret" },
   );
 
-  assertEquals(markdown.includes("## Onboarding"), false);
+  assertStringIncludes(
+    markdown,
+    "- [x] **[Complete onboarding](https://slack.com/shortcuts/FtONBOARD1/secret)** — fill in opportunity details",
+  );
+  assertEquals(markdown.includes("to unlock the Requirements Agent"), false);
+  assertEquals(markdown.includes("- [ ] Fill in opportunity details"), false);
+});
+
+Deno.test("Onboarding task stays unticked without a link", () => {
+  const markdown = renderDashboardCanvas(baseContext);
+
+  assertStringIncludes(markdown, "- [ ] Fill in opportunity details");
   assertEquals(markdown.includes("Complete onboarding"), false);
 });
 
@@ -151,13 +183,33 @@ Deno.test("pinnedIndexBlocks shows Publish situation report when onboarding is c
   const blocks = pinnedIndexBlocks({ ...baseContext, onboardingComplete: true }, navOptions);
   const actionsBlock = blocks.find(
     (block) => (block as { type: string }).type === "actions",
-  ) as { elements: Array<{ action_id: string; text: { text: string } }> };
+  ) as {
+    elements: Array<{
+      action_id: string;
+      text: { text: string };
+      value: string | Record<string, unknown>;
+    }>;
+  };
 
   assertEquals(actionsBlock.elements.length, 1);
   assertEquals(actionsBlock.elements[0].action_id, "publish_situation_report");
   assertEquals(
     actionsBlock.elements[0].text.text,
     "Publish situation report",
+  );
+  const rawValue = actionsBlock.elements[0].value;
+  const buttonValue = (typeof rawValue === "string"
+    ? JSON.parse(rawValue)
+    : rawValue) as {
+      dashboard_canvas_id: string;
+      dashboard_canvas_content?: string;
+      situation_report_canvas_id?: string;
+    };
+  assertEquals(buttonValue.dashboard_canvas_id, baseContext.dashboardCanvasId);
+  assertEquals(buttonValue.situation_report_canvas_id, baseContext.situationReportCanvasId);
+  assertEquals(
+    buttonValue.dashboard_canvas_content,
+    JSON.stringify({ ...baseContext, onboardingComplete: true }),
   );
 });
 

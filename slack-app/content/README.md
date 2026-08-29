@@ -56,7 +56,7 @@ Or use domain vocabulary via TES extension (mutually exclusive with inline `opti
 }
 ```
 
-Registered domain refs: `@domain/deliverable-statuses`, `@domain/customer-deliverable-statuses`, `@domain/sailpoint-suites` (modal dynamic overlay only).
+Registered domain refs: `@domain/deliverable-statuses`, `@domain/customer-deliverable-statuses`, `@domain/sailpoint-suites`, `@domain/project-types`, `@domain/competitors`. The last three are modal dynamic overlay only.
 
 ## Delivery Template Canvas
 
@@ -80,7 +80,7 @@ Customer-facing periodic snapshot of Deliverables List state.
 ## Canvas rules
 
 - Files use `.hbs.md` suffix
-- Do **not** embed `<!-- tes-event-context -->` in author templates (injected by renderer)
+- Do **not** embed `<!-- tes-event-context -->` in author templates (the renderer must not inject it either)
 
 ## Validation
 

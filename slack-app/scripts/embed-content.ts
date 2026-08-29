@@ -24,6 +24,8 @@ const JSON_FILES = [
   "content/domain/sailpoint-suites.json",
   "content/domain/deliverable-statuses.json",
   "content/domain/customer-deliverable-statuses.json",
+  "content/domain/project-types.json",
+  "content/domain/competitors.json",
   "schemas/content/capabilities/modal.v1.json",
   "schemas/content/capabilities/list.v1.json",
   "schemas/content/capabilities/message.v1.json",
@@ -33,7 +35,6 @@ const JSON_FILES = [
 ] as const;
 
 const TEXT_FILES = [
-  "content/canvases/dashboard.md",
   "content/canvases/dashboard.hbs.md",
   "content/canvases/requirements.hbs.md",
   "content/canvases/infrastructure.hbs.md",

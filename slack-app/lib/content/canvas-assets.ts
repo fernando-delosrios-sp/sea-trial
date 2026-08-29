@@ -7,7 +7,7 @@ import {
 import { readEmbeddedAssetBytes } from "./embedded-assets.generated.ts";
 import { resolveCanvasAssetPath } from "./paths.ts";
 
-export const DASHBOARD_CANVAS_PATH = "canvases/dashboard.md";
+export const DASHBOARD_CANVAS_PATH = "canvases/dashboard.hbs.md";
 
 const IMAGE_REF_PATTERN = /!\[([^\]]*)\]\(([^)]+)\)/g;
 

@@ -1,7 +1,5 @@
 import type { OnboardingForm, TesEventContext } from "@sea-trial/shared/types/index.ts";
-import { serializeEventContext } from "../event-context.ts";
 import { applyCanvasAssetUrls } from "./canvas-assets.ts";
-import { readContentText } from "./paths.ts";
 import { loadValidatedCanvasTemplate } from "./template-loader.ts";
 import { buildSituationReportSeedMarkdown } from "../situation-report.ts";
 
@@ -14,28 +12,32 @@ export interface DashboardRenderOptions {
   onboardingLink?: string;
 }
 
-let cachedDefaultDashboard: string | null = null;
-
-function loadDefaultDashboardContent(): string {
-  if (cachedDefaultDashboard === null) {
-    cachedDefaultDashboard = readContentText("canvases/dashboard.md");
-  }
-  return cachedDefaultDashboard;
-}
-
 function loadTemplate(relativePath: string) {
   return loadValidatedCanvasTemplate(relativePath);
 }
 
 /** Resets cached canvas content — for tests only. */
 export function resetCanvasCacheForTests(): void {
-  cachedDefaultDashboard = null;
 }
 
 function formatMembers(context: TesEventContext): string {
   return context.memberUserIds?.length
     ? context.memberUserIds.map((id) => `<@${id}>`).join(", ")
     : NOT_SET;
+}
+
+/**
+ * Renders a possibly multi-entry onboarding value inside a canvas bullet.
+ * Multiple entries become a nested list so the parent bullet stays valid markdown.
+ */
+function formatEntries(value: string | undefined): string {
+  const lines = (value ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length <= 1) return lines[0] ?? "";
+  return `\n${lines.map((line) => `    - ${line}`).join("\n")}`;
 }
 
 function buildDashboardViewModel(
@@ -48,6 +50,7 @@ function buildDashboardViewModel(
   return {
     projectName: context.projectName,
     channelId: context.channelId,
+    onboardingComplete: context.onboardingComplete,
     accountDisplay: context.accountName ?? NOT_SET,
     salesforceDisplay: context.salesforceOpportunityUrl ?? NOT_SET,
     membersDisplay: formatMembers(context),
@@ -55,38 +58,36 @@ function buildDashboardViewModel(
     statusDisplay: context.onboardingComplete ? "✅ Complete" : "⏳ Pending",
     showOpportunityDetails: Boolean(details),
     opportunityAccount: details?.accountName ?? "",
-    opportunityGoal: details?.mainProspectGoal ?? "",
-    opportunityDealHistory: details?.dealHistory ?? "",
+    opportunityGoal: formatEntries(details?.mainProspectGoal),
+    opportunityDealHistory: formatEntries(details?.dealHistory),
     opportunityProjectType: details?.projectType ?? "",
-    opportunityStakeholders: details?.stakeholders ?? "",
+    opportunityStakeholders: formatEntries(details?.stakeholders),
     opportunityCompetitors: details?.competitors ?? "",
     opportunitySuite: details?.sailpointSuite ?? "",
     opportunityDeadline: details?.deadline ?? "",
-    opportunityNotes: details?.notes ?? "",
+    opportunityNotes: formatEntries(details?.notes),
     hasDerivedComponents: context.derivedComponents.length > 0,
     derivedComponents: context.derivedComponents,
-    showOnboardingLink: !context.onboardingComplete &&
-      Boolean(options?.onboardingLink),
-    onboardingLink: options?.onboardingLink ?? "",
+    showOnboardingLink: Boolean(
+      options?.onboardingLink || context.onboardingLinkUrl,
+    ),
+    onboardingLink: options?.onboardingLink || context.onboardingLinkUrl ||
+      "",
   };
 }
 
-/** Renders the Dashboard canvas markdown with metadata injected by code. */
+/** Renders the Dashboard canvas markdown. Event context is not stored on the canvas. */
 export function renderDashboardCanvas(
   context: TesEventContext,
   form?: OnboardingForm,
   options?: DashboardRenderOptions,
 ): string {
-  const defaultContent = loadDefaultDashboardContent().trim();
   const template = loadTemplate("canvases/dashboard.hbs.md");
-  const dynamicContent = template(
-    buildDashboardViewModel(context, form, options),
-  ).trim();
-  let body = [defaultContent, dynamicContent].filter(Boolean).join("\n\n");
+  let body = template(buildDashboardViewModel(context, form, options)).trim();
   if (options?.assetUrls && Object.keys(options.assetUrls).length > 0) {
     body = applyCanvasAssetUrls(body, options.assetUrls);
   }
-  return [body, serializeEventContext(context)].join("\n");
+  return body;
 }
 
 /** Renders the Requirements canvas from declarative template. */

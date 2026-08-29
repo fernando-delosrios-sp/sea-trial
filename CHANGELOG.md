@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-29 — Dashboard canvas template
+
+### Changed
+
+- **TES Event Dashboard** — The Dashboard is a single Handlebars template with rules of engagement, role sections, and an onboarding checklist that remains after complete. TesEventContext is not written into canvas markdown.
+
+---
+
 ## 2026-08-29 — Onboarding form fields
 
 ### Changed

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-29 — Publish situation report snapshot
+
+### Changed
+
+- **Publish situation report** — The pinned publish button carries the same compact snapshot as Complete onboarding, so publish does not read Dashboard canvas content.
+
+---
+
 ## 2026-08-29 — Dashboard canvas template
 
 ### Changed

@@ -1,6 +1,10 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
-import { runPublishSituationReport } from "../lib/publish-situation-report-handler.ts";
+import { serializeEventContextSnapshot } from "../lib/event-context.ts";
+import {
+  loadContextFromPublishButton,
+  runPublishSituationReport,
+} from "../lib/publish-situation-report-handler.ts";
 import type { PublishSituationReportClient } from "../lib/publish-situation-report-handler.ts";
 import { parseGeneratedAt } from "../lib/situation-report.ts";
 
@@ -109,4 +113,30 @@ Deno.test("runPublishSituationReport rejects missing situation report canvas", a
   });
   assertEquals(result.ok, false);
   assertEquals(result.error?.includes("Situation Report"), true);
+});
+
+Deno.test("Publish situation report button uses snapshot without canvas read", () => {
+  const snapshot = serializeEventContextSnapshot(baseContext);
+  const context = loadContextFromPublishButton(JSON.stringify({
+    dashboard_canvas_id: "dash1",
+    dashboard_canvas_content: snapshot,
+    situation_report_canvas_id: "sr1",
+  }));
+  assertEquals(context, baseContext);
+});
+
+Deno.test("Publish situation report button without snapshot fails", () => {
+  assertEquals(
+    loadContextFromPublishButton(JSON.stringify({
+      dashboard_canvas_id: "dash1",
+    })),
+    null,
+  );
+});
+
+Deno.test("publish_situation_report block action does not call readCanvasMarkdown", () => {
+  const source = Deno.readTextFileSync(
+    new URL("../functions/publish_situation_report/mod.ts", import.meta.url),
+  );
+  assertEquals(source.includes("readCanvasMarkdown"), false);
 });

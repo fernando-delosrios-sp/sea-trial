@@ -10,7 +10,6 @@ export interface UpdateCanvasSectionParams {
   newContent: string;
 }
 
-import { METADATA_MARKER } from "./event-context.ts";
 import {
   allocateUniqueName,
   isNameCollisionError,
@@ -174,31 +173,21 @@ export async function replaceCanvasContent(
 }
 
 /**
- * Reads canvas markdown by concatenating header sections and any section
- * containing the TesEventContext metadata marker (which may live outside headers).
+ * Reads canvas markdown by concatenating header sections.
  */
 export async function readCanvasMarkdown(
   client: CanvasSectionsClient,
   canvasId: string,
 ): Promise<string> {
-  const [headerLookup, metadataLookup] = await Promise.all([
-    client.canvases.sections.lookup({
-      canvas_id: canvasId,
-      criteria: { section_types: ["any_header", "h1", "h2", "h3"] },
-    }),
-    client.canvases.sections.lookup({
-      canvas_id: canvasId,
-      criteria: { contains_text: METADATA_MARKER },
-    }),
-  ]);
+  const headerLookup = await client.canvases.sections.lookup({
+    canvas_id: canvasId,
+    criteria: { section_types: ["any_header", "h1", "h2", "h3"] },
+  });
 
   const seen = new Set<string>();
   const parts: string[] = [];
 
-  for (const section of [
-    ...(headerLookup.sections ?? []),
-    ...(metadataLookup.sections ?? []),
-  ]) {
+  for (const section of headerLookup.sections ?? []) {
     if (section.id && seen.has(section.id)) continue;
     if (section.id) seen.add(section.id);
     if (section.markdown) parts.push(section.markdown);

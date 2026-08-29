@@ -1,7 +1,7 @@
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
-import { readCanvasMarkdown } from "../../lib/canvas.ts";
 import {
   loadContextFromDashboardMarkdown,
+  loadContextFromPublishButton,
   runPublishSituationReport,
 } from "../../lib/publish-situation-report-handler.ts";
 
@@ -44,24 +44,8 @@ export default SlackFunction(
       return { error: "Missing channel context for publish button." };
     }
 
-    let dashboardMarkdown = "";
-    if (typeof action.value === "string" && action.value.trim()) {
-      try {
-        const payload = JSON.parse(action.value) as {
-          dashboard_canvas_id?: string;
-        };
-        if (payload.dashboard_canvas_id) {
-          dashboardMarkdown = await readCanvasMarkdown(
-            client,
-            payload.dashboard_canvas_id,
-          );
-        }
-      } catch {
-        return { error: "Invalid publish button payload." };
-      }
-    }
-
-    const context = loadContextFromDashboardMarkdown(dashboardMarkdown);
+    const buttonValue = typeof action.value === "string" ? action.value : "";
+    const context = loadContextFromPublishButton(buttonValue);
     if (!context) {
       return { error: "Could not load channel context from dashboard." };
     }

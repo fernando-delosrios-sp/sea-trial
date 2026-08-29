@@ -131,9 +131,33 @@ export async function runPublishSituationReport(
   return { ok: true };
 }
 
-/** Loads event context from dashboard canvas markdown embedded in button value. */
+/** Loads event context from a compact snapshot or legacy dashboard dump. */
 export function loadContextFromDashboardMarkdown(
   dashboardMarkdown: string,
 ): TesEventContext | null {
   return deserializeEventContext(dashboardMarkdown);
+}
+
+/**
+ * Loads event context from the pinned Publish situation report button value.
+ * Accepts `{ dashboard_canvas_content }` JSON; does not read canvas markdown.
+ */
+export function loadContextFromPublishButton(
+  buttonValue: string,
+): TesEventContext | null {
+  const trimmed = buttonValue.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      dashboard_canvas_content?: unknown;
+    };
+    if (typeof parsed.dashboard_canvas_content === "string") {
+      return deserializeEventContext(parsed.dashboard_canvas_content);
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }

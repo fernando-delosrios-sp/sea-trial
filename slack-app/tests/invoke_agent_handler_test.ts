@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
-import { serializeEventContext } from "../lib/event-context.ts";
+import { serializeEventContextSnapshot } from "../lib/event-context.ts";
 import { createLogger, resetLoggerTestHooks, setLogSinkForTests } from "../lib/logger.ts";
 import { runInvokeAgentHandler } from "../lib/invoke-agent-handler.ts";
 
@@ -22,7 +22,7 @@ const baseInputs = {
   user_id: "U1",
   message_ts: "1111.0001",
   thread_ts: "1111.0001",
-  dashboard_canvas_content: serializeEventContext(completeContext),
+  dashboard_canvas_content: serializeEventContextSnapshot(completeContext),
   requirements_canvas_content: "# Requirements",
   file_ids: [] as string[],
 };

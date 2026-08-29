@@ -1,5 +1,6 @@
 import {
   assertEquals,
+  assertRejects,
   assertThrows,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
@@ -100,37 +101,53 @@ Deno.test("composition list steps expose bookmark opt-in", () => {
   assertEquals(bookmarked.map((step) => step.id), ["deliverables", "incidents"]);
 });
 
-Deno.test("composition workflow steps expose bookmark opt-in", () => {
+Deno.test("composition workflow steps omit bookmark and featured", () => {
   const composition = loadComposition("tes-event");
   const onboarding = composition.steps.find((step) => step.id === "onboarding");
 
-  assertEquals(onboarding?.kind, "workflow");
-  assertEquals(
-    onboarding && "bookmark" in onboarding ? onboarding.bookmark : undefined,
-    true,
+  assertEquals(onboarding, {
+    id: "onboarding",
+    kind: "workflow",
+    link: "open_onboarding_workflow",
+  });
+});
+
+Deno.test("Workflow bookmark opt-in — validation fails", () => {
+  assertThrows(
+    () =>
+      parseCompositionJson(
+        JSON.stringify({
+          version: "1",
+          steps: [{
+            id: "onboarding",
+            kind: "workflow",
+            link: "open_onboarding_workflow",
+            bookmark: true,
+          }],
+        }),
+      ),
+    Error,
+    "bookmark",
   );
 });
 
-Deno.test("composition accepts workflow bookmark and featured flags", () => {
-  const composition = parseCompositionJson(
-    JSON.stringify({
-      version: "1",
-      steps: [{
-        id: "onboarding",
-        kind: "workflow",
-        link: "open_onboarding_workflow",
-        bookmark: true,
-        featured: true,
-      }],
-    }),
+Deno.test("Workflow featured opt-in — validation fails", () => {
+  assertThrows(
+    () =>
+      parseCompositionJson(
+        JSON.stringify({
+          version: "1",
+          steps: [{
+            id: "onboarding",
+            kind: "workflow",
+            link: "open_onboarding_workflow",
+            featured: true,
+          }],
+        }),
+      ),
+    Error,
+    "featured",
   );
-
-  const step = composition.steps[0];
-  assertEquals(step.kind, "workflow");
-  if (step.kind === "workflow") {
-    assertEquals(step.bookmark, true);
-    assertEquals(step.featured, true);
-  }
 });
 
 Deno.test("composition rejects canvas step with featured flag", () => {
@@ -339,23 +356,34 @@ Deno.test("navigation entry with unmapped step id throws", () => {
   );
 });
 
-function buildWorkflowTriggerMock() {
+function buildWorkflowTriggerMock(options?: { omitShareUrl?: boolean }) {
   let createCalls = 0;
+  const createPayloads: Record<string, unknown>[] = [];
   const permissionSets: Record<string, unknown>[] = [];
   const permissionAdds: Record<string, unknown>[] = [];
   const featuredAdds: Record<string, unknown>[] = [];
 
   return {
     createCalls: () => createCalls,
+    createPayloads: () => createPayloads,
     permissionSets: () => permissionSets,
     permissionAdds: () => permissionAdds,
     featuredAdds: () => featuredAdds,
     workflows: {
       triggers: {
-        create: async () => {
+        create: async (payload: Record<string, unknown>) => {
           createCalls += 1;
+          createPayloads.push(payload);
           const id = `FtONBOARD${createCalls}`;
-          return { ok: true, trigger: { id } };
+          return {
+            ok: true,
+            trigger: {
+              id,
+              ...(options?.omitShareUrl
+                ? {}
+                : { share_url: `https://slack.com/shortcuts/${id}/secret` }),
+            },
+          };
         },
         permissions: {
           set: async (payload: Record<string, unknown>) => {
@@ -518,24 +546,29 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
     true,
   );
   assertEquals(workflowTriggerMock.createCalls(), 1);
-  assertEquals(workflowTriggerMock.permissionSets(), [{
-    trigger_id: "FtONBOARD1",
-    permission_type: "named_entities",
-  }]);
+  assertEquals(
+    workflowTriggerMock.createPayloads()[0]?.name,
+    "Complete Onboarding (C999)",
+  );
+  assertEquals(workflowTriggerMock.permissionSets(), []);
   assertEquals(workflowTriggerMock.permissionAdds(), [{
     trigger_id: "FtONBOARD1",
     channel_ids: ["C999"],
   }]);
-  assertEquals(workflowTriggerMock.featuredAdds(), [{
-    channel_id: "C999",
-    trigger_ids: ["FtONBOARD1"],
-  }]);
+  assertEquals(workflowTriggerMock.featuredAdds(), []);
   assertEquals(canvasEditContents.length > 0, true);
   assertEquals(
     canvasEditContents.some((content) =>
-      content.includes("https://slack.com/shortcuts/FtONBOARD1")
+      content.includes("https://slack.com/shortcuts/FtONBOARD1/secret")
     ),
     true,
+  );
+  assertEquals(
+    canvasEditContents.some((content) =>
+      content.includes("https://slack.com/shortcuts/FtONBOARD1]") ||
+      content.includes("https://slack.com/shortcuts/FtONBOARD1)")
+    ),
+    false,
   );
   } finally {
     globalThis.fetch = originalFetch;
@@ -767,7 +800,70 @@ Deno.test("channel provisioner creates list without bookmark when flag absent", 
   assertEquals(listBookmarkAdds.length, 0);
 });
 
-Deno.test("channel provisioner creates per-channel onboarding triggers", async () => {
+Deno.test("Dashboard link uses API share URL — seeding fails when share URL is absent", async () => {
+  resetCompositionCacheForTests();
+  resetKindCacheForTests();
+  resetMessageCacheForTests();
+
+  const workflowTriggerMock = buildWorkflowTriggerMock({ omitShareUrl: true });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(null, { status: 200 });
+
+  try {
+    await assertRejects(
+      () =>
+        provisionChannel(
+          {
+            files: {
+              getUploadURLExternal: async () => ({
+                ok: true,
+                upload_url: "https://upload.example.test",
+                file_id: "F-banner",
+              }),
+              completeUploadExternal: async () => ({
+                ok: true,
+                files: [{ permalink: "https://example.slack.com/files/U1/F1/banner.png" }],
+              }),
+              info: async () => ({ ok: true, file: { permalink: "unused" } }),
+            },
+            canvases: {
+              create: async (params: { title: string }) => ({
+                canvas_id: `C-${params.title}`,
+              }),
+              edit: async () => ({}),
+              sections: { lookup: async () => ({ sections: [] }) },
+            },
+            slackLists: {
+              create: async (params: { name: string }) => ({
+                list_id: `L-${params.name}`,
+              }),
+              access: { set: async () => ({ ok: true }) },
+              items: {
+                create: async () => ({ item: { id: "item1" } }),
+                list: async () => ({ items: [] }),
+              },
+            },
+            bookmarks: { add: async () => ({ ok: true }) },
+            chat: { postMessage: async () => ({ ts: "1234.5678" }) },
+            pins: { add: async () => ({}) },
+            workflows: workflowTriggerMock.workflows,
+          },
+          {
+            channel_id: "C999",
+            project_name: "Demo",
+            account_name: "Acme Corp",
+            env: provisionEnv,
+          },
+        ),
+      Error,
+      "share URL missing",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+Deno.test("channel provisioner creates a distinct Onboarding Link Trigger per channel", async () => {
   resetCompositionCacheForTests();
   resetKindCacheForTests();
   resetMessageCacheForTests();
@@ -836,10 +932,15 @@ Deno.test("channel provisioner creates per-channel onboarding triggers", async (
     });
 
     assertEquals(workflowTriggerMock.createCalls(), 2);
-    assertEquals(workflowTriggerMock.featuredAdds(), [
-      { channel_id: "C111", trigger_ids: ["FtONBOARD1"] },
-      { channel_id: "C222", trigger_ids: ["FtONBOARD2"] },
+    assertEquals(
+      workflowTriggerMock.createPayloads().map((payload) => payload.name),
+      ["Complete Onboarding (C111)", "Complete Onboarding (C222)"],
+    );
+    assertEquals(workflowTriggerMock.permissionAdds(), [
+      { trigger_id: "FtONBOARD1", channel_ids: ["C111"] },
+      { trigger_id: "FtONBOARD2", channel_ids: ["C222"] },
     ]);
+    assertEquals(workflowTriggerMock.featuredAdds(), []);
   } finally {
     globalThis.fetch = originalFetch;
   }

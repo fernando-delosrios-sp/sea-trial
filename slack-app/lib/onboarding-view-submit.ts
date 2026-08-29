@@ -1,7 +1,10 @@
 import type { OnboardingForm } from "@sea-trial/shared/types/index.ts";
-import { deserializeEventContext } from "./event-context.ts";
+import {
+  deserializeEventContext,
+  MISSING_ONBOARDING_SNAPSHOT_ERROR,
+} from "./event-context.ts";
 import { processOnboardingSubmit } from "./onboarding-submit.ts";
-import { readCanvasMarkdown, replaceCanvasContent, type CanvasSectionsClient } from "./canvas.ts";
+import { replaceCanvasContent, type CanvasSectionsClient } from "./canvas.ts";
 import { renderDashboardCanvasForSlack, type CanvasAssetUploadClient } from "./content/canvas-assets.ts";
 
 export function getInputValue(
@@ -55,6 +58,7 @@ export interface SlackOnboardingSubmitClient
 
 /**
  * Processes an onboarding modal submission: updates context, dashboard, and posts confirmation.
+ * Uses the trigger context snapshot in private metadata — does not read canvas markdown.
  */
 export async function executeOnboardingSubmit(
   client: SlackOnboardingSubmitClient,
@@ -68,7 +72,7 @@ export async function executeOnboardingSubmit(
   if (!existingContext) {
     return {
       ok: false,
-      error: "Could not load TesEventContext from Dashboard canvas.",
+      error: MISSING_ONBOARDING_SNAPSHOT_ERROR,
     };
   }
 
@@ -100,14 +104,16 @@ export async function executeOnboardingSubmit(
 }
 
 /**
- * Loads dashboard markdown for opening onboarding from the pinned index button.
+ * Loads the trigger context snapshot from the pinned index Complete onboarding button.
+ * Does not read Dashboard canvas markdown.
  */
-export async function loadDashboardContentForButton(
-  client: CanvasSectionsClient,
+export function loadDashboardContentForButton(
   buttonValue: string | undefined,
   fallbackContent: string,
-): Promise<string> {
-  if (!buttonValue) return fallbackContent;
+): string {
+  if (!buttonValue) {
+    return deserializeEventContext(fallbackContent) ? fallbackContent : "";
+  }
 
   try {
     const parsed = JSON.parse(buttonValue) as {
@@ -115,15 +121,10 @@ export async function loadDashboardContentForButton(
       dashboard_canvas_content?: string;
     };
     const snapshot = parsed.dashboard_canvas_content?.trim();
-    if (snapshot) return snapshot;
-    if (parsed.dashboard_canvas_id) {
-      return await readCanvasMarkdown(client, parsed.dashboard_canvas_id);
-    }
+    if (snapshot && deserializeEventContext(snapshot)) return snapshot;
   } catch {
-    // Fall through to fallback content.
+    // Invalid button JSON is treated as a missing snapshot.
   }
 
-  return fallbackContent;
+  return deserializeEventContext(fallbackContent) ? fallbackContent : "";
 }
-
-

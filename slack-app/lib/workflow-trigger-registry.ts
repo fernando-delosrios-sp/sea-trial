@@ -36,12 +36,11 @@ export function resolveWorkflowTriggerId(
 }
 
 export function resolveWorkflowTriggerShareUrl(
-  triggerId: string,
+  _triggerId: string,
   env?: Record<string, string | undefined>,
-): string {
+): string | undefined {
   const fromEnv = env?.["SLACK_ONBOARDING_TRIGGER_URL"]?.trim();
-  if (fromEnv) return fromEnv;
-  return `https://slack.com/shortcuts/${triggerId}`;
+  return fromEnv || undefined;
 }
 
 /** Builds Slack app env vars for deploy-time workflow triggers from trigger list output. */
@@ -56,9 +55,6 @@ export function buildWorkflowTriggerEnvVars(
     if (!triggerId) continue;
 
     env[config.envVar] = triggerId;
-    if (config.envVar === "SLACK_ONBOARDING_TRIGGER_ID") {
-      env.SLACK_ONBOARDING_TRIGGER_URL = resolveWorkflowTriggerShareUrl(triggerId);
-    }
   }
 
   return env;

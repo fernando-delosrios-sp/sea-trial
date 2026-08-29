@@ -25,6 +25,28 @@ Deno.test("serializeEventContext round-trips via deserializeEventContext", () =>
   assertEquals(deserialized, baseContext);
 });
 
+Deno.test("deserializeEventContext compact JSON round-trip", () => {
+  const compact = JSON.stringify(baseContext);
+  assertEquals(deserializeEventContext(compact), baseContext);
+});
+
+Deno.test("existing Dashboard metadata markdown still deserializes", () => {
+  const markdown = [
+    "# TES Event Dashboard",
+    "",
+    "## Project",
+    "",
+    serializeEventContext(baseContext),
+  ].join("\n");
+  assertEquals(deserializeEventContext(markdown), baseContext);
+});
+
+Deno.test("deserializeEventContext invalid JSON fails", () => {
+  assertEquals(deserializeEventContext("{not-json"), null);
+  assertEquals(deserializeEventContext("{"), null);
+  assertEquals(deserializeEventContext(""), null);
+});
+
 Deno.test("serializeEventContext round-trips creation-modal fields", () => {
   const contextWithCreationFields: TesEventContext = {
     ...baseContext,

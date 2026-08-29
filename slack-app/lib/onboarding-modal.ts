@@ -3,6 +3,7 @@ import {
   ONBOARDING_MODAL_BLOCKS,
   type OnboardingModalParams,
 } from "./content/modal-compiler.ts";
+import { deserializeEventContext } from "./event-context.ts";
 
 export type { OnboardingModalParams };
 
@@ -18,23 +19,10 @@ export function buildOnboardingModalView(
 }
 
 /**
- * Resolves Account pre-fill from dashboard canvas metadata when present.
+ * Resolves Account pre-fill from a trigger context snapshot when present.
  */
 export function resolveAccountPrefill(
   dashboardCanvasContent: string,
 ): string | undefined {
-  const marker = "<!-- tes-event-context -->";
-  const markerIndex = dashboardCanvasContent.indexOf(marker);
-  if (markerIndex === -1) return undefined;
-
-  const afterMarker = dashboardCanvasContent.slice(markerIndex + marker.length);
-  const match = afterMarker.match(/```json\s*([\s\S]*?)\s*```/);
-  if (!match?.[1]) return undefined;
-
-  try {
-    const parsed = JSON.parse(match[1]) as { accountName?: string };
-    return parsed.accountName;
-  } catch {
-    return undefined;
-  }
+  return deserializeEventContext(dashboardCanvasContent)?.accountName;
 }

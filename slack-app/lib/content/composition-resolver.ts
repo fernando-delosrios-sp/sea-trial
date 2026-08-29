@@ -21,8 +21,6 @@ export interface WorkflowStep {
   id: string;
   kind: "workflow";
   link: string;
-  bookmark?: true;
-  featured?: true;
 }
 
 export type CompositionStep = CanvasStep | ListStep | WorkflowStep;
@@ -124,18 +122,16 @@ function parseStep(entry: unknown, index: number, source: string): CompositionSt
     if (row.tab !== undefined) {
       throw new Error(`${label} workflow step must not contain tab`);
     }
-    if (row.bookmark !== undefined && row.bookmark !== true) {
-      throw new Error(`${label}.bookmark must be true when present`);
+    if (row.bookmark !== undefined) {
+      throw new Error(`${label} workflow step must not contain bookmark`);
     }
-    if (row.featured !== undefined && row.featured !== true) {
-      throw new Error(`${label}.featured must be true when present`);
+    if (row.featured !== undefined) {
+      throw new Error(`${label} workflow step must not contain featured`);
     }
     return {
       id,
       kind: "workflow",
       link,
-      bookmark: row.bookmark === true ? true : undefined,
-      featured: row.featured === true ? true : undefined,
     };
   }
 

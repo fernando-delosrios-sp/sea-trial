@@ -71,7 +71,8 @@ export default SlackFunction(
 
       if (
         inviteResult.ok === false &&
-        inviteResult.error !== "already_in_channel"
+        inviteResult.error !== "already_in_channel" &&
+        inviteResult.error !== "cant_invite_self"
       ) {
         return {
           error: `Channel created as #${channelName} but failed to invite members${

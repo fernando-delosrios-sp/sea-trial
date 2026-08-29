@@ -2,8 +2,10 @@ import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/mod.ts";
 import OpenOnboardingWorkflow from "../workflows/open_onboarding.ts";
 
 /**
- * Shared deploy-time link trigger for opening onboarding. Channel context comes
- * from TriggerContextData at invoke time; channel provision grants run access.
+ * Shared deploy-time Complete Onboarding shortcut. Disabled in triggers.config.yaml
+ * because a canvas click cannot supply dashboard_canvas_id. Prefer the Dashboard
+ * Complete onboarding link (per-channel Onboarding Link Trigger) or the pinned
+ * index button.
  */
 const completeOnboardingTrigger = {
   type: TriggerTypes.Shortcut,

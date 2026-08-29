@@ -1,4 +1,4 @@
-import { deserializeEventContext, serializeEventContext } from "../event-context.ts";
+import { deserializeEventContext, serializeEventContextSnapshot } from "../event-context.ts";
 import {
   validateModalBlocks,
   validateModalDynamicOverlay,
@@ -219,7 +219,7 @@ export function buildOnboardingModalView(
     private_metadata: JSON.stringify({
       channel_id: params.channelId,
       dashboard_canvas_id: dashboardCanvasId,
-      dashboard_canvas_content: serializeEventContext(context),
+      dashboard_canvas_content: serializeEventContextSnapshot(context),
     }),
     title: modal.title,
     submit: modal.submit,

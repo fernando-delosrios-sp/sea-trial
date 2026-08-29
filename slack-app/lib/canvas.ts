@@ -46,9 +46,15 @@ export interface SlackCanvasClient {
           section_types?: string[];
           contains_text?: string;
         };
-      }) => Promise<{ sections?: Array<{ id: string; markdown?: string }> }>;
+      }) => Promise<CanvasSectionsLookupResponse>;
     };
   };
+}
+
+export interface CanvasSectionsLookupResponse {
+  ok?: boolean;
+  error?: string;
+  sections?: Array<{ id: string; markdown?: string }>;
 }
 
 /** Minimal client surface for replacing full canvas markdown. */
@@ -73,7 +79,7 @@ export interface CanvasSectionsClient {
           section_types?: string[];
           contains_text?: string;
         };
-      }) => Promise<{ sections?: Array<{ id: string; markdown?: string }> }>;
+      }) => Promise<CanvasSectionsLookupResponse>;
     };
   };
 }

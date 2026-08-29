@@ -1,8 +1,16 @@
-import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { METADATA_MARKER, serializeEventContext } from "../lib/event-context.ts";
+import { assertEquals, assertStringIncludes, assertThrows } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import {
+  MISSING_ONBOARDING_SNAPSHOT_ERROR,
+  serializeEventContext,
+  serializeEventContextSnapshot,
+} from "../lib/event-context.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import { readCanvasMarkdown } from "../lib/canvas.ts";
-import { loadDashboardContentForButton } from "../lib/onboarding-view-submit.ts";
+import {
+  executeOnboardingSubmit,
+  loadDashboardContentForButton,
+} from "../lib/onboarding-view-submit.ts";
+import { resolveDashboardCanvasContent } from "../functions/open_onboarding/mod.ts";
 
 const baseContext: TesEventContext = {
   channelId: "C1",
@@ -18,6 +26,18 @@ const baseContext: TesEventContext = {
   accountName: "Acme Corp",
 };
 
+const onboardingForm = {
+  accountName: "Acme Corp",
+  mainProspectGoal: "PoC",
+  dealHistory: "New",
+  projectType: "PoC",
+  stakeholders: "SE",
+  competitors: "None",
+  sailpointSuite: "Identity Security Cloud",
+  deadline: "2026-09-01",
+  notes: "",
+};
+
 function mockCanvasClient(sections: Array<{ id: string; markdown?: string }>) {
   return {
     chat: { postMessage: async () => ({}) },
@@ -25,22 +45,7 @@ function mockCanvasClient(sections: Array<{ id: string; markdown?: string }>) {
       create: async () => ({ canvas: { id: "dash-1" } }),
       edit: async () => ({}),
       sections: {
-        lookup: async (
-          params: { criteria: { section_types?: string[]; contains_text?: string } },
-        ) => {
-          if (params.criteria.contains_text === METADATA_MARKER) {
-            return {
-              sections: sections.filter((section) =>
-                section.markdown?.includes(METADATA_MARKER)
-              ),
-            };
-          }
-          return {
-            sections: sections.filter((section) =>
-              section.markdown?.includes("#") || section.markdown?.includes("##")
-            ),
-          };
-        },
+        lookup: async () => ({ sections }),
       },
     },
   };
@@ -54,19 +59,33 @@ Deno.test("readCanvasMarkdown includes metadata section outside headers", async 
   ]);
 
   const content = await readCanvasMarkdown(client, "dash-1");
-  assertStringIncludes(content, METADATA_MARKER);
+  assertStringIncludes(content, "<!-- tes-event-context -->");
   assertStringIncludes(content, "Acme Corp");
 });
 
-Deno.test("loadDashboardContentForButton uses snapshot in button value without canvas lookup", async () => {
-  const snapshot = serializeEventContext(baseContext);
-  const client = mockCanvasClient([]);
-  client.canvases.sections.lookup = async () => {
-    throw new Error("should not read canvas when snapshot is present");
+Deno.test("Dashboard-link open with snapshot (no lookup)", () => {
+  const snapshot = serializeEventContextSnapshot(baseContext);
+  const client = {
+    canvases: {
+      sections: {
+        lookup: async () => {
+          throw new Error("readCanvasMarkdown must not be invoked");
+        },
+      },
+    },
   };
 
-  const content = await loadDashboardContentForButton(
-    client,
+  const content = resolveDashboardCanvasContent(client, {
+    dashboard_canvas_id: "dash-1",
+    dashboard_canvas_content: snapshot,
+  });
+
+  assertEquals(content, snapshot);
+});
+
+Deno.test("pinned button open with snapshot", () => {
+  const snapshot = serializeEventContextSnapshot(baseContext);
+  const content = loadDashboardContentForButton(
     JSON.stringify({
       dashboard_canvas_id: "dash-1",
       dashboard_canvas_content: snapshot,
@@ -74,31 +93,138 @@ Deno.test("loadDashboardContentForButton uses snapshot in button value without c
     "",
   );
 
-  assertStringIncludes(content, METADATA_MARKER);
+  assertEquals(content, snapshot);
   assertStringIncludes(content, "Acme Corp");
 });
 
-Deno.test("loadDashboardContentForButton reads canvas via button value", async () => {
-  const metadata = serializeEventContext(baseContext);
-  const client = mockCanvasClient([
-    { id: "s1", markdown: "# Dashboard\n\n## Project" },
-    { id: "s2", markdown: metadata },
-  ]);
+Deno.test("missing snapshot errors", () => {
+  const client = {
+    canvases: {
+      sections: {
+        lookup: async () => {
+          throw new Error("readCanvasMarkdown must not be invoked");
+        },
+      },
+    },
+  };
 
-  const content = await loadDashboardContentForButton(
-    client,
-    JSON.stringify({ dashboard_canvas_id: "dash-1" }),
+  assertEquals(
+    resolveDashboardCanvasContent(client, { dashboard_canvas_id: "dash-1" }),
     "",
   );
-
-  assertStringIncludes(content, METADATA_MARKER);
-  assertStringIncludes(content, "Acme Corp");
+  assertEquals(
+    loadDashboardContentForButton(
+      JSON.stringify({ dashboard_canvas_id: "dash-1" }),
+      "",
+    ),
+    "",
+  );
 });
 
-Deno.test("loadDashboardContentForButton falls back when button value is missing", async () => {
-  const fallback = serializeEventContext(baseContext);
-  const client = mockCanvasClient([]);
+Deno.test("Open onboarding from Dashboard canvas link does not error as empty dashboard when canvas ID is baked", () => {
+  const content = resolveDashboardCanvasContent({}, {});
+  assertEquals(content, "");
+});
 
-  const content = await loadDashboardContentForButton(client, undefined, fallback);
-  assertEquals(content, fallback);
+Deno.test("readCanvasMarkdown not invoked from onboarding open or submit source", () => {
+  const openSource = Deno.readTextFileSync(
+    new URL("../functions/open_onboarding/mod.ts", import.meta.url),
+  );
+  const submitSource = Deno.readTextFileSync(
+    new URL("../lib/onboarding-view-submit.ts", import.meta.url),
+  );
+  assertEquals(openSource.includes("readCanvasMarkdown"), false);
+  assertEquals(submitSource.includes("readCanvasMarkdown"), false);
+});
+
+Deno.test("submit updates Dashboard from snapshot", async () => {
+  const snapshot = serializeEventContextSnapshot(baseContext);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(null, { status: 200 });
+  const edited: string[] = [];
+  let lookupCalled = false;
+
+  try {
+    const result = await executeOnboardingSubmit(
+      {
+        chat: { postMessage: async () => ({}) },
+        files: {
+          getUploadURLExternal: async () => ({
+            ok: true,
+            upload_url: "https://upload.example.test",
+            file_id: "F-banner",
+          }),
+          completeUploadExternal: async () => ({
+            ok: true,
+            files: [{
+              permalink: "https://example.slack.com/files/U1/F1/banner.png",
+            }],
+          }),
+          info: async () => ({
+            ok: true,
+            file: { permalink: "https://example.slack.com/files/U1/F1/banner.png" },
+          }),
+        },
+        canvases: {
+          edit: async (params: {
+            canvas_id: string;
+            changes: Array<{ document_content?: { markdown: string } }>;
+          }) => {
+            const markdown = params.changes[0]?.document_content?.markdown ?? "";
+            edited.push(markdown);
+            return {};
+          },
+          sections: {
+            lookup: async () => {
+              lookupCalled = true;
+              throw new Error("readCanvasMarkdown must not be invoked");
+            },
+          },
+        },
+      },
+      {
+        channel_id: "C1",
+        dashboard_canvas_content: snapshot,
+      },
+      onboardingForm,
+    );
+
+    assertEquals(result, { ok: true });
+    assertEquals(lookupCalled, false);
+    assertEquals(edited.length, 1);
+    assertStringIncludes(edited[0], "Acme Corp");
+    assertStringIncludes(edited[0], "<!-- tes-event-context -->");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+Deno.test("executeOnboardingSubmit missing snapshot errors without canvas read", async () => {
+  const result = await executeOnboardingSubmit(
+    {
+      chat: { postMessage: async () => ({}) },
+      files: {
+        getUploadURLExternal: async () => ({ ok: false }),
+        completeUploadExternal: async () => ({ ok: false }),
+        info: async () => ({ ok: false }),
+      },
+      canvases: {
+        edit: async () => {
+          throw new Error("should not write dashboard");
+        },
+        sections: {
+          lookup: async () => {
+            throw new Error("readCanvasMarkdown must not be invoked");
+          },
+        },
+      },
+    },
+    { channel_id: "C1", dashboard_canvas_content: "" },
+    onboardingForm,
+  );
+
+  assertEquals(result, {
+    ok: false,
+    error: MISSING_ONBOARDING_SNAPSHOT_ERROR,
+  });
 });

@@ -10,10 +10,12 @@ import {
   type ProvisionTarget,
 } from "../lib/triggers-config.ts";
 import { buildWorkflowTriggerEnvVars } from "../lib/workflow-trigger-registry.ts";
+import {
+  type SlackCommandRunner,
+  unsetOnboardingEnvVars,
+} from "./slack-cli-helpers.ts";
 
-export interface SlackCommandRunner {
-  run(args: string[]): Promise<{ code: number; stdout: string; stderr: string }>;
-}
+export type { SlackCommandRunner } from "./slack-cli-helpers.ts";
 
 export async function listTriggers(
   runner: SlackCommandRunner,
@@ -208,7 +210,16 @@ export async function provisionTriggersFromConfig(options: {
   const listedAfter = parseTriggerListOutput(
     await listTriggers(options.runner, appId, token),
   );
-  await syncWorkflowTriggerEnvVars(options.runner, appId, token, listedAfter);
+
+  const onboardingDeployEnabled = config.triggers.some(
+    (entry) => entry.id === "complete-onboarding" && entry.enabled,
+  );
+
+  if (onboardingDeployEnabled) {
+    await syncWorkflowTriggerEnvVars(options.runner, appId, token, listedAfter);
+  } else {
+    await unsetOnboardingEnvVars(options.runner, appId, token);
+  }
 }
 
 if (import.meta.main) {

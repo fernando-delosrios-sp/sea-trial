@@ -21,7 +21,7 @@ triggers:
     trigger_def: triggers/complete_onboarding.ts
     scope: global
     channels: []
-    enabled: false  # per-channel triggers.create at seed time surfaces Workflows tab bookmarks
+    enabled: false  # per-channel Onboarding Link Trigger is created at provision
 
   - id: tes-onboard
     trigger_def: triggers/tes_onboard.ts

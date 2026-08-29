@@ -35,7 +35,6 @@ import {
   provisionWorkflowChannelAssociation,
   type WorkflowTriggerClient,
 } from "../onboarding-channel-trigger.ts";
-import type { ListedTrigger } from "../triggers-config.ts";
 
 function resolveProvisionTeamId(
   env?: Record<string, string | undefined>,
@@ -57,8 +56,6 @@ export interface ProvisionInputs {
   member_user_ids?: string[];
   context_notes?: string;
   env?: Record<string, string | undefined>;
-  /** Optional deploy-time trigger list fallback when env trigger ID is unset. */
-  listed_triggers?: ListedTrigger[];
 }
 
 export interface ChannelProvisionClient
@@ -169,9 +166,7 @@ async function provisionWorkflowStep(
   step: CompositionStep & { kind: "workflow" },
   channelId: string,
   context: TesEventContext,
-  env?: Record<string, string | undefined>,
-  listedTriggers?: ListedTrigger[],
-): Promise<string | undefined> {
+): Promise<string> {
   if (!context.dashboardCanvasId) {
     throw new Error(
       `Workflow step "${step.id}" requires dashboard canvas to be provisioned first`,
@@ -182,13 +177,8 @@ async function provisionWorkflowStep(
     client,
     channelId,
     step.link,
-    {
-      bookmark: step.bookmark,
-      featured: step.featured,
-    },
-    env,
-    listedTriggers,
     context.dashboardCanvasId,
+    context,
   );
 }
 
@@ -220,15 +210,22 @@ async function finalizeDashboardCanvas(
   pinnedMessageTs?: string,
   onboardingShortcutUrl?: string,
   env?: Record<string, string | undefined>,
+  requireTriggerShareUrl = false,
 ): Promise<void> {
   if (!context.dashboardCanvasId) return;
 
+  if (requireTriggerShareUrl && !onboardingShortcutUrl) {
+    throw new Error(
+      "Cannot seed Dashboard onboarding link: trigger share URL is missing",
+    );
+  }
+
   const onboardingLink = onboardingShortcutUrl ??
-    buildOnboardingCanvasLink(
+    (requireTriggerShareUrl ? undefined : buildOnboardingCanvasLink(
       channelId,
       pinnedMessageTs,
       env,
-    );
+    ));
   const content = await renderDashboardCanvasForSlack(
     client,
     channelId,
@@ -273,6 +270,7 @@ export async function provisionChannel(
 
   const stepIds: Record<string, string> = {};
   let onboardingShortcutUrl: string | undefined;
+  let hadWorkflowStep = false;
 
   for (const step of composition.steps) {
     if (!shouldProvisionStep(step)) continue;
@@ -302,14 +300,13 @@ export async function provisionChannel(
         break;
       }
       case "workflow": {
+        hadWorkflowStep = true;
         onboardingShortcutUrl = await provisionWorkflowStep(
           client,
           step,
           inputs.channel_id,
           context,
-          inputs.env,
-          inputs.listed_triggers,
-        ) ?? onboardingShortcutUrl;
+        );
         break;
       }
       default:
@@ -332,6 +329,7 @@ export async function provisionChannel(
     pinnedMessageTs,
     onboardingShortcutUrl,
     inputs.env,
+    hadWorkflowStep,
   );
 
   return context;

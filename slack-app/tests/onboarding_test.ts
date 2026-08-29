@@ -33,8 +33,8 @@ Deno.test("Open onboarding form — modal has all required fields", () => {
   assertEquals(ONBOARDING_MODAL_BLOCKS.includes("sailpoint_suite"), true);
 });
 
-Deno.test("Open onboarding form — Account is pre-filled from TesEventContext.accountName", () => {
-  const dashboardContent = serializeEventContext(baseContext);
+Deno.test("Open onboarding form from pinned index — Account is pre-filled from TesEventContext.accountName", () => {
+  const dashboardContent = JSON.stringify(baseContext);
   const view = buildOnboardingModalView({
     channelId: "C1",
     dashboardCanvasContent: dashboardContent,

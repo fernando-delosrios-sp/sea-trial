@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-08-29 — Onboarding trigger context snapshot
+
+### Changed
+
+- **Seed-time snapshot** — Create TES Event bakes a compact TesEventContext snapshot into the channel's Onboarding Link Trigger and the pinned Complete onboarding button. Opening and submitting onboarding use that snapshot; they do not read Dashboard canvas markdown.
+- **Dashboard write on submit** — Submitting onboarding still replaces the Dashboard canvas with opportunity details and derived components from the snapshot plus the form.
+
+### Fixed
+
+- **Complete onboarding from Dashboard** — The modal opens with Account pre-filled from create-time context even when Slack cannot return canvas content.
+
+### Breaking
+
+- **Existing TES Event Channels** — Triggers and buttons without a snapshot stay broken. Re-run Create TES Event for a new channel, or repair with an explicit `TES_EVENT_CONTEXT_JSON` snapshot. Canvas content cannot be recovered.
+
+---
+
+## 2026-04-10 — Onboarding Dashboard canvas link
+
+### Changed
+
+- **Onboarding discovery** — Channel members complete onboarding from the Dashboard canvas Complete onboarding link; the pinned index button remains as fallback. The Workflows tab is not a required entry.
+- **Onboarding Link Trigger** — Channel seed creates a per-channel shortcut named `Complete Onboarding ({channelId})` with baked channel and Dashboard IDs, and writes the API share URL onto the Dashboard.
+- **Shared Complete Onboarding shortcut** — Disabled in deploy config so the workspace palette no longer advertises a broken global shortcut.
+
+### Removed
+
+- **Workflow bookmark/featured flags** — Workflow steps in the composition manifest are `{ id, kind, link }` only; `bookmark` and `featured` are invalid on workflow steps (list bookmarks and canvas tabs are unchanged).
+
+### Fixed
+
+- **Dashboard shortcut URL** — Seeding no longer fabricates `https://slack.com/shortcuts/{id}` without the secret path segment; missing API share URL fails provision instead of writing a dead link.
+
+---
 ## 2026-08-14 — Workflow channel surfacing
 
 ### Changed

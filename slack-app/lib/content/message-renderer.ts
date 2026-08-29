@@ -1,5 +1,5 @@
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
-import { serializeEventContext } from "../event-context.ts";
+import { serializeEventContextSnapshot } from "../event-context.ts";
 import {
   getContextFieldForStepId,
   loadComposition,
@@ -12,6 +12,24 @@ import {
 import { TEMPLATES_BY_PATH } from "./embedded-templates.generated.ts";
 
 const PINNED_INDEX_TITLE = "TES Event Channel Index";
+export const PINNED_ONBOARDING_BUTTON_MAX_CHARS = 2000;
+
+function pinnedOnboardingButtonValue(context: TesEventContext): {
+  dashboard_canvas_id: string;
+  dashboard_canvas_content: string;
+} {
+  const buttonValueJson = {
+    dashboard_canvas_id: context.dashboardCanvasId,
+    dashboard_canvas_content: serializeEventContextSnapshot(context),
+  };
+  const encoded = JSON.stringify(buttonValueJson);
+  if (encoded.length > PINNED_ONBOARDING_BUTTON_MAX_CHARS) {
+    throw new Error(
+      `Pinned Complete onboarding button value is ${encoded.length} characters (max ${PINNED_ONBOARDING_BUTTON_MAX_CHARS}). Seeding failed; the snapshot was not truncated.`,
+    );
+  }
+  return buttonValueJson;
+}
 
 function loadPinnedIndexTemplate() {
   const template = TEMPLATES_BY_PATH["messages/pinned-index.hbs.json"];
@@ -137,10 +155,7 @@ export function renderPinnedIndexBlocks(
   const rendered = template({
     messageText: buildIndexMessageText(context, composition, options),
     onboardingComplete: context.onboardingComplete,
-    buttonValueJson: {
-      dashboard_canvas_id: context.dashboardCanvasId,
-      dashboard_canvas_content: serializeEventContext(context),
-    },
+    buttonValueJson: pinnedOnboardingButtonValue(context),
     publishButtonValueJson: {
       dashboard_canvas_id: context.dashboardCanvasId,
       situation_report_canvas_id: context.situationReportCanvasId,

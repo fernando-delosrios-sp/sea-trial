@@ -32,5 +32,3 @@ export function buildOutgoingDomains(
 
   return [...domains];
 }
-
-

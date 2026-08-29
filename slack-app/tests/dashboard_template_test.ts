@@ -1,6 +1,7 @@
 import {
   assertEquals,
   assertStringIncludes,
+  assertThrows,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   dashboardTemplate,
@@ -79,25 +80,26 @@ Deno.test("dashboardTemplate Project section falls back gracefully when creation
   assertStringIncludes(markdown, "_Not set_");
 });
 
-Deno.test("renderDashboardCanvas includes onboarding link when provided", () => {
+Deno.test("Dashboard link uses API share URL", () => {
   const markdown = renderDashboardCanvas(baseContext, undefined, {
-    onboardingLink: "https://app.slack.com/shortcuts/onboarding",
+    onboardingLink: "https://slack.com/shortcuts/FtONBOARD1/secret",
   });
 
   assertStringIncludes(markdown, "Complete onboarding");
   assertStringIncludes(
     markdown,
-    "https://app.slack.com/shortcuts/onboarding",
+    "https://slack.com/shortcuts/FtONBOARD1/secret",
   );
 });
 
-Deno.test("renderDashboardCanvas hides onboarding link when onboarding is complete", () => {
+Deno.test("Onboarding section hidden after submit", () => {
   const markdown = renderDashboardCanvas(
     { ...baseContext, onboardingComplete: true },
     undefined,
-    { onboardingLink: "https://app.slack.com/shortcuts/onboarding" },
+    { onboardingLink: "https://slack.com/shortcuts/FtONBOARD1/secret" },
   );
 
+  assertEquals(markdown.includes("## Onboarding"), false);
   assertEquals(markdown.includes("Complete onboarding"), false);
 });
 
@@ -126,10 +128,23 @@ Deno.test("pinnedIndexBlocks includes a Complete onboarding button when onboardi
     };
   assertEquals(buttonValue.dashboard_canvas_id, baseContext.dashboardCanvasId);
   assertEquals(
-    Boolean(buttonValue.dashboard_canvas_content?.includes("Acme")),
-    true,
+    buttonValue.dashboard_canvas_content,
+    JSON.stringify(baseContext),
   );
+  assertEquals(buttonValue.dashboard_canvas_content?.includes("Acme Corp"), true);
   assertEquals(encoded.length <= 2000, true);
+});
+
+Deno.test("Oversized pinned button snapshot fails seed", () => {
+  const oversized = {
+    ...baseContext,
+    contextNotes: "x".repeat(2000),
+  };
+  assertThrows(
+    () => pinnedIndexBlocks(oversized, navOptions),
+    Error,
+    "Seeding failed; the snapshot was not truncated",
+  );
 });
 
 Deno.test("pinnedIndexBlocks shows Publish situation report when onboarding is complete", () => {

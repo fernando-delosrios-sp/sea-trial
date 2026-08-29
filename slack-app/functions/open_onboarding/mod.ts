@@ -1,3 +1,8 @@
+/**
+ * Opens and submits onboarding from a seed-time trigger context snapshot
+ * (workflow input `dashboard_canvas_content` or pinned button value).
+ * Does not read Dashboard canvas markdown.
+ */
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
 import {
   buildOnboardingModalView,
@@ -9,7 +14,10 @@ import {
   parseOnboardingForm,
   type SlackOnboardingSubmitClient,
 } from "../../lib/onboarding-view-submit.ts";
-import { readCanvasMarkdown, type CanvasSectionsClient } from "../../lib/canvas.ts";
+import {
+  deserializeEventContext,
+  MISSING_ONBOARDING_SNAPSHOT_ERROR,
+} from "../../lib/event-context.ts";
 
 export const OpenOnboardingFunction = DefineFunction({
   callback_id: "open_onboarding",
@@ -27,40 +35,27 @@ export const OpenOnboardingFunction = DefineFunction({
   output_parameters: { properties: {}, required: [] },
 });
 
-async function resolveDashboardCanvasContent(
-  client: CanvasSectionsClient,
+export function resolveDashboardCanvasContent(
+  _client: unknown,
   inputs: {
     dashboard_canvas_content?: string;
     dashboard_canvas_id?: string;
   },
-): Promise<string> {
-  const inline = inputs.dashboard_canvas_content?.trim() ?? "";
-  if (inline) return inline;
-
-  const dashboardCanvasId = inputs.dashboard_canvas_id?.trim();
-  if (!dashboardCanvasId) return "";
-
-  try {
-    return await readCanvasMarkdown(client, dashboardCanvasId);
-  } catch {
-    return "";
-  }
+): string {
+  const snapshot = inputs.dashboard_canvas_content?.trim() ?? "";
+  if (deserializeEventContext(snapshot)) return snapshot;
+  return "";
 }
 
 export default SlackFunction(
   OpenOnboardingFunction,
   async ({ inputs, client }) => {
-    const dashboardCanvasContent = await resolveDashboardCanvasContent(
-      client as unknown as CanvasSectionsClient,
+    const dashboardCanvasContent = resolveDashboardCanvasContent(
+      client,
       inputs,
     );
     if (!dashboardCanvasContent) {
-      const triedCanvasId = Boolean(inputs.dashboard_canvas_id?.trim());
-      return {
-        error: triedCanvasId
-          ? "Could not read the dashboard canvas. Use the Complete onboarding button on the pinned index message."
-          : "Dashboard content is unavailable. Use the Complete onboarding button on the pinned index message.",
-      };
+      return { error: MISSING_ONBOARDING_SNAPSHOT_ERROR };
     }
 
     const accountName = resolveAccountPrefill(dashboardCanvasContent);
@@ -89,13 +84,12 @@ export default SlackFunction(
       : action.value != null
       ? JSON.stringify(action.value)
       : undefined;
-    const dashboardCanvasContent = await loadDashboardContentForButton(
-      client as unknown as CanvasSectionsClient,
+    const dashboardCanvasContent = loadDashboardContentForButton(
       buttonValue,
       "",
     );
     if (!dashboardCanvasContent) {
-      return { error: "Could not load dashboard canvas for onboarding." };
+      return { error: MISSING_ONBOARDING_SNAPSHOT_ERROR };
     }
 
     const accountName = resolveAccountPrefill(dashboardCanvasContent);
@@ -124,24 +118,9 @@ export default SlackFunction(
       dashboard_canvas_content?: string;
     };
 
-    let dashboardCanvasContent = metadata.dashboard_canvas_content?.trim() ?? "";
-    if (!dashboardCanvasContent) {
-      const dashboardCanvasId = metadata.dashboard_canvas_id?.trim();
-      if (!dashboardCanvasId) {
-        return { error: "Missing dashboard canvas reference in onboarding metadata." };
-      }
-
-      try {
-        dashboardCanvasContent = await readCanvasMarkdown(
-          client as unknown as CanvasSectionsClient,
-          dashboardCanvasId,
-        );
-      } catch {
-        return {
-          error:
-            "Could not load dashboard canvas. Try opening onboarding from the pinned index button.",
-        };
-      }
+    const dashboardCanvasContent = metadata.dashboard_canvas_content?.trim() ?? "";
+    if (!deserializeEventContext(dashboardCanvasContent)) {
+      return { error: MISSING_ONBOARDING_SNAPSHOT_ERROR };
     }
 
     const result = await executeOnboardingSubmit(
@@ -160,4 +139,3 @@ export default SlackFunction(
     return { completed: true };
   },
 );
-

@@ -24,20 +24,21 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 - [ ] Dashboard, Requirements, Infrastructure canvases exist
 - [ ] Deliverables and Incidents lists exist
 - [ ] Deliverables and Incidents appear as channel bookmarks (channel header) linking to each list
-- [ ] Onboarding appears in the channel Workflows tab bookmarked list (not duplicate global shortcuts per channel)
+- [ ] Dashboard includes a Complete onboarding markdown link (Workflows tab is not required)
+- [ ] **New channel required** after this change — existing channels need Create TES Event again or `repair-workflow-tab.ts` with `TES_EVENT_CONTEXT_JSON`
 - [ ] Pinned index message links all objects
 - [ ] Onboarding CTA visible when onboarding incomplete
 
 ## Onboarding
 
-- [ ] Open onboarding from Workflows tab bookmarked list → modal opens with all fields
+- [ ] Click Complete onboarding on the Dashboard canvas → modal opens with all fields
 - [ ] Click "Complete onboarding" on pinned index → modal opens with all fields
-- [ ] Account field pre-filled from creation context (editable)
-- [ ] Submit form → Dashboard updated, `onboardingComplete` true, Account reflects submitted value
+- [ ] Account field pre-filled from the **create-time** account name (editable) on both the Dashboard link and the pinned button
+- [ ] Submit form → Dashboard updated, `onboardingComplete` true, Account reflects submitted value; Dashboard `## Onboarding` section is gone
 - [ ] Identity Security Cloud → correct components derived
 - [ ] Channel message announces agent available when summoned (@mention)
 
-> **Legacy channels:** Per-channel onboarding shortcuts created before this change may still appear in the workspace shortcut palette until manually removed.
+> **Existing channels:** Triggers without a snapshot stay broken. Re-run Create TES Event, or run `scripts/repair-workflow-tab.ts` with `CHANNEL_ID`, `DASHBOARD_CANVAS_ID`, and `TES_EVENT_CONTEXT_JSON` (compact snapshot — the script does not read canvas markdown). Shared "Complete Onboarding" shortcuts titled exactly that name may still appear until `cleanup-onboarding-triggers` runs.
 
 ## Agent gate
 

@@ -1,21 +1,19 @@
+/**
+ * Per-channel Onboarding Link Trigger used as the Dashboard canvas CTA.
+ * Not associated with the channel Workflows tab.
+ */
 import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/mod.ts";
-import type { ListedTrigger } from "./triggers-config.ts";
+import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import type { SlackListApiCallResponse, SlackListClient } from "./lists.ts";
 import OpenOnboardingWorkflow from "../workflows/open_onboarding.ts";
-import {
-  isKnownWorkflowLink,
-  resolveWorkflowTriggerId,
-  resolveWorkflowTriggerShareUrl,
-} from "./workflow-trigger-registry.ts";
-
-export interface WorkflowAssociationOptions {
-  bookmark?: true;
-  featured?: true;
-}
+import { buildProvisionTitle } from "./triggers-config.ts";
+import { isKnownWorkflowLink } from "./workflow-trigger-registry.ts";
+import { serializeEventContextSnapshot } from "./event-context.ts";
 
 type SlackApiResponse = SlackListApiCallResponse & {
   trigger?: {
     id?: string;
+    trigger_id?: string;
     share_url?: string;
     shortcut_url?: string;
   };
@@ -30,6 +28,7 @@ export interface WorkflowTriggerClient {
         set?: (payload: {
           trigger_id: string;
           permission_type?: string;
+          channel_ids?: string[];
         }) => Promise<{ ok?: boolean; error?: string }>;
         add: (payload: {
           trigger_id: string;
@@ -37,22 +36,21 @@ export interface WorkflowTriggerClient {
         }) => Promise<{ ok?: boolean; error?: string }>;
       };
     };
-    featured?: {
-      add: (payload: {
-        channel_id: string;
-        trigger_ids: string[];
-      }) => Promise<{ ok?: boolean; error?: string }>;
-    };
   };
 }
 
-function resolveTriggerShareUrl(
-  trigger: { id?: string; share_url?: string; shortcut_url?: string },
+function parseTriggerId(
+  trigger: { id?: string; trigger_id?: string },
 ): string | undefined {
-  const direct = trigger.share_url?.trim() || trigger.shortcut_url?.trim();
-  if (direct) return direct;
-  if (trigger.id) return `https://slack.com/shortcuts/${trigger.id}`;
-  return undefined;
+  const id = trigger.id?.trim() || trigger.trigger_id?.trim();
+  return id || undefined;
+}
+
+function parseTriggerShareUrl(
+  trigger: { share_url?: string; shortcut_url?: string },
+): string | undefined {
+  const url = trigger.share_url?.trim() || trigger.shortcut_url?.trim();
+  return url || undefined;
 }
 
 async function callWorkflowApi(
@@ -63,7 +61,11 @@ async function callWorkflowApi(
   if (method === "workflows.triggers.permissions.set") {
     const set = client.workflows.triggers.permissions.set;
     if (set) {
-      return set(params as { trigger_id: string; permission_type?: string });
+      return set(params as {
+        trigger_id: string;
+        permission_type?: string;
+        channel_ids?: string[];
+      });
     }
   }
 
@@ -71,15 +73,6 @@ async function callWorkflowApi(
     return client.workflows.triggers.permissions.add(
       params as { trigger_id: string; channel_ids?: string[] },
     );
-  }
-
-  if (method === "workflows.featured.add") {
-    const add = client.workflows.featured?.add;
-    if (add) {
-      return add(
-        params as { channel_id: string; trigger_ids: string[] },
-      );
-    }
   }
 
   if (client.apiCall) {
@@ -90,38 +83,18 @@ async function callWorkflowApi(
 }
 
 /**
- * Restricts a trigger to named entities when the platform allows it.
- * Best-effort: some tenants reject permissions.set on runtime-created triggers.
- */
-async function trySetNamedEntityPermissions(
-  client: WorkflowTriggerClient,
-  triggerId: string,
-): Promise<void> {
-  const response = await callWorkflowApi(
-    client,
-    "workflows.triggers.permissions.set",
-    {
-      trigger_id: triggerId,
-      permission_type: "named_entities",
-    },
-  ).catch(() => ({ ok: false }));
-
-  if (response.ok !== true) {
-    return;
-  }
-}
-
-/**
- * Grants channel run access for a trigger. Required for Workflows tab surfacing.
+ * Grants channel run access for a trigger.
+ *
+ * `permissions.add` only works when the trigger is already `named_entities`.
+ * Otherwise `permissions.set` must include `channel_ids` in the same call —
+ * setting empty `named_entities` returns `named_entities_cannot_be_empty`.
  */
 async function grantChannelTriggerAccess(
   client: WorkflowTriggerClient,
   triggerId: string,
   channelId: string,
 ): Promise<void> {
-  await trySetNamedEntityPermissions(client, triggerId);
-
-  const accessResponse = await callWorkflowApi(
+  const addResponse = await callWorkflowApi(
     client,
     "workflows.triggers.permissions.add",
     {
@@ -130,42 +103,49 @@ async function grantChannelTriggerAccess(
     },
   );
 
-  if (!accessResponse.ok) {
-    throw new Error(
-      `Failed to grant workflow trigger ${triggerId} access to channel ${channelId}${
-        accessResponse.error ? `: ${accessResponse.error}` : ""
-      }`,
-    );
+  if (addResponse.ok) {
+    return;
   }
+
+  if (addResponse.error === "invalid_permission_type") {
+    const setResponse = await callWorkflowApi(
+      client,
+      "workflows.triggers.permissions.set",
+      {
+        trigger_id: triggerId,
+        permission_type: "named_entities",
+        channel_ids: [channelId],
+      },
+    );
+
+    if (!setResponse.ok) {
+      throw new Error(
+        `Failed to set workflow trigger permissions for ${triggerId}${
+          setResponse.error ? `: ${setResponse.error}` : ""
+        }`,
+      );
+    }
+    return;
+  }
+
+  throw new Error(
+    `Failed to grant workflow trigger ${triggerId} access to channel ${channelId}${
+      addResponse.error ? `: ${addResponse.error}` : ""
+    }`,
+  );
 }
 
 /**
- * Attempts to create the channel Workflows header tab via featured.add.
- * Best-effort: bot tokens may be rejected on some tenants; seeding must continue.
+ * Creates a per-channel Onboarding Link Trigger with baked channel ID, Dashboard
+ * ID, and compact TesEventContext snapshot. Open/submit use that snapshot — not
+ * canvas lookup. The Dashboard Complete onboarding href must use the API share
+ * URL — never a URL synthesized from trigger ID.
  */
-async function tryEnsureWorkflowsChannelTab(
-  client: WorkflowTriggerClient,
-  channelId: string,
-  triggerId: string,
-): Promise<void> {
-  await callWorkflowApi(
-    client,
-    "workflows.featured.add",
-    {
-      channel_id: channelId,
-      trigger_ids: [triggerId],
-    },
-  ).catch(() => ({ ok: false }));
-}
-
-/**
- * Creates a channel-scoped onboarding shortcut, grants access, and attempts
- * to surface it in the channel Workflows tab.
- */
-async function createChannelOnboardingTrigger(
+export async function createChannelOnboardingTrigger(
   client: WorkflowTriggerClient,
   channelId: string,
   dashboardCanvasId: string,
+  eventContext: TesEventContext,
 ): Promise<string> {
   const create = client.workflows.triggers.create;
   if (!create) {
@@ -174,7 +154,7 @@ async function createChannelOnboardingTrigger(
 
   const triggerResponse = await create({
     type: TriggerTypes.Shortcut,
-    name: "Complete Onboarding",
+    name: buildProvisionTitle("Complete Onboarding", "channel", channelId),
     description: `Open onboarding for TES Event Channel ${channelId}`,
     workflow: `#/workflows/${OpenOnboardingWorkflow.definition.callback_id}`,
     inputs: {
@@ -183,10 +163,15 @@ async function createChannelOnboardingTrigger(
       },
       channel_id: { value: channelId },
       dashboard_canvas_id: { value: dashboardCanvasId },
+      dashboard_canvas_content: {
+        value: serializeEventContextSnapshot(eventContext),
+      },
     },
   });
 
-  if (!triggerResponse.ok || !triggerResponse.trigger?.id) {
+  const trigger = triggerResponse.trigger;
+  const triggerId = trigger ? parseTriggerId(trigger) : undefined;
+  if (!triggerResponse.ok || !triggerId) {
     throw new Error(
       `Failed to create onboarding trigger for channel ${channelId}${
         triggerResponse.error ? `: ${triggerResponse.error}` : ""
@@ -194,11 +179,9 @@ async function createChannelOnboardingTrigger(
     );
   }
 
-  const triggerId = triggerResponse.trigger.id;
   await grantChannelTriggerAccess(client, triggerId, channelId);
-  await tryEnsureWorkflowsChannelTab(client, channelId, triggerId);
 
-  const shareUrl = resolveTriggerShareUrl(triggerResponse.trigger);
+  const shareUrl = parseTriggerShareUrl(trigger!);
   if (!shareUrl) {
     throw new Error(
       `Onboarding trigger created but share URL missing for channel ${channelId}`,
@@ -209,85 +192,40 @@ async function createChannelOnboardingTrigger(
 }
 
 /**
- * Grants a shared deploy-time workflow trigger channel-scoped run access and
- * optional Workflows tab surfacing.
- */
-export async function associateWorkflowWithChannel(
-  client: WorkflowTriggerClient,
-  channelId: string,
-  triggerId: string,
-  options: WorkflowAssociationOptions = {},
-): Promise<string | undefined> {
-  if (options.bookmark === true) {
-    await grantChannelTriggerAccess(client, triggerId, channelId);
-    await tryEnsureWorkflowsChannelTab(client, channelId, triggerId);
-  }
-
-  if (options.featured === true) {
-    const featuredResponse = await callWorkflowApi(
-      client,
-      "workflows.featured.add",
-      {
-        channel_id: channelId,
-        trigger_ids: [triggerId],
-      },
-    );
-    if (!featuredResponse.ok) {
-      throw new Error(
-        `Failed to feature workflow trigger ${triggerId} in channel ${channelId}${
-          featuredResponse.error ? `: ${featuredResponse.error}` : ""
-        }`,
-      );
-    }
-  }
-
-  return resolveWorkflowTriggerShareUrl(triggerId);
-}
-
-/**
- * Resolves a workflow step link and provisions channel workflow surfacing.
+ * Resolves a workflow step link and creates the per-channel Onboarding Link Trigger.
  */
 export async function provisionWorkflowChannelAssociation(
   client: WorkflowTriggerClient,
   channelId: string,
   link: string,
-  options: WorkflowAssociationOptions = {},
-  env?: Record<string, string | undefined>,
-  listedTriggers?: ListedTrigger[],
   dashboardCanvasId?: string,
-): Promise<string | undefined> {
+  eventContext?: TesEventContext,
+): Promise<string> {
   if (!isKnownWorkflowLink(link)) {
     throw new Error(`Unknown workflow link "${link}"`);
   }
 
-  if (link === "open_onboarding_workflow" && options.bookmark === true) {
-    if (!dashboardCanvasId) {
-      throw new Error(
-        'Workflow step "open_onboarding_workflow" requires dashboard canvas to be provisioned first',
-      );
-    }
-    return await createChannelOnboardingTrigger(
-      client,
-      channelId,
-      dashboardCanvasId,
+  if (link !== "open_onboarding_workflow") {
+    throw new Error(`Unknown workflow link "${link}"`);
+  }
+
+  if (!dashboardCanvasId) {
+    throw new Error(
+      'Workflow step "open_onboarding_workflow" requires dashboard canvas to be provisioned first',
     );
   }
 
-  const triggerId = resolveWorkflowTriggerId(link, env, listedTriggers);
-  if (!triggerId) {
-    if (options.bookmark === true || options.featured === true) {
-      throw new Error(
-        `Cannot resolve deploy-time trigger for workflow link "${link}" — set SLACK_ONBOARDING_TRIGGER_ID or redeploy triggers`,
-      );
-    }
-    return undefined;
+  if (!eventContext) {
+    throw new Error(
+      'Workflow step "open_onboarding_workflow" requires a TesEventContext snapshot',
+    );
   }
 
-  return await associateWorkflowWithChannel(
+  return await createChannelOnboardingTrigger(
     client,
     channelId,
-    triggerId,
-    options,
+    dashboardCanvasId,
+    eventContext,
   );
 }
 
@@ -296,16 +234,13 @@ export async function provisionOnboardingChannelShortcut(
   client: WorkflowTriggerClient,
   channelId: string,
   dashboardCanvasId: string,
-  _dashboardCanvasContent = "",
-  env?: Record<string, string | undefined>,
-): Promise<string | undefined> {
+  eventContext: TesEventContext,
+): Promise<string> {
   return await provisionWorkflowChannelAssociation(
     client,
     channelId,
     "open_onboarding_workflow",
-    { bookmark: true },
-    env,
-    undefined,
     dashboardCanvasId,
+    eventContext,
   );
 }

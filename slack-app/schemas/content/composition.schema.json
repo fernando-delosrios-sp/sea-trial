@@ -59,7 +59,9 @@
             "not": {
               "anyOf": [
                 { "required": ["ref"] },
-                { "required": ["tab"] }
+                { "required": ["tab"] },
+                { "required": ["bookmark"] },
+                { "required": ["featured"] }
               ]
             }
           }

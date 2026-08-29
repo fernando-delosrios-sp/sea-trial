@@ -23,14 +23,14 @@ Modal Block Kit definitions SHALL live in `slack-app/content/modals/*.json` with
 
 ### Requirement: Declarative canvas content
 
-Canvas markdown SHALL be authored in `slack-app/content/canvases/*.hbs.md` and rendered via Handlebars. The `<!-- tes-event-context -->` metadata block SHALL be injected by code after rendering, not embedded in editorial templates. Situation Report canvases SHALL use `situation-report.hbs.md` as their editorial source. Delivery Template Canvases SHALL use `delivery.hbs.md` as their editorial source.
+Canvas markdown SHALL be authored in `slack-app/content/canvases/*.hbs.md` and rendered via Handlebars. The slack-app SHALL NOT append a `<!-- tes-event-context -->` JSON dump to canvas documents. Author templates SHALL NOT contain that marker. Situation Report canvases SHALL use `situation-report.hbs.md` as their editorial source. Delivery Template Canvases SHALL use `delivery.hbs.md` as their editorial source.
 
 #### Scenario: Dashboard canvas from template
 
 - **GIVEN** a `TesEventContext` with creation fields set
 - **WHEN** the dashboard canvas is rendered
 - **THEN** the Project section SHALL include Account, Salesforce URL, members, notes, and status
-- **AND** metadata JSON SHALL be appended by the renderer
+- **AND** the rendered markdown SHALL NOT include `<!-- tes-event-context -->` or a fenced JSON dump of `TesEventContext`
 
 #### Scenario: Static canvases from templates
 

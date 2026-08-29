@@ -5,7 +5,7 @@ Declarative blueprint for TES Event Channel structure — which Slack objects co
 ## Requirements
 ### Requirement: Channel composition manifest
 
-The slack-app SHALL define channel structure in a versioned JSON manifest under `slack-app/content/channels/`. The manifest SHALL declare an ordered `steps` array. Each step SHALL have a stable `id`, a `kind` (`canvas`, `list`, or `workflow`), and kind-specific fields validated by JSON Schema. Canvas and list steps SHALL reference content templates via `ref`. Workflow steps SHALL reference deploy-time app workflows via `link`. Optional `title` MAY label a step for pinned index derivation. Workflow steps MAY declare opt-in `bookmark: true` for Workflows tab bookmarked surfacing and opt-in `featured: true` for Workflows tab featured surfacing. The `tes-event` manifest SHALL include a `situation_report` canvas step.
+The slack-app SHALL define channel structure in a versioned JSON manifest under `slack-app/content/channels/`. The manifest SHALL declare an ordered `steps` array. Each step SHALL have a stable `id`, a `kind` (`canvas`, `list`, or `workflow`), and kind-specific fields validated by JSON Schema. Canvas and list steps SHALL reference content templates via `ref`. Workflow steps SHALL reference app workflows via `link`. Optional `title` MAY label a step for pinned index derivation. Workflow steps SHALL NOT declare `bookmark` or `featured`. The `tes-event` manifest SHALL include a `situation_report` canvas step.
 
 #### Scenario: TES event manifest loads and validates
 
@@ -34,8 +34,7 @@ The slack-app SHALL define channel structure in a versioned JSON manifest under 
 - **GIVEN** a composition step with `kind` `workflow`
 - **WHEN** the manifest is validated
 - **THEN** `link` SHALL be required
-- **AND** `ref` and `tab` SHALL NOT be present
-- **AND** optional `bookmark` and `featured` SHALL be allowed only as boolean `true`
+- **AND** `ref`, `tab`, `bookmark`, and `featured` SHALL NOT be present
 
 #### Scenario: Provisioning order respects dependencies
 
@@ -67,12 +66,12 @@ Object IDs provisioned during channel create SHALL be stored using step `id` ide
 #### Scenario: Slot map populates context fields
 
 - **GIVEN** provisioning completes for steps `dashboard`, `requirements`, and `deliverables`
-- **WHEN** context is serialized to Dashboard metadata
+- **WHEN** context is serialized after provisioning
 - **THEN** `dashboardCanvasId`, `requirementsCanvasId`, and `deliverablesListId` SHALL contain the provisioned Slack IDs
 
 ### Requirement: Opt-in channel surfacing
 
-The channel provisioner SHALL apply channel surfacing only when declared on a step. A canvas step with `tab: true` SHALL attach the canvas as a channel tab. A list step with `bookmark: true` SHALL add a channel header bookmark with a list deep link after the list is created. A workflow step with `bookmark: true` SHALL associate the deploy-time workflow trigger with the channel for Workflows tab bookmarked surfacing without creating a new trigger per channel. A workflow step with `featured: true` SHALL call `workflows.featured.add` for the channel. Steps without surfacing flags SHALL create or link objects without that surfacing.
+The channel provisioner SHALL apply channel surfacing only when declared on a step. A canvas step with `tab: true` SHALL attach the canvas as a channel tab. A list step with `bookmark: true` SHALL add a channel header bookmark with a list deep link after the list is created. Workflow steps SHALL NOT use `bookmark` or `featured` for Workflows tab surfacing. Steps without canvas `tab` or list `bookmark` SHALL create or link objects without that surfacing.
 
 #### Scenario: Canvas tab opt-in
 
@@ -101,34 +100,44 @@ The channel provisioner SHALL apply channel surfacing only when declared on a st
 
 #### Scenario: Workflow bookmark opt-in
 
-- **GIVEN** a workflow step with `bookmark: true` and a deploy-time trigger for its `link`
-- **WHEN** channel provisioning runs
-- **THEN** the provisioner SHALL NOT create a new trigger for that channel
-- **AND** the shared trigger SHALL be granted run access for the provisioned channel only
-- **AND** the workflow SHALL appear in the channel Workflows tab bookmarked list
+- **GIVEN** a workflow step that includes `bookmark: true`
+- **WHEN** the manifest is validated
+- **THEN** validation SHALL fail
+- **AND** the provisioner SHALL NOT associate a workflow with the channel Workflows tab bookmarked list
 
 #### Scenario: Workflow featured opt-in
 
-- **GIVEN** a workflow step with `featured: true` and a deploy-time trigger for its `link`
-- **WHEN** channel provisioning runs
-- **THEN** the provisioner SHALL call `workflows.featured.add` with the channel ID and shared trigger ID
+- **GIVEN** a workflow step that includes `featured: true`
+- **WHEN** the manifest is validated
+- **THEN** validation SHALL fail
+- **AND** the provisioner SHALL NOT call `workflows.featured.add`
 
 ### Requirement: Shared workflow trigger registry
 
-The slack-app SHALL resolve workflow step `link` values to deploy-time trigger IDs without creating new triggers during channel provision. The onboarding link `open_onboarding_workflow` SHALL map to a single link trigger installed at deploy time.
+The slack-app SHALL treat workflow step `link` values as known workflow identifiers. For `open_onboarding_workflow`, channel provision SHALL create a per-channel Onboarding Link Trigger (not reuse a deploy-time shared Complete Onboarding trigger). Created trigger inputs SHALL include `channel_id`, `dashboard_canvas_id`, and a compact JSON `TesEventContext` snapshot. Unknown `link` values SHALL fail provision.
 
 #### Scenario: Onboarding trigger resolved at provision
 
-- **GIVEN** a deploy-time onboarding link trigger exists for `open_onboarding_workflow`
-- **WHEN** a workflow step with that link is provisioned
-- **THEN** the provisioner SHALL resolve the existing trigger ID
-- **AND** SHALL NOT call `workflows.triggers.create` for that step
+- **GIVEN** a workflow step with `link` `open_onboarding_workflow` and a provisioned Dashboard canvas ID
+- **AND** a seed-time `TesEventContext` exists
+- **WHEN** the workflow step is provisioned
+- **THEN** the provisioner SHALL call `workflows.triggers.create`
+- **AND** the created trigger inputs SHALL include the channel ID, Dashboard canvas ID, and compact JSON snapshot
+- **AND** the trigger name SHALL be `Complete Onboarding ({channelId})`
+- **AND** the provisioner SHALL NOT reuse a deploy-time shared Complete Onboarding trigger ID in place of create
 
 #### Scenario: Unknown workflow link fails provision
 
 - **GIVEN** a workflow step references an unknown `link`
 - **WHEN** channel provisioning runs
 - **THEN** provisioning SHALL fail with a clear error
+
+#### Scenario: Missing dashboard canvas fails onboarding trigger create
+
+- **GIVEN** a workflow step with `link` `open_onboarding_workflow`
+- **AND** Dashboard canvas has not been provisioned
+- **WHEN** the workflow step is provisioned
+- **THEN** provisioning SHALL fail with a clear error that the Dashboard canvas is required
 
 ### Requirement: Pinned index from steps
 

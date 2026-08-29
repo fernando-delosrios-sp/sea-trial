@@ -1,6 +1,8 @@
 /**
  * Per-channel Onboarding Link Trigger used as the Dashboard canvas CTA.
  * Not associated with the channel Workflows tab.
+ * The trigger context snapshot is baked at create and rewritten on every
+ * successful onboarding submit.
  */
 import { TriggerContextData, TriggerTypes } from "@slack/deno-slack-api/mod.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
@@ -24,6 +26,7 @@ export interface WorkflowTriggerClient {
   workflows: {
     triggers: {
       create?: (payload: Record<string, unknown>) => Promise<SlackApiResponse>;
+      update?: (payload: Record<string, unknown>) => Promise<SlackApiResponse>;
       permissions: {
         set?: (payload: {
           trigger_id: string;
@@ -73,6 +76,13 @@ async function callWorkflowApi(
     return client.workflows.triggers.permissions.add(
       params as { trigger_id: string; channel_ids?: string[] },
     );
+  }
+
+  if (method === "workflows.triggers.update") {
+    const update = client.workflows.triggers.update;
+    if (update) {
+      return update(params);
+    }
   }
 
   if (client.apiCall) {
@@ -137,16 +147,33 @@ async function grantChannelTriggerAccess(
 
 /**
  * Creates a per-channel Onboarding Link Trigger with baked channel ID, Dashboard
- * ID, and compact TesEventContext snapshot. Open/submit use that snapshot — not
- * canvas lookup. The Dashboard Complete onboarding href must use the API share
- * URL — never a URL synthesized from trigger ID.
+ * ID, trigger id, share URL, and compact TesEventContext snapshot. Open/submit
+ * use that snapshot — not canvas lookup. Submit refreshes the snapshot. The
+ * Dashboard Complete onboarding href must use the API share URL — never a URL
+ * synthesized from trigger ID.
  */
+export interface ChannelOnboardingTrigger {
+  triggerId: string;
+  shareUrl: string;
+}
+
+export function withOnboardingTriggerIdentity(
+  context: TesEventContext,
+  trigger: ChannelOnboardingTrigger,
+): TesEventContext {
+  return {
+    ...context,
+    onboardingTriggerId: trigger.triggerId,
+    onboardingLinkUrl: trigger.shareUrl,
+  };
+}
+
 export async function createChannelOnboardingTrigger(
   client: WorkflowTriggerClient,
   channelId: string,
   dashboardCanvasId: string,
   eventContext: TesEventContext,
-): Promise<string> {
+): Promise<ChannelOnboardingTrigger> {
   const create = client.workflows.triggers.create;
   if (!create) {
     throw new Error("Client does not support workflows.triggers.create");
@@ -188,7 +215,52 @@ export async function createChannelOnboardingTrigger(
     );
   }
 
-  return shareUrl;
+  const triggerIdentity: ChannelOnboardingTrigger = { triggerId, shareUrl };
+  await updateOnboardingTriggerSnapshot(
+    client,
+    channelId,
+    dashboardCanvasId,
+    withOnboardingTriggerIdentity(eventContext, triggerIdentity),
+  );
+
+  return triggerIdentity;
+}
+
+export async function updateOnboardingTriggerSnapshot(
+  client: WorkflowTriggerClient,
+  channelId: string,
+  dashboardCanvasId: string,
+  eventContext: TesEventContext,
+): Promise<void> {
+  const triggerId = eventContext.onboardingTriggerId?.trim();
+  if (!triggerId) {
+    throw new Error("missing onboardingTriggerId");
+  }
+
+  const updateResponse = await callWorkflowApi(
+    client,
+    "workflows.triggers.update",
+    {
+      trigger_id: triggerId,
+      inputs: {
+        interactivity: {
+          value: TriggerContextData.Shortcut.interactivity,
+        },
+        channel_id: { value: channelId },
+        dashboard_canvas_id: { value: dashboardCanvasId },
+        dashboard_canvas_content: {
+          value: serializeEventContextSnapshot(eventContext),
+        },
+      },
+    },
+  );
+  if (!updateResponse.ok) {
+    throw new Error(
+      `Failed to refresh onboarding trigger snapshot for channel ${channelId}${
+        updateResponse.error ? `: ${updateResponse.error}` : ""
+      }`,
+    );
+  }
 }
 
 /**
@@ -200,7 +272,7 @@ export async function provisionWorkflowChannelAssociation(
   link: string,
   dashboardCanvasId?: string,
   eventContext?: TesEventContext,
-): Promise<string> {
+): Promise<ChannelOnboardingTrigger> {
   if (!isKnownWorkflowLink(link)) {
     throw new Error(`Unknown workflow link "${link}"`);
   }
@@ -235,7 +307,7 @@ export async function provisionOnboardingChannelShortcut(
   channelId: string,
   dashboardCanvasId: string,
   eventContext: TesEventContext,
-): Promise<string> {
+): Promise<ChannelOnboardingTrigger> {
   return await provisionWorkflowChannelAssociation(
     client,
     channelId,

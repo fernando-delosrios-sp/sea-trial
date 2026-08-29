@@ -6,6 +6,7 @@ import {
   MISSING_REPAIR_SNAPSHOT_ERROR,
   resolveRepairEventContext,
 } from "../lib/repair-onboarding-trigger.ts";
+import { withOnboardingTriggerIdentity } from "../lib/onboarding-channel-trigger.ts";
 
 const seedContext: TesEventContext = {
   channelId: "C1",
@@ -54,4 +55,27 @@ Deno.test("repair script does not read canvas markdown", () => {
     new URL("../scripts/repair-workflow-tab.ts", import.meta.url),
   );
   assertEquals(source.includes("readCanvasMarkdown"), false);
+});
+
+Deno.test("repair without a usable snapshot still cannot invent context", () => {
+  assertThrows(
+    () => resolveRepairEventContext({ TES_EVENT_CONTEXT_JSON: "" }),
+    Error,
+    MISSING_REPAIR_SNAPSHOT_ERROR,
+  );
+});
+
+Deno.test("repair with JSON plus new trigger persists id", () => {
+  const context = resolveRepairEventContext({
+    TES_EVENT_CONTEXT_JSON: serializeEventContextSnapshot(seedContext),
+  });
+  const repaired = withOnboardingTriggerIdentity(context, {
+    triggerId: "FtREPAIR",
+    shareUrl: "https://slack.com/shortcuts/FtREPAIR/secret",
+  });
+  assertEquals(repaired.onboardingTriggerId, "FtREPAIR");
+  assertEquals(
+    repaired.onboardingLinkUrl,
+    "https://slack.com/shortcuts/FtREPAIR/secret",
+  );
 });

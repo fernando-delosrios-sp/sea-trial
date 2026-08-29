@@ -42,6 +42,10 @@ export interface TesEventContext {
   channelType?: string;
   /** Version of the composition manifest used at channel create. */
   compositionVersion?: string;
+  /** Onboarding Link Trigger share URL written into the Dashboard checklist. */
+  onboardingLinkUrl?: string;
+  /** Onboarding Link Trigger id used to refresh the trigger context snapshot on submit. */
+  onboardingTriggerId?: string;
 }
 
 export interface DeliverableProposal {

@@ -5,6 +5,9 @@ export const METADATA_MARKER = "<!-- tes-event-context -->";
 export const MISSING_ONBOARDING_SNAPSHOT_ERROR =
   "Onboarding is missing a trigger context snapshot. Re-run Create TES Event, or repair with TES_EVENT_CONTEXT_JSON.";
 
+export const MISSING_ONBOARDING_TRIGGER_ID_ERROR =
+  "Onboarding is missing a trigger id. Re-run Create TES Event, or repair with TES_EVENT_CONTEXT_JSON.";
+
 /**
  * Compact JSON snapshot for Onboarding Link Trigger inputs and pinned button values.
  */
@@ -13,7 +16,9 @@ export function serializeEventContextSnapshot(context: TesEventContext): string 
 }
 
 /**
- * Serializes `TesEventContext` into a Dashboard canvas metadata JSON block.
+ * Legacy fenced markdown dump of `TesEventContext`. Kept so
+ * `deserializeEventContext` can still parse historical canvases.
+ * New Dashboard writes MUST NOT use this.
  */
 export function serializeEventContext(context: TesEventContext): string {
   const json = JSON.stringify(context, null, 2);
@@ -33,7 +38,7 @@ function parseContextObject(json: string): TesEventContext | null {
 }
 
 /**
- * Deserializes `TesEventContext` from compact JSON or Dashboard metadata markdown.
+ * Deserializes `TesEventContext` from compact JSON or a legacy Dashboard dump.
  * @returns Parsed context or null if the payload is missing or invalid
  */
 export function deserializeEventContext(

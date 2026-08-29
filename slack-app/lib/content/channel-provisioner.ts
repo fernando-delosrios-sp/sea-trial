@@ -7,7 +7,7 @@ import {
   createDeliverablesList,
   createIncidentsList,
 } from "../lists.ts";
-import { serializeEventContext } from "../event-context.ts";
+import { serializeEventContextSnapshot } from "../event-context.ts";
 import {
   applyStepIds,
   loadComposition,
@@ -33,6 +33,7 @@ import { isKindProvisionable } from "./kind-registry.ts";
 import { buildOnboardingCanvasLink } from "../onboarding-canvas-link.ts";
 import {
   provisionWorkflowChannelAssociation,
+  withOnboardingTriggerIdentity,
   type WorkflowTriggerClient,
 } from "../onboarding-channel-trigger.ts";
 
@@ -166,7 +167,7 @@ async function provisionWorkflowStep(
   step: CompositionStep & { kind: "workflow" },
   channelId: string,
   context: TesEventContext,
-): Promise<string> {
+) {
   if (!context.dashboardCanvasId) {
     throw new Error(
       `Workflow step "${step.id}" requires dashboard canvas to be provisioned first`,
@@ -301,12 +302,14 @@ export async function provisionChannel(
       }
       case "workflow": {
         hadWorkflowStep = true;
-        onboardingShortcutUrl = await provisionWorkflowStep(
+        const trigger = await provisionWorkflowStep(
           client,
           step,
           inputs.channel_id,
           context,
         );
+        onboardingShortcutUrl = trigger.shareUrl;
+        context = withOnboardingTriggerIdentity(context, trigger);
         break;
       }
       default:
@@ -337,5 +340,5 @@ export async function provisionChannel(
 
 /** Serializes context for workflow output after provisioning. */
 export function serializeProvisionedContext(context: TesEventContext): string {
-  return serializeEventContext(context);
+  return serializeEventContextSnapshot(context);
 }

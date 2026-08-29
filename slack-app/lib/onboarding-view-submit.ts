@@ -2,10 +2,16 @@ import type { OnboardingForm } from "@sea-trial/shared/types/index.ts";
 import {
   deserializeEventContext,
   MISSING_ONBOARDING_SNAPSHOT_ERROR,
+  MISSING_ONBOARDING_TRIGGER_ID_ERROR,
 } from "./event-context.ts";
 import { processOnboardingSubmit } from "./onboarding-submit.ts";
 import { replaceCanvasContent, type CanvasSectionsClient } from "./canvas.ts";
+import { richTextValueToText } from "./content/rich-text.ts";
 import { renderDashboardCanvasForSlack, type CanvasAssetUploadClient } from "./content/canvas-assets.ts";
+import {
+  updateOnboardingTriggerSnapshot,
+  type WorkflowTriggerClient,
+} from "./onboarding-channel-trigger.ts";
 
 export function getInputValue(
   state: Record<string, Record<string, unknown>>,
@@ -13,10 +19,36 @@ export function getInputValue(
 ): string {
   const block = state[blockId];
   if (!block) return "";
-  const value = block.value;
-  if (typeof value === "string") return value;
-  const selected = block.value as { selected_option?: { value: string } };
-  return selected?.selected_option?.value ?? "";
+  const payload = block.value;
+  if (typeof payload === "string") return payload;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return "";
+  }
+
+  const row = payload as Record<string, unknown>;
+  if (typeof row.value === "string") return row.value;
+  if (typeof row.selected_date === "string") return row.selected_date;
+  if (row.rich_text_value) return richTextValueToText(row.rich_text_value);
+
+  const selectedOption = row.selected_option;
+  if (selectedOption && typeof selectedOption === "object") {
+    const value = (selectedOption as { value?: unknown }).value;
+    if (typeof value === "string") return value;
+  }
+
+  const selectedOptions = row.selected_options;
+  if (Array.isArray(selectedOptions)) {
+    return selectedOptions
+      .map((option) => {
+        if (!option || typeof option !== "object") return "";
+        const value = (option as { value?: unknown }).value;
+        return typeof value === "string" ? value : "";
+      })
+      .filter((value) => value.length > 0)
+      .join(", ");
+  }
+
+  return "";
 }
 
 export function parseOnboardingForm(
@@ -41,7 +73,7 @@ export interface OnboardingViewMetadata {
 }
 
 export interface SlackOnboardingSubmitClient
-  extends CanvasSectionsClient, CanvasAssetUploadClient {
+  extends CanvasSectionsClient, CanvasAssetUploadClient, WorkflowTriggerClient {
   chat: {
     postMessage: (params: { channel: string; text: string }) => Promise<unknown>;
   };
@@ -76,10 +108,32 @@ export async function executeOnboardingSubmit(
     };
   }
 
+  if (!existingContext.onboardingTriggerId?.trim()) {
+    return {
+      ok: false,
+      error: MISSING_ONBOARDING_TRIGGER_ID_ERROR,
+    };
+  }
+
+  const firstComplete = existingContext.onboardingComplete === false;
   const { context } = processOnboardingSubmit(
     existingContext,
     form,
   );
+
+  try {
+    await updateOnboardingTriggerSnapshot(
+      client,
+      metadata.channel_id,
+      context.dashboardCanvasId,
+      context,
+    );
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 
   const dashboardContent = await renderDashboardCanvasForSlack(
     client,
@@ -94,11 +148,13 @@ export async function executeOnboardingSubmit(
     dashboardContent,
   );
 
-  await client.chat.postMessage({
-    channel: metadata.channel_id,
-    text:
-      "✅ Onboarding complete! @mention the bot with your requirement documents to summon the Requirements Agent.",
-  });
+  if (firstComplete) {
+    await client.chat.postMessage({
+      channel: metadata.channel_id,
+      text:
+        "✅ Onboarding complete! @mention the bot with your requirement documents to summon the Requirements Agent.",
+    });
+  }
 
   return { ok: true };
 }

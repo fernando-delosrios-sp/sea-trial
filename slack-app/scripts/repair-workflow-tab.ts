@@ -3,7 +3,9 @@
  * Complete onboarding link for an existing TES Event Channel.
  *
  * Does not read canvas markdown. Supply an explicit seed-time TesEventContext
- * snapshot — Slack canvas APIs cannot recover it.
+ * snapshot — Slack canvas APIs cannot recover it. After trigger create, the
+ * snapshot is updated with `onboardingTriggerId` and `onboardingLinkUrl`. Later
+ * onboarding submits refresh that same trigger snapshot.
  *
  * Required env (from slack-app/):
  *   SLACK_BOT_TOKEN           — bot token with triggers:write and canvases:write
@@ -21,7 +23,7 @@ import { loadSync } from "std/dotenv/mod.ts";
 import { replaceCanvasContent } from "../lib/canvas.ts";
 import { resolveRepairEventContext } from "../lib/repair-onboarding-trigger.ts";
 import { renderDashboardCanvas } from "../lib/content/canvas-renderer.ts";
-import { provisionWorkflowChannelAssociation } from "../lib/onboarding-channel-trigger.ts";
+import { provisionWorkflowChannelAssociation, withOnboardingTriggerIdentity } from "../lib/onboarding-channel-trigger.ts";
 
 loadSync({ export: true, allowEmptyValues: true });
 
@@ -89,6 +91,8 @@ const client = {
     triggers: {
       create: (params: Record<string, unknown>) =>
         call("workflows.triggers.create", params),
+      update: (params: Record<string, unknown>) =>
+        call("workflows.triggers.update", params),
       permissions: {
         set: (params: Record<string, unknown>) =>
           call("workflows.triggers.permissions.set", params),
@@ -103,7 +107,7 @@ console.log(
   `Repairing Dashboard onboarding link for ${channelId} (dashboard ${dashboardCanvasId})`,
 );
 
-const url = await provisionWorkflowChannelAssociation(
+const trigger = await provisionWorkflowChannelAssociation(
   client,
   channelId,
   "open_onboarding_workflow",
@@ -111,12 +115,17 @@ const url = await provisionWorkflowChannelAssociation(
   { ...context, channelId, dashboardCanvasId },
 );
 
-const nextMarkdown = renderDashboardCanvas(
+const repaired = withOnboardingTriggerIdentity(
   { ...context, channelId, dashboardCanvasId },
+  trigger,
+);
+
+const nextMarkdown = renderDashboardCanvas(
+  repaired,
   context.onboarding,
-  { onboardingLink: url },
+  { onboardingLink: trigger.shareUrl },
 );
 await replaceCanvasContent(client, dashboardCanvasId, nextMarkdown);
 
-console.log(`Created Onboarding Link Trigger: ${url}`);
+console.log(`Created Onboarding Link Trigger: ${trigger.shareUrl} (${trigger.triggerId})`);
 console.log("Done — refresh the channel Dashboard and use Complete onboarding.");

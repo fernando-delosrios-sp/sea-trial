@@ -34,9 +34,11 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 - [ ] Click Complete onboarding on the Dashboard canvas → modal opens with all fields
 - [ ] Click "Complete onboarding" on pinned index → modal opens with all fields
 - [ ] Account field pre-filled from the **create-time** account name (editable) on both the Dashboard link and the pinned button
-- [ ] Submit form → Dashboard updated, `onboardingComplete` true, Account reflects submitted value; Dashboard `## Onboarding` section is gone
+- [ ] Submit form → Dashboard updated, `onboardingComplete` true, Account reflects submitted value; Dashboard Onboarding tasks shows a ticked Complete onboarding link (still clickable to edit)
+- [ ] After first submit, click Dashboard Complete onboarding again → modal prefills last submitted fields (suite, stakeholders, etc.)
+- [ ] Edit fields and submit again → Dashboard opportunity details update; **no second** agent-available channel message
 - [ ] Identity Security Cloud → correct components derived
-- [ ] Channel message announces agent available when summoned (@mention)
+- [ ] Channel message announces agent available when summoned (@mention) **only on first complete**
 
 > **Existing channels:** Triggers without a snapshot stay broken. Re-run Create TES Event, or run `scripts/repair-workflow-tab.ts` with `CHANNEL_ID`, `DASHBOARD_CANVAS_ID`, and `TES_EVENT_CONTEXT_JSON` (compact snapshot — the script does not read canvas markdown). Shared "Complete Onboarding" shortcuts titled exactly that name may still appear until `cleanup-onboarding-triggers` runs.
 

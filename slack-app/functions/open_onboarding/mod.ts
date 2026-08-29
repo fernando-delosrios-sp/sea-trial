@@ -1,7 +1,8 @@
 /**
- * Opens and submits onboarding from a seed-time trigger context snapshot
+ * Opens and submits onboarding from a trigger context snapshot
  * (workflow input `dashboard_canvas_content` or pinned button value).
- * Does not read Dashboard canvas markdown.
+ * After submit, the trigger snapshot is refreshed so Dashboard Complete
+ * onboarding can edit the last form. Does not read Dashboard canvas markdown.
  */
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
 import {

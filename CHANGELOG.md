@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-29 — Edit onboarding from Dashboard
+
+### Changed
+
+- **Edit from Complete onboarding** — After first submit, the Dashboard Complete onboarding link still opens the same modal, now prefilled from the last submitted form (suite, stakeholders, dates, notes, and the rest).
+- **Trigger snapshot refresh** — Each successful submit rewrites the Onboarding Link Trigger snapshot to the new TesEventContext so the next open matches Opportunity Details. The agent-available channel message is posted only on first complete, not on later edits.
+
+### Breaking
+
+- **Channels without a trigger id** — TES Event Channels provisioned before `onboardingTriggerId` cannot refresh the snapshot. Re-run Create TES Event, or repair with `TES_EVENT_CONTEXT_JSON`.
+
+---
+
 ## 2026-08-29 — Onboarding trigger context snapshot
 
 ### Changed

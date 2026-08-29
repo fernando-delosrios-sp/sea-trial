@@ -1,3 +1,4 @@
+import type { OnboardingForm } from "@sea-trial/shared/types/index.ts";
 import { deserializeEventContext, serializeEventContextSnapshot } from "../event-context.ts";
 import {
   validateModalBlocks,
@@ -6,6 +7,19 @@ import {
 } from "./capability-validator.ts";
 import { resolveModalSelectOptionsRef } from "./domain-ref-resolver.ts";
 import { readContentJson } from "./paths.ts";
+import { textToRichTextValue } from "./rich-text.ts";
+
+const ONBOARDING_BLOCK_FIELDS: Record<string, keyof OnboardingForm> = {
+  account_name: "accountName",
+  main_prospect_goal: "mainProspectGoal",
+  deal_history: "dealHistory",
+  project_type: "projectType",
+  stakeholders: "stakeholders",
+  competitors: "competitors",
+  sailpoint_suite: "sailpointSuite",
+  deadline: "deadline",
+  notes: "notes",
+};
 
 export interface ModalDefinition {
   callback_id: string;
@@ -213,6 +227,8 @@ export function buildOnboardingModalView(
     );
   }
 
+  applyOnboardingFormPrefill(blocks, context.onboarding);
+
   return {
     type: "modal",
     callback_id: modal.callback_id,
@@ -256,6 +272,67 @@ function applyDynamicOverlay(
       element.options = resolveModalSelectOptionsRef(config.options_ref);
     }
   }
+}
+
+function applyOnboardingFormPrefill(
+  blocks: Array<Record<string, unknown>>,
+  form: OnboardingForm | undefined,
+): void {
+  if (!form) return;
+
+  for (const block of blocks) {
+    const blockId = typeof block.block_id === "string" ? block.block_id : "";
+    const field = ONBOARDING_BLOCK_FIELDS[blockId];
+    const element = block.element as Record<string, unknown> | undefined;
+    if (!field || !element) continue;
+    applyElementPrefill(element, form[field]);
+  }
+}
+
+function applyElementPrefill(
+  element: Record<string, unknown>,
+  value: string,
+): void {
+  const trimmed = value.trim();
+  if (!trimmed) return;
+
+  switch (element.type) {
+    case "plain_text_input":
+      element.initial_value = trimmed;
+      return;
+    case "rich_text_input":
+      element.initial_value = textToRichTextValue(trimmed);
+      return;
+    case "datepicker":
+      element.initial_date = trimmed;
+      return;
+    case "static_select": {
+      const option = findSelectOption(element.options, trimmed);
+      if (option) element.initial_option = option;
+      return;
+    }
+    case "multi_static_select": {
+      const selected = trimmed
+        .split(",")
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0)
+        .map((part) => findSelectOption(element.options, part))
+        .filter((option): option is Record<string, unknown> => option != null);
+      if (selected.length > 0) element.initial_options = selected;
+      return;
+    }
+  }
+}
+
+function findSelectOption(
+  options: unknown,
+  value: string,
+): Record<string, unknown> | undefined {
+  if (!Array.isArray(options)) return undefined;
+  return options.find((option) => {
+    if (!option || typeof option !== "object") return false;
+    return (option as { value?: unknown }).value === value;
+  }) as Record<string, unknown> | undefined;
 }
 
 /** Block IDs for the Create TES Event modal (backward-compatible export). */

@@ -19,7 +19,7 @@
  */
 import { loadSync } from "std/dotenv/mod.ts";
 import { replaceCanvasContent } from "../lib/canvas.ts";
-import { deserializeEventContext } from "../lib/event-context.ts";
+import { resolveRepairEventContext } from "../lib/repair-onboarding-trigger.ts";
 import { renderDashboardCanvas } from "../lib/content/canvas-renderer.ts";
 import { provisionWorkflowChannelAssociation } from "../lib/onboarding-channel-trigger.ts";
 
@@ -28,7 +28,6 @@ loadSync({ export: true, allowEmptyValues: true });
 const token = Deno.env.get("SLACK_BOT_TOKEN")?.trim();
 const channelId = Deno.env.get("CHANNEL_ID")?.trim();
 const dashboardCanvasId = Deno.env.get("DASHBOARD_CANVAS_ID")?.trim();
-const eventContextJson = Deno.env.get("TES_EVENT_CONTEXT_JSON")?.trim();
 
 if (!token) {
   console.error("Set SLACK_BOT_TOKEN (bot token with triggers:write and canvases:write)");
@@ -42,16 +41,14 @@ if (!dashboardCanvasId) {
   console.error("Set DASHBOARD_CANVAS_ID to the channel dashboard canvas file ID");
   Deno.exit(1);
 }
-if (!eventContextJson) {
-  console.error(
-    "Set TES_EVENT_CONTEXT_JSON to a compact TesEventContext snapshot. Canvas content cannot be read; re-run Create TES Event if you do not have the snapshot.",
-  );
-  Deno.exit(1);
-}
 
-const context = deserializeEventContext(eventContextJson);
-if (!context) {
-  console.error("TES_EVENT_CONTEXT_JSON is not a valid TesEventContext snapshot");
+let context;
+try {
+  context = resolveRepairEventContext({
+    TES_EVENT_CONTEXT_JSON: Deno.env.get("TES_EVENT_CONTEXT_JSON"),
+  });
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
   Deno.exit(1);
 }
 

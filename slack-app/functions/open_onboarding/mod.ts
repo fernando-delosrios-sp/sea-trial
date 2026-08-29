@@ -47,16 +47,27 @@ export function resolveDashboardCanvasContent(
   return "";
 }
 
+export function requireOnboardingSnapshot(
+  inputs: {
+    dashboard_canvas_content?: string;
+    dashboard_canvas_id?: string;
+  },
+): { ok: true; snapshot: string } | { ok: false; error: string } {
+  const snapshot = resolveDashboardCanvasContent(undefined, inputs);
+  if (!snapshot) {
+    return { ok: false, error: MISSING_ONBOARDING_SNAPSHOT_ERROR };
+  }
+  return { ok: true, snapshot };
+}
+
 export default SlackFunction(
   OpenOnboardingFunction,
   async ({ inputs, client }) => {
-    const dashboardCanvasContent = resolveDashboardCanvasContent(
-      client,
-      inputs,
-    );
-    if (!dashboardCanvasContent) {
-      return { error: MISSING_ONBOARDING_SNAPSHOT_ERROR };
+    const required = requireOnboardingSnapshot(inputs);
+    if (!required.ok) {
+      return { error: required.error };
     }
+    const dashboardCanvasContent = required.snapshot;
 
     const accountName = resolveAccountPrefill(dashboardCanvasContent);
 

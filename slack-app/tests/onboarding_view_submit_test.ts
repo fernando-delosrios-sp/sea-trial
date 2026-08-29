@@ -10,7 +10,7 @@ import {
   executeOnboardingSubmit,
   loadDashboardContentForButton,
 } from "../lib/onboarding-view-submit.ts";
-import { resolveDashboardCanvasContent } from "../functions/open_onboarding/mod.ts";
+import { resolveDashboardCanvasContent, requireOnboardingSnapshot } from "../functions/open_onboarding/mod.ts";
 
 const baseContext: TesEventContext = {
   channelId: "C1",
@@ -97,21 +97,12 @@ Deno.test("pinned button open with snapshot", () => {
   assertStringIncludes(content, "Acme Corp");
 });
 
-Deno.test("missing snapshot errors", () => {
-  const client = {
-    canvases: {
-      sections: {
-        lookup: async () => {
-          throw new Error("readCanvasMarkdown must not be invoked");
-        },
-      },
-    },
-  };
-
-  assertEquals(
-    resolveDashboardCanvasContent(client, { dashboard_canvas_id: "dash-1" }),
-    "",
-  );
+Deno.test("missing snapshot fails open with repair error", () => {
+  const result = requireOnboardingSnapshot({ dashboard_canvas_id: "dash-1" });
+  assertEquals(result, {
+    ok: false,
+    error: MISSING_ONBOARDING_SNAPSHOT_ERROR,
+  });
   assertEquals(
     loadDashboardContentForButton(
       JSON.stringify({ dashboard_canvas_id: "dash-1" }),

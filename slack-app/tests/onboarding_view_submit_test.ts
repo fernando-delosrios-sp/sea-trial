@@ -301,6 +301,29 @@ Deno.test("executeOnboardingSubmit missing snapshot errors without canvas read",
   assertEquals(edited.length, 0);
 });
 
+Deno.test("Submit fails when trigger update fails", async () => {
+  const snapshot = serializeEventContextSnapshot(baseContext);
+  const { client, lookupCalled, updatePayloads, edited, posted } = submitClient({
+    update: async () => ({ ok: false, error: "restricted_action" }),
+    edit: async () => {
+      throw new Error("should not write dashboard");
+    },
+  });
+  const result = await executeOnboardingSubmit(
+    client,
+    { channel_id: "C1", dashboard_canvas_content: snapshot },
+    onboardingForm,
+  );
+
+  assertEquals(result.ok, false);
+  if (result.ok) return;
+  assertStringIncludes(result.error, "restricted_action");
+  assertEquals(lookupCalled(), false);
+  assertEquals(updatePayloads.length, 1);
+  assertEquals(edited.length, 0);
+  assertEquals(posted.length, 0);
+});
+
 Deno.test("Submit fails when trigger id is missing", async () => {
   const snapshot = serializeEventContextSnapshot({
     ...baseContext,

@@ -280,15 +280,12 @@ Deno.test("Open after complete prefills submitted fields", () => {
 });
 
 Deno.test("Trigger context snapshot term in glossary", () => {
-  const spec = Deno.readTextFileSync(
-    new URL(
-      "../../openspec/changes/edit-onboarding-snapshot/specs/ubiquitous-language/spec.md",
-      import.meta.url,
-    ),
+  const living = Deno.readTextFileSync(
+    new URL("../../openspec/specs/ubiquitous-language/spec.md", import.meta.url),
   );
-  assertEquals(spec.includes("### Term: Trigger context snapshot"), true);
-  assertStringIncludes(spec, "rewritten on every successful onboarding submit");
-  assertStringIncludes(spec, "Not Dashboard markdown");
+  assertEquals(living.includes("### Term: Trigger context snapshot"), true);
+  assertStringIncludes(living, "rewritten on every successful onboarding submit");
+  assertStringIncludes(living, "Not Dashboard markdown");
 });
 
 Deno.test("open still does not call readCanvasMarkdown", () => {

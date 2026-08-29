@@ -385,6 +385,7 @@ function buildWorkflowTriggerMock(options?: { omitShareUrl?: boolean }) {
             },
           };
         },
+        update: async () => ({ ok: true }),
         permissions: {
           set: async (payload: Record<string, unknown>) => {
             permissionSets.push(payload);

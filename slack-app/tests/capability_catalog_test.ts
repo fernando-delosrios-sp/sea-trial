@@ -226,8 +226,10 @@ Deno.test("unknown domain ref rejected", () => {
 Deno.test("domain refs registered", () => {
   const refs = listRegisteredDomainRefs().sort();
   assertEquals(refs, [
+    "@domain/competitors",
     "@domain/customer-deliverable-statuses",
     "@domain/deliverable-statuses",
+    "@domain/project-types",
     "@domain/sailpoint-suites",
   ]);
 });

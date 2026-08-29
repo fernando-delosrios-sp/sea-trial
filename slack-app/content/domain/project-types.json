@@ -1,0 +1,9 @@
+{
+  "choices": [
+    { "value": "SailPoint-hosted POC", "label": "SailPoint-hosted POC" },
+    { "value": "On prem POC", "label": "On prem POC" },
+    { "value": "Pilot", "label": "Pilot" },
+    { "value": "Custom demo", "label": "Custom demo" },
+    { "value": "Workshop", "label": "Workshop" }
+  ]
+}

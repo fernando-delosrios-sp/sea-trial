@@ -14,6 +14,16 @@
     "@domain/customer-deliverable-statuses": {
       "source": "domain/customer-deliverable-statuses.json",
       "resolver": "customer-deliverable-status-map"
+    },
+    "@domain/project-types": {
+      "source": "domain/project-types.json",
+      "resolver": "project-type-choices",
+      "select_format": "single_select"
+    },
+    "@domain/competitors": {
+      "source": "domain/competitors.json",
+      "resolver": "competitor-choices",
+      "select_format": "multi_select"
     }
   }
 }

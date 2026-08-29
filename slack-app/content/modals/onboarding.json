@@ -14,31 +14,60 @@
       "type": "input",
       "block_id": "main_prospect_goal",
       "label": { "type": "plain_text", "text": "Main Prospect Goal" },
-      "element": { "type": "plain_text_input", "action_id": "value" }
+      "hint": {
+        "type": "plain_text",
+        "text": "Use the bulleted list button, then press Enter for each goal."
+      },
+      "element": {
+        "type": "rich_text_input",
+        "action_id": "value"
+      }
     },
     {
       "type": "input",
       "block_id": "deal_history",
       "label": { "type": "plain_text", "text": "Deal History" },
-      "element": { "type": "plain_text_input", "action_id": "value" }
+      "hint": {
+        "type": "plain_text",
+        "text": "Use the bulleted list button, then press Enter for each milestone."
+      },
+      "element": {
+        "type": "rich_text_input",
+        "action_id": "value"
+      }
     },
     {
       "type": "input",
       "block_id": "project_type",
       "label": { "type": "plain_text", "text": "Project Type" },
-      "element": { "type": "plain_text_input", "action_id": "value" }
+      "element": {
+        "type": "static_select",
+        "action_id": "value",
+        "options": []
+      }
     },
     {
       "type": "input",
       "block_id": "stakeholders",
       "label": { "type": "plain_text", "text": "Stakeholders" },
-      "element": { "type": "plain_text_input", "action_id": "value" }
+      "hint": {
+        "type": "plain_text",
+        "text": "Customer-side contacts. Use the bulleted list button, then press Enter for each person."
+      },
+      "element": {
+        "type": "rich_text_input",
+        "action_id": "value"
+      }
     },
     {
       "type": "input",
       "block_id": "competitors",
       "label": { "type": "plain_text", "text": "Competitors" },
-      "element": { "type": "plain_text_input", "action_id": "value" }
+      "element": {
+        "type": "multi_static_select",
+        "action_id": "value",
+        "options": []
+      }
     },
     {
       "type": "input",
@@ -54,7 +83,7 @@
       "type": "input",
       "block_id": "deadline",
       "label": { "type": "plain_text", "text": "Deadline" },
-      "element": { "type": "plain_text_input", "action_id": "value" }
+      "element": { "type": "datepicker", "action_id": "value" }
     },
     {
       "type": "input",
@@ -83,6 +112,8 @@
   },
   "dynamic": {
     "account_name": { "prefill": "accountName" },
+    "project_type": { "options_ref": "@domain/project-types" },
+    "competitors": { "options_ref": "@domain/competitors" },
     "sailpoint_suite": { "options_ref": "@domain/sailpoint-suites" }
   }
 }

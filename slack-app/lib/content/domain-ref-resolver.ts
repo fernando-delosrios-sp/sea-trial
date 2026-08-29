@@ -1,6 +1,8 @@
 import { getRegisteredDomainRefEntry } from "./capability-catalog.ts";
 import {
+  getCompetitorChoices,
   getDeliverableStatusChoices,
+  getProjectTypeChoices,
   getSupportedSuites,
 } from "./domain.ts";
 
@@ -48,9 +50,22 @@ export function resolveModalSelectOptionsRef(
         text: { type: "plain_text", text: suite },
         value: suite,
       }));
+    case "project-type-choices":
+      return toModalSelectOptions(getProjectTypeChoices());
+    case "competitor-choices":
+      return toModalSelectOptions(getCompetitorChoices());
     default:
       throw new Error(
         `No modal select resolver for ${ref} (resolver: ${entry.resolver})`,
       );
   }
+}
+
+function toModalSelectOptions(
+  choices: Array<{ value: string; label: string }>,
+): Array<{ text: { type: string; text: string }; value: string }> {
+  return choices.map((choice) => ({
+    text: { type: "plain_text", text: choice.label },
+    value: choice.value,
+  }));
 }

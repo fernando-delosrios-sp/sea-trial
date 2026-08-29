@@ -1,0 +1,15 @@
+{
+  "choices": [
+    { "value": "Saviynt", "label": "Saviynt" },
+    { "value": "Okta", "label": "Okta" },
+    { "value": "Microsoft Entra", "label": "Microsoft Entra" },
+    { "value": "One Identity", "label": "One Identity" },
+    { "value": "Omada", "label": "Omada" },
+    { "value": "Oracle", "label": "Oracle" },
+    { "value": "IBM", "label": "IBM" },
+    { "value": "Ping Identity", "label": "Ping Identity" },
+    { "value": "Veza", "label": "Veza" },
+    { "value": "Bravura Security", "label": "Bravura Security" },
+    { "value": "Other", "label": "Other" }
+  ]
+}

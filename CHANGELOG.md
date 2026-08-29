@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-29 — Onboarding form fields
+
+### Changed
+
+- **Onboarding fields** — Project type and competitors come from domain lists (single-select and multi-select). Goal, deal history, and stakeholders use Slack rich-text lists; deadline uses a date picker.
+
+---
+
 ## 2026-08-29 — Edit onboarding from Dashboard
 
 ### Changed

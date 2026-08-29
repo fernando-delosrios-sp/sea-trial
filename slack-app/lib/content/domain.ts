@@ -6,11 +6,17 @@ export interface StatusChoice {
   label: string;
 }
 
+/** A single select option sourced from a domain vocabulary file. */
+export interface VocabularyChoice {
+  value: string;
+  label: string;
+}
+
 interface SailpointSuitesFile {
   suites: Record<string, string[]>;
 }
 
-interface DeliverableStatusesFile {
+interface ChoiceListFile {
   choices: Array<{ value: string; label: string }>;
 }
 
@@ -45,6 +51,8 @@ const BUCKET_DISPLAY: Record<CustomerStatusBucket, string> = {
 let cachedSuites: Record<string, string[]> | null = null;
 let cachedStatusChoices: StatusChoice[] | null = null;
 let cachedCustomerStatusMappings: CustomerStatusMapping[] | null = null;
+let cachedProjectTypeChoices: VocabularyChoice[] | null = null;
+let cachedCompetitorChoices: VocabularyChoice[] | null = null;
 
 function validateSailpointSuites(data: unknown): SailpointSuitesFile {
   if (!data || typeof data !== "object") {
@@ -78,16 +86,17 @@ function validateSailpointSuites(data: unknown): SailpointSuitesFile {
   return { suites: result };
 }
 
-function validateDeliverableStatuses(data: unknown): DeliverableStatusesFile {
+function validateChoiceList(data: unknown, fileName: string): ChoiceListFile {
   if (!data || typeof data !== "object") {
-    throw new Error("deliverable-statuses.json must be an object");
+    throw new Error(`${fileName} must be an object`);
   }
   const choices = (data as Record<string, unknown>).choices;
   if (!Array.isArray(choices) || choices.length === 0) {
-    throw new Error("deliverable-statuses.json must contain a non-empty choices array");
+    throw new Error(`${fileName} must contain a non-empty choices array`);
   }
 
   const parsed: Array<{ value: string; label: string }> = [];
+  const seen = new Set<string>();
   for (const [index, choice] of choices.entries()) {
     if (!choice || typeof choice !== "object") {
       throw new Error(`choices[${index}] must be an object`);
@@ -104,6 +113,10 @@ function validateDeliverableStatuses(data: unknown): DeliverableStatusesFile {
     if (value !== label) {
       throw new Error(`choices[${index}] value must equal label`);
     }
+    if (seen.has(value)) {
+      throw new Error(`choices[${index}] duplicates value "${value}"`);
+    }
+    seen.add(value);
     parsed.push({ value, label });
   }
 
@@ -160,11 +173,28 @@ function loadSuites(): Record<string, string[]> {
 function loadStatusChoices(): StatusChoice[] {
   if (cachedStatusChoices) return cachedStatusChoices;
   const data = readContentJson("domain/deliverable-statuses.json");
-  cachedStatusChoices = validateDeliverableStatuses(data).choices.map((c) => ({
+  cachedStatusChoices = validateChoiceList(
+    data,
+    "deliverable-statuses.json",
+  ).choices.map((c) => ({
     value: c.value as DeliverableStatus,
     label: c.label,
   }));
   return cachedStatusChoices;
+}
+
+function loadProjectTypeChoices(): VocabularyChoice[] {
+  if (cachedProjectTypeChoices) return cachedProjectTypeChoices;
+  const data = readContentJson("domain/project-types.json");
+  cachedProjectTypeChoices = validateChoiceList(data, "project-types.json").choices;
+  return cachedProjectTypeChoices;
+}
+
+function loadCompetitorChoices(): VocabularyChoice[] {
+  if (cachedCompetitorChoices) return cachedCompetitorChoices;
+  const data = readContentJson("domain/competitors.json");
+  cachedCompetitorChoices = validateChoiceList(data, "competitors.json").choices;
+  return cachedCompetitorChoices;
 }
 
 function loadCustomerStatusMappings(): CustomerStatusMapping[] {
@@ -184,6 +214,8 @@ export function resetDomainCacheForTests(): void {
   cachedSuites = null;
   cachedStatusChoices = null;
   cachedCustomerStatusMappings = null;
+  cachedProjectTypeChoices = null;
+  cachedCompetitorChoices = null;
 }
 
 /** Parses and validates domain JSON from raw strings — for tests. */
@@ -193,10 +225,19 @@ export function parseSailpointSuitesJson(raw: string): Record<string, string[]> 
 
 /** Parses and validates deliverable status JSON from raw strings — for tests. */
 export function parseDeliverableStatusesJson(raw: string): StatusChoice[] {
-  return validateDeliverableStatuses(JSON.parse(raw)).choices.map((c) => ({
-    value: c.value as DeliverableStatus,
-    label: c.label,
-  }));
+  return validateChoiceList(JSON.parse(raw), "deliverable-statuses.json").choices
+    .map((c) => ({
+      value: c.value as DeliverableStatus,
+      label: c.label,
+    }));
+}
+
+/** Parses and validates a domain vocabulary choice list from raw strings — for tests. */
+export function parseVocabularyChoicesJson(
+  raw: string,
+  fileName: string,
+): VocabularyChoice[] {
+  return validateChoiceList(JSON.parse(raw), fileName).choices;
 }
 
 /** Parses and validates customer status map JSON from raw strings — for tests. */
@@ -228,6 +269,16 @@ export function deriveComponents(sailpointSuite: string): string[] {
 /** Returns deliverable status select choices from domain JSON. */
 export function getDeliverableStatusChoices(): StatusChoice[] {
   return [...loadStatusChoices()];
+}
+
+/** Returns onboarding project type choices from domain JSON. */
+export function getProjectTypeChoices(): VocabularyChoice[] {
+  return [...loadProjectTypeChoices()];
+}
+
+/** Returns onboarding competitor choices from domain JSON. */
+export function getCompetitorChoices(): VocabularyChoice[] {
+  return [...loadCompetitorChoices()];
 }
 
 /** Returns the full internal → customer status mapping from domain JSON. */

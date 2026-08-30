@@ -17,18 +17,10 @@
 
 ## ✅ Onboarding tasks
 
-{{#if showOnboardingLink}}
 {{#if onboardingComplete}}
-- [x] **[Complete onboarding]({{onboardingLink}})** — fill in opportunity details
+- [x] Run **Complete onboarding** — fill in opportunity details
 {{else}}
-- [ ] ⏳ **[Complete onboarding]({{onboardingLink}})** — fill in opportunity details to unlock the Requirements Agent.
-{{/if}}
-{{else}}
-{{#if onboardingComplete}}
-- [x] Fill in opportunity details
-{{else}}
-- [ ] Fill in opportunity details
-{{/if}}
+- [ ] ⏳ Run **Complete onboarding** to fill in opportunity details and unlock the Requirements Agent.
 {{/if}}
 - [ ] Prepare necessary infrastructure
 - [ ] Define deliverables list

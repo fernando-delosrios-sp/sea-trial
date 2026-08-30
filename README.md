@@ -64,7 +64,7 @@ Import from `slack-app/lib/content/loader.ts` for the full public surface. JSON 
 
 #### Channel composition
 
-TES Event Channel structure — which objects are seeded, in what order, and how they surface — is declared in `slack-app/content/channels/tes-event.json` as an ordered `steps[]` array. Each step has an `id`, a `kind` (`canvas`, `list`, or `workflow`), and kind-specific fields. Canvases opt in to channel tabs with `"tab": true`; lists opt in to Bookmarks bar links with `"bookmark": true`; workflow steps are `{ id, kind, link }` only (`bookmark`/`featured` are rejected). Onboarding is discoverable from the Dashboard canvas Complete onboarding link (a per-channel Onboarding Link Trigger) with the pinned index button as fallback. Both carry a seed-time TesEventContext snapshot; opening and submitting onboarding does not read Dashboard canvas markdown. The kind registry under `slack-app/content/kinds/*.v1.json` defines extensible object types with `api_availability` gating. Loaders:
+TES Event Channel structure — which objects are seeded, in what order, and how they surface — is declared in `slack-app/content/channels/tes-event.json` as an ordered `steps[]` array. Each step has an `id`, a `kind` (`canvas` or `list`), and kind-specific fields. Canvases opt in to channel tabs with `"tab": true`; lists opt in to Bookmarks bar links with `"bookmark": true`. `kind: workflow` is rejected. Onboarding opens from the workspace shortcut **Complete onboarding** (channel in view) using the TES Event Context Store. Seed `put`s a store row and grants that shortcut to the new channel. The pinned index has no Complete/Edit onboarding button. Opening and submitting onboarding does not read Dashboard canvas markdown. The kind registry under `slack-app/content/kinds/*.v1.json` defines extensible object types with `api_availability` gating. Loaders:
 
 | Module | Purpose |
 |--------|---------|
@@ -81,8 +81,7 @@ The GitHub Actions deploy workflow provisions Slack triggers after `slack deploy
 | Trigger | Default scope | Purpose |
 |---------|---------------|---------|
 | **Create TES Event** | global (enabled) | Creation modal → provision workflow |
-| **Complete Onboarding** | global (disabled) | Shared shortcut is off; each channel gets `Complete Onboarding ({channelId})` at seed |
-| **TES Onboard** | channel (disabled) | Optional legacy channel shortcut |
+| **Complete onboarding** | global (enabled) | Opens onboarding for the channel in view via the TES Event Context Store |
 
 Configure scope and channel lists in `slack-app/triggers.config.yaml`:
 
@@ -90,6 +89,24 @@ Configure scope and channel lists in `slack-app/triggers.config.yaml`:
 - `scope: channel` — one trigger per channel ID in `channels`, or set GitHub Variable `SLACK_TRIGGER_CHANNEL_IDS` (comma-separated) at deploy time
 
 Re-deploy is idempotent: existing triggers are updated, missing ones are created.
+
+After deploy, delete leftover per-channel shortcuts:
+
+```bash
+cd slack-app
+deno run --allow-read --allow-env --allow-run scripts/cleanup-onboarding-triggers.ts
+```
+
+That deletes `Complete Onboarding ({channelId})` and exact `Complete Onboarding`. It does not delete `Create TES Event` or the live `Complete onboarding` shortcut.
+
+Repair an existing TES Event Channel (store row + grant, no per-channel trigger):
+
+```bash
+cd slack-app
+SLACK_BOT_TOKEN=... CHANNEL_ID=C… SLACK_ONBOARDING_TRIGGER_ID=Ft… \
+  TES_EVENT_CONTEXT_JSON='{"channelId":"C…",...}' \
+  deno run --allow-read --allow-env --allow-net scripts/repair-tes-event-context.ts
+```
 
 Local manual provision (optional):
 
@@ -120,7 +137,7 @@ Configuration is stored in GitHub Secrets and Variables. A manual workflow deplo
 | `LLM_MODEL` | Model name (e.g. `gpt-4o`) |
 | `RENDER_SERVICE_ID` | Render web service ID for agent-service |
 | `SLACK_TEAM_ID` | Slack workspace ID (T…) for pinned index navigation links and delivery canvas URLs |
-| `SLACK_ONBOARDING_TRIGGER_ID` | Unused when `complete-onboarding` is disabled; leftover env is unset on deploy |
+| `SLACK_ONBOARDING_TRIGGER_ID` | Global Complete onboarding trigger id; set on deploy and used to grant each TES Event Channel |
 | `SLACK_ONBOARDING_TRIGGER_URL` | Optional manual override only — never synthesized from trigger ID |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Grafana Cloud OTLP base URL (e.g. `https://otlp-gateway-prod-eu-west-6.grafana.net/otlp`) |
 | `OTEL_LOGS_ENABLED` | Set to `true` to push structured logs from both services (`false` by default) |

@@ -218,7 +218,7 @@ export function buildProposalBlocks(
  */
 export function onboardingGateMessage(): string {
   return (
-    "Onboarding is not complete. Click *Complete onboarding* in the pinned index message before @mentioning the bot with documents."
+    "Onboarding is not complete. Run *Complete onboarding* from the shortcut menu before @mentioning the bot with documents."
   );
 }
 

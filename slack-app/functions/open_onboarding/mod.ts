@@ -1,8 +1,6 @@
 /**
- * Opens and submits onboarding from a trigger context snapshot
- * (workflow input `dashboard_canvas_content` or pinned button value).
- * After submit, the trigger snapshot is refreshed so Dashboard Complete
- * onboarding can edit the last form. Does not read Dashboard canvas markdown.
+ * Opens and submits onboarding from the TES Event Context Store using the
+ * shortcut channel in view. Does not read Dashboard canvas markdown.
  */
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
 import {
@@ -11,14 +9,15 @@ import {
 } from "../../lib/onboarding-modal.ts";
 import {
   executeOnboardingSubmit,
-  loadDashboardContentForButton,
   parseOnboardingForm,
   type SlackOnboardingSubmitClient,
 } from "../../lib/onboarding-view-submit.ts";
+import { serializeEventContextSnapshot } from "../../lib/event-context.ts";
 import {
-  deserializeEventContext,
-  MISSING_ONBOARDING_SNAPSHOT_ERROR,
-} from "../../lib/event-context.ts";
+  getTesEventContext,
+  TES_EVENT_CONTEXT_STORE_MISS_ERROR,
+  type TesEventContextStoreClient,
+} from "../../lib/tes-event-context-store.ts";
 
 export const OpenOnboardingFunction = DefineFunction({
   callback_id: "open_onboarding",
@@ -28,48 +27,41 @@ export const OpenOnboardingFunction = DefineFunction({
     properties: {
       interactivity: { type: Schema.slack.types.interactivity },
       channel_id: { type: Schema.slack.types.channel_id },
-      dashboard_canvas_content: { type: Schema.types.string },
-      dashboard_canvas_id: { type: Schema.types.string },
     },
     required: ["interactivity", "channel_id"],
   },
   output_parameters: { properties: {}, required: [] },
 });
 
-export function resolveDashboardCanvasContent(
-  _client: unknown,
-  inputs: {
-    dashboard_canvas_content?: string;
-    dashboard_canvas_id?: string;
-  },
-): string {
-  const snapshot = inputs.dashboard_canvas_content?.trim() ?? "";
-  if (deserializeEventContext(snapshot)) return snapshot;
-  return "";
-}
-
-export function requireOnboardingSnapshot(
-  inputs: {
-    dashboard_canvas_content?: string;
-    dashboard_canvas_id?: string;
-  },
-): { ok: true; snapshot: string } | { ok: false; error: string } {
-  const snapshot = resolveDashboardCanvasContent(undefined, inputs);
-  if (!snapshot) {
-    return { ok: false, error: MISSING_ONBOARDING_SNAPSHOT_ERROR };
+export async function loadOnboardingContextFromStore(
+  client: TesEventContextStoreClient,
+  channelId: string,
+): Promise<{ ok: true; snapshot: string } | { ok: false; error: string }> {
+  try {
+    const context = await getTesEventContext(client, channelId);
+    if (!context) {
+      return { ok: false, error: TES_EVENT_CONTEXT_STORE_MISS_ERROR };
+    }
+    return { ok: true, snapshot: serializeEventContextSnapshot(context) };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
-  return { ok: true, snapshot };
 }
 
 export default SlackFunction(
   OpenOnboardingFunction,
   async ({ inputs, client }) => {
-    const required = requireOnboardingSnapshot(inputs);
+    const required = await loadOnboardingContextFromStore(
+      client as unknown as TesEventContextStoreClient,
+      inputs.channel_id,
+    );
     if (!required.ok) {
       return { error: required.error };
     }
     const dashboardCanvasContent = required.snapshot;
-
     const accountName = resolveAccountPrefill(dashboardCanvasContent);
 
     await client.views.open({
@@ -82,40 +74,6 @@ export default SlackFunction(
     });
 
     return { completed: false };
-  },
-).addBlockActionsHandler(
-  "complete_onboarding",
-  async ({ action, body, client }) => {
-    const channelId = body.channel?.id;
-    if (!channelId) {
-      return { error: "Missing channel context for onboarding button." };
-    }
-
-    const buttonValue = typeof action.value === "string"
-      ? action.value
-      : action.value != null
-      ? JSON.stringify(action.value)
-      : undefined;
-    const dashboardCanvasContent = loadDashboardContentForButton(
-      buttonValue,
-      "",
-    );
-    if (!dashboardCanvasContent) {
-      return { error: MISSING_ONBOARDING_SNAPSHOT_ERROR };
-    }
-
-    const accountName = resolveAccountPrefill(dashboardCanvasContent);
-
-    await client.views.open({
-      interactivity_pointer: body.interactivity.interactivity_pointer,
-      view: buildOnboardingModalView({
-        channelId,
-        dashboardCanvasContent,
-        accountName,
-      }),
-    });
-
-    return { completed: true };
   },
 ).addViewSubmissionHandler(
   "submit_onboarding",
@@ -130,16 +88,11 @@ export default SlackFunction(
       dashboard_canvas_content?: string;
     };
 
-    const dashboardCanvasContent = metadata.dashboard_canvas_content?.trim() ?? "";
-    if (!deserializeEventContext(dashboardCanvasContent)) {
-      return { error: MISSING_ONBOARDING_SNAPSHOT_ERROR };
-    }
-
     const result = await executeOnboardingSubmit(
       client as unknown as SlackOnboardingSubmitClient,
       {
         channel_id: metadata.channel_id,
-        dashboard_canvas_content: dashboardCanvasContent,
+        dashboard_canvas_content: metadata.dashboard_canvas_content ?? "",
       },
       parseOnboardingForm(view.state.values),
     );

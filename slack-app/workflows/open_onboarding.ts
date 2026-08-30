@@ -9,8 +9,6 @@ const OpenOnboardingWorkflow = DefineWorkflow({
     properties: {
       interactivity: { type: Schema.slack.types.interactivity },
       channel_id: { type: Schema.slack.types.channel_id },
-      dashboard_canvas_content: { type: Schema.types.string },
-      dashboard_canvas_id: { type: Schema.types.string },
     },
     required: ["interactivity", "channel_id"],
   },
@@ -19,8 +17,6 @@ const OpenOnboardingWorkflow = DefineWorkflow({
 OpenOnboardingWorkflow.addStep(OpenOnboardingFunction, {
   interactivity: OpenOnboardingWorkflow.inputs.interactivity,
   channel_id: OpenOnboardingWorkflow.inputs.channel_id,
-  dashboard_canvas_content: OpenOnboardingWorkflow.inputs.dashboard_canvas_content,
-  dashboard_canvas_id: OpenOnboardingWorkflow.inputs.dashboard_canvas_id,
 });
 
 export default OpenOnboardingWorkflow;

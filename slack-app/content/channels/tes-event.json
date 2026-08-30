@@ -41,11 +41,6 @@
       "ref": "incidents",
       "title": "Incidents",
       "bookmark": true
-    },
-    {
-      "id": "onboarding",
-      "kind": "workflow",
-      "link": "open_onboarding_workflow"
     }
   ]
 }

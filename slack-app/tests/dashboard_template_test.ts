@@ -1,7 +1,6 @@
 import {
   assertEquals,
   assertStringIncludes,
-  assertThrows,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   dashboardTemplate,
@@ -88,94 +87,59 @@ Deno.test("dashboardTemplate Project section falls back gracefully when creation
   assertStringIncludes(markdown, "_Not set_");
 });
 
-Deno.test("Dashboard link uses API share URL", () => {
-  const markdown = renderDashboardCanvas(baseContext, undefined, {
-    onboardingLink: "https://slack.com/shortcuts/FtONBOARD1/secret",
-  });
+Deno.test("Dashboard instructs the user to run Complete onboarding", () => {
+  const markdown = renderDashboardCanvas(baseContext);
 
   assertStringIncludes(markdown, "Complete onboarding");
-  assertStringIncludes(
-    markdown,
-    "https://slack.com/shortcuts/FtONBOARD1/secret",
-  );
+  assertEquals(markdown.includes("https://slack.com/shortcuts/"), false);
+  assertEquals(markdown.includes("- [ ] Fill in opportunity details"), false);
 });
 
 Deno.test("Onboarding CTA replaces the opportunity details task while incomplete", () => {
-  const markdown = renderDashboardCanvas(baseContext, undefined, {
-    onboardingLink: "https://slack.com/shortcuts/FtONBOARD1/secret",
-  });
+  const markdown = renderDashboardCanvas(baseContext);
 
   assertStringIncludes(
     markdown,
-    "- [ ] ⏳ **[Complete onboarding](https://slack.com/shortcuts/FtONBOARD1/secret)** — fill in opportunity details to unlock the Requirements Agent.",
+    "- [ ] ⏳ Run **Complete onboarding** to fill in opportunity details and unlock the Requirements Agent.",
   );
   assertEquals(markdown.includes("- [ ] Fill in opportunity details"), false);
   assertEquals(markdown.includes("## Onboarding\n"), false);
 });
 
-Deno.test("Onboarding task stays linked and ticked after submit", () => {
+Deno.test("Onboarding task ticked after submit", () => {
   const markdown = renderDashboardCanvas(
     { ...baseContext, onboardingComplete: true },
-    undefined,
-    { onboardingLink: "https://slack.com/shortcuts/FtONBOARD1/secret" },
   );
 
   assertStringIncludes(
     markdown,
-    "- [x] **[Complete onboarding](https://slack.com/shortcuts/FtONBOARD1/secret)** — fill in opportunity details",
+    "- [x] Run **Complete onboarding** — fill in opportunity details",
   );
   assertEquals(markdown.includes("to unlock the Requirements Agent"), false);
   assertEquals(markdown.includes("- [ ] Fill in opportunity details"), false);
+  assertEquals(markdown.includes("https://slack.com/shortcuts/"), false);
 });
 
-Deno.test("Onboarding task stays unticked without a link", () => {
-  const markdown = renderDashboardCanvas(baseContext);
-
-  assertStringIncludes(markdown, "- [ ] Fill in opportunity details");
-  assertEquals(markdown.includes("Complete onboarding"), false);
-});
-
-Deno.test("pinnedIndexBlocks includes a Complete onboarding button when onboarding is incomplete", () => {
+Deno.test("pinnedIndexBlocks has no Complete onboarding button", () => {
   const blocks = pinnedIndexBlocks(baseContext, navOptions);
   const actionsBlock = blocks.find(
     (block) => (block as { type: string }).type === "actions",
-  ) as {
-    elements: Array<{
-      action_id: string;
-      text: { text: string };
-      value: string | Record<string, unknown>;
-    }>;
-  };
-
-  assertEquals(actionsBlock.elements.length, 1);
-  assertEquals(actionsBlock.elements[0].action_id, "complete_onboarding");
-  assertEquals(actionsBlock.elements[0].text.text, "Complete onboarding");
-  const rawValue = actionsBlock.elements[0].value;
-  const encoded = typeof rawValue === "string" ? rawValue : JSON.stringify(rawValue);
-  const buttonValue = (typeof rawValue === "string"
-    ? JSON.parse(rawValue)
-    : rawValue) as {
-      dashboard_canvas_id: string;
-      dashboard_canvas_content?: string;
-    };
-  assertEquals(buttonValue.dashboard_canvas_id, baseContext.dashboardCanvasId);
-  assertEquals(
-    buttonValue.dashboard_canvas_content,
-    JSON.stringify(baseContext),
   );
-  assertEquals(buttonValue.dashboard_canvas_content?.includes("Acme Corp"), true);
-  assertEquals(encoded.length <= 2000, true);
+  assertEquals(actionsBlock, undefined);
+  const encoded = JSON.stringify(blocks);
+  assertEquals(encoded.includes("complete_onboarding"), false);
+  assertEquals(encoded.includes("Edit onboarding"), false);
 });
 
-Deno.test("Oversized pinned button snapshot fails seed", () => {
+Deno.test("Oversized snapshot still seeds pinned index without a Complete onboarding button", () => {
   const oversized = {
     ...baseContext,
     contextNotes: "x".repeat(2000),
   };
-  assertThrows(
-    () => pinnedIndexBlocks(oversized, navOptions),
-    Error,
-    "Seeding failed; the snapshot was not truncated",
+  const blocks = pinnedIndexBlocks(oversized, navOptions);
+  assertEquals(
+    blocks.some((block) => (block as { type: string }).type === "actions"),
+    false,
   );
 });
 
@@ -198,9 +162,8 @@ Deno.test("pinnedIndexBlocks shows Publish situation report when onboarding is c
     "Publish situation report",
   );
   const rawValue = actionsBlock.elements[0].value;
-  const buttonValue = (typeof rawValue === "string"
-    ? JSON.parse(rawValue)
-    : rawValue) as {
+  assertEquals(typeof rawValue, "string");
+  const buttonValue = JSON.parse(rawValue as string) as {
       dashboard_canvas_id: string;
       dashboard_canvas_content?: string;
       situation_report_canvas_id?: string;

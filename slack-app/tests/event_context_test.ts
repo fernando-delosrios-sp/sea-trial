@@ -3,6 +3,7 @@ import {
   applyOnboarding,
   deserializeEventContext,
   serializeEventContext,
+  serializeEventContextSnapshot,
 } from "../lib/event-context.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 
@@ -60,6 +61,16 @@ Deno.test("serializeEventContext round-trips creation-modal fields", () => {
   const deserialized = deserializeEventContext(serialized);
 
   assertEquals(deserialized, contextWithCreationFields);
+});
+
+Deno.test("serializeEventContextSnapshot omits onboardingTriggerId and onboardingLinkUrl", () => {
+  const serialized = serializeEventContextSnapshot({
+    ...baseContext,
+    onboardingTriggerId: "FtOLD",
+    onboardingLinkUrl: "https://slack.com/shortcuts/FtOLD/secret",
+  } as TesEventContext);
+  assertEquals(serialized.includes("onboardingTriggerId"), false);
+  assertEquals(serialized.includes("onboardingLinkUrl"), false);
 });
 
 Deno.test("applyOnboarding sets onboardingComplete and derived components", () => {

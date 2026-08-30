@@ -107,11 +107,11 @@ Deno.test("requirements canvas renders from declarative template", () => {
   assertEquals(content.includes("Requirements Agent"), true);
 });
 
-Deno.test("pinned index blocks conditional onboarding button", () => {
+Deno.test("pinned index has no Complete onboarding button until publish after complete", () => {
   const incomplete = pinnedIndexBlocks(baseContext, navOptions);
   assertEquals(
     incomplete.some((b) => (b as { type: string }).type === "actions"),
-    true,
+    false,
   );
 
   const complete = pinnedIndexBlocks({ ...baseContext, onboardingComplete: true }, navOptions);

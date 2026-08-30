@@ -2,16 +2,11 @@ import { join } from "std/path/join.ts";
 import {
   parseTriggerListOutput,
 } from "../lib/triggers-config.ts";
-import { WORKFLOW_LINK_TRIGGERS } from "../lib/workflow-trigger-registry.ts";
+import { isRetiredOnboardingTriggerTitle } from "../lib/complete-onboarding-grant.ts";
 import {
   buildSlackArgs,
   type SlackCommandRunner,
-  unsetOnboardingEnvVars,
 } from "./slack-cli-helpers.ts";
-
-/** Exact title `Complete Onboarding` — does not match `Complete Onboarding ({channelId})`. */
-const ONBOARDING_TRIGGER_TITLE =
-  WORKFLOW_LINK_TRIGGERS.open_onboarding_workflow.triggerName;
 
 async function listShortcutTriggers(
   runner: SlackCommandRunner,
@@ -44,14 +39,14 @@ export async function cleanupOnboardingTriggers(options: {
   );
   const listed = parseTriggerListOutput(listedOutput);
   const toDelete = listed.filter((trigger) =>
-    trigger.title === ONBOARDING_TRIGGER_TITLE
+    isRetiredOnboardingTriggerTitle(trigger.title)
   );
 
   const deleted: string[] = [];
 
   if (toDelete.length === 0) {
     console.log(
-      `[ok] No "${ONBOARDING_TRIGGER_TITLE}" triggers found (already clean)`,
+      "[ok] No retired Complete Onboarding triggers found (already clean)",
     );
   }
 
@@ -80,14 +75,7 @@ export async function cleanupOnboardingTriggers(options: {
     deleted.push(trigger.id);
   }
 
-  const unset = await unsetOnboardingEnvVars(
-    options.runner,
-    options.appId,
-    options.token,
-    { dryRun: options.dryRun },
-  );
-
-  return { deleted, unset };
+  return { deleted, unset: [] };
 }
 
 if (import.meta.main) {

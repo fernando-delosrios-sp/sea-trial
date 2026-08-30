@@ -17,10 +17,7 @@ export const PINNED_ONBOARDING_BUTTON_MAX_CHARS = 2000;
 function pinnedSnapshotButtonValue(
   context: TesEventContext,
   extra: Record<string, string | undefined> = {},
-): {
-  dashboard_canvas_id: string;
-  dashboard_canvas_content: string;
-} {
+): string {
   const buttonValueJson = {
     dashboard_canvas_id: context.dashboardCanvasId,
     dashboard_canvas_content: serializeEventContextSnapshot(context),
@@ -32,14 +29,7 @@ function pinnedSnapshotButtonValue(
       `Pinned button value is ${encoded.length} characters (max ${PINNED_ONBOARDING_BUTTON_MAX_CHARS}). Seeding failed; the snapshot was not truncated.`,
     );
   }
-  return buttonValueJson;
-}
-
-function pinnedOnboardingButtonValue(context: TesEventContext): {
-  dashboard_canvas_id: string;
-  dashboard_canvas_content: string;
-} {
-  return pinnedSnapshotButtonValue(context);
+  return encoded;
 }
 
 function loadPinnedIndexTemplate() {
@@ -143,7 +133,7 @@ function buildIndexMessageText(
     "",
     context.onboardingComplete
       ? "✅ Onboarding complete — publish a situation report or @mention the bot with documents to summon the Requirements Agent."
-      : "⏳ Click *Complete onboarding* below to unlock the Requirements Agent.",
+      : "⏳ Run *Complete onboarding* from the shortcut menu to unlock the Requirements Agent.",
   ].join("\n");
 }
 
@@ -166,10 +156,11 @@ export function renderPinnedIndexBlocks(
   const rendered = template({
     messageText: buildIndexMessageText(context, composition, options),
     onboardingComplete: context.onboardingComplete,
-    buttonValueJson: pinnedOnboardingButtonValue(context),
-    publishButtonValueJson: pinnedSnapshotButtonValue(context, {
-      situation_report_canvas_id: context.situationReportCanvasId,
-    }),
+    publishButtonValueJson: context.onboardingComplete
+      ? pinnedSnapshotButtonValue(context, {
+        situation_report_canvas_id: context.situationReportCanvasId,
+      })
+      : "{}",
   });
 
   const blocks = JSON.parse(rendered) as Record<string, unknown>[];

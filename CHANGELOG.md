@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-08-30 · v0.1.0
+
+### ✨ New Features
+
+- **TES Event Context Store** — Each TES Event Channel's compact `TesEventContext` lives in a Slack Datastore keyed by channel ID. Seed, open, and submit `put`/`get` that row (not canvas markdown or trigger inputs).
+
+### 🔧 Improvements
+
+- **Complete onboarding shortcut** — One workspace shortcut named `Complete onboarding` uses the channel in view. Seed grants it to the new TES Event Channel. People with no TES Event Channel membership do not see it.
+- **Dashboard and pinned index** — The Dashboard tells the Sales Engineer to run `Complete onboarding`. The pinned index is navigation and Publish situation report only — no Complete/Edit onboarding button.
+
+### ⚠️ Breaking Changes
+
+- **Per-channel Onboarding Link Triggers are gone** — Seed no longer creates `Complete Onboarding ({channelId})`. Existing channels need `repair-tes-event-context.ts` (`put` + grant) and `cleanup-onboarding-triggers.ts`.
+- **`TesEventContext` dropped `onboardingTriggerId` and `onboardingLinkUrl`** — Compact snapshots must not include those fields.
+
+### 📚 Documentation
+
+- README, smoke checklist, and repair/cleanup usage updated for the store, global shortcut, and retired per-channel triggers.
+
+---
+
 ## 2026-08-29 — Publish situation report snapshot
 
 ### Changed

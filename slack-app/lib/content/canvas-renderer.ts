@@ -68,11 +68,6 @@ function buildDashboardViewModel(
     opportunityNotes: formatEntries(details?.notes),
     hasDerivedComponents: context.derivedComponents.length > 0,
     derivedComponents: context.derivedComponents,
-    showOnboardingLink: Boolean(
-      options?.onboardingLink || context.onboardingLinkUrl,
-    ),
-    onboardingLink: options?.onboardingLink || context.onboardingLinkUrl ||
-      "",
   };
 }
 

@@ -17,13 +17,7 @@ export interface ListStep {
   bookmark?: true;
 }
 
-export interface WorkflowStep {
-  id: string;
-  kind: "workflow";
-  link: string;
-}
-
-export type CompositionStep = CanvasStep | ListStep | WorkflowStep;
+export type CompositionStep = CanvasStep | ListStep;
 
 export interface CompositionManifest {
   version: string;
@@ -115,27 +109,12 @@ function parseStep(entry: unknown, index: number, source: string): CompositionSt
   }
 
   if (kind === "workflow") {
-    const link = requireString(row, "link", label);
-    if (row.ref !== undefined) {
-      throw new Error(`${label} workflow step must not contain ref`);
-    }
-    if (row.tab !== undefined) {
-      throw new Error(`${label} workflow step must not contain tab`);
-    }
-    if (row.bookmark !== undefined) {
-      throw new Error(`${label} workflow step must not contain bookmark`);
-    }
-    if (row.featured !== undefined) {
-      throw new Error(`${label} workflow step must not contain featured`);
-    }
-    return {
-      id,
-      kind: "workflow",
-      link,
-    };
+    throw new Error(
+      `${label}.kind workflow is unsupported — use canvas or list`,
+    );
   }
 
-  throw new Error(`${label}.kind must be canvas, list, or workflow`);
+  throw new Error(`${label}.kind must be canvas or list`);
 }
 
 function validateComposition(data: unknown, source: string): CompositionManifest {

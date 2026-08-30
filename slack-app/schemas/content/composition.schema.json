@@ -17,7 +17,7 @@
       "required": ["id", "kind"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
-        "kind": { "enum": ["canvas", "list", "workflow"] },
+        "kind": { "enum": ["canvas", "list"] },
         "ref": { "type": "string", "minLength": 1 },
         "link": { "type": "string", "minLength": 1 },
         "title": { "type": "string" },
@@ -47,20 +47,6 @@
               "anyOf": [
                 { "required": ["link"] },
                 { "required": ["tab"] },
-                { "required": ["featured"] }
-              ]
-            }
-          }
-        },
-        {
-          "if": { "properties": { "kind": { "const": "workflow" } } },
-          "then": {
-            "required": ["link"],
-            "not": {
-              "anyOf": [
-                { "required": ["ref"] },
-                { "required": ["tab"] },
-                { "required": ["bookmark"] },
                 { "required": ["featured"] }
               ]
             }

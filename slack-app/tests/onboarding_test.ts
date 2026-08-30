@@ -26,7 +26,6 @@ const baseContext: TesEventContext = {
   infrastructureCanvasId: "infra-1",
   situationReportCanvasId: "sr1",
   accountName: "Acme Corp",
-  onboardingLinkUrl: "https://slack.com/shortcuts/FtONBOARD1/secret",
 };
 
 Deno.test("Open onboarding form — modal has all required fields", () => {
@@ -323,7 +322,7 @@ Deno.test("Submit onboarding updates context and dashboard", () => {
   assertEquals(result.dashboardContent.includes("Acme Corp"), true);
   assertStringIncludes(
     result.dashboardContent,
-    "- [x] **[Complete onboarding](https://slack.com/shortcuts/FtONBOARD1/secret)** — fill in opportunity details",
+    "- [x] Run **Complete onboarding** — fill in opportunity details",
   );
   assertEquals(result.dashboardContent.includes("<!-- tes-event-context -->"), false);
 });

@@ -22,12 +22,12 @@ triggers:
     channels: []
     enabled: true
   - id: tes-onboard
-    trigger_def: triggers/tes_onboard.ts
+    trigger_def: triggers/complete_onboarding.ts
     scope: channel
     channels: []
     enabled: false
   - id: legacy-channel
-    trigger_def: triggers/tes_onboard.ts
+    trigger_def: triggers/complete_onboarding.ts
     scope: channel
     channels: [C111, C222]
     enabled: true
@@ -58,7 +58,7 @@ triggers:
 Deno.test("resolveChannelIds uses SLACK_TRIGGER_CHANNEL_IDS when inline channels empty", () => {
   const entry = {
     id: "tes-onboard",
-    trigger_def: "triggers/tes_onboard.ts",
+    trigger_def: "triggers/complete_onboarding.ts",
     scope: "channel" as const,
     channels: [],
     enabled: true,
@@ -86,6 +86,38 @@ Deno.test("expandProvisionTargets creates one target per channel id", async () =
   assertEquals(channelTargets.length, 2);
   assertEquals(channelTargets[0].title.includes("C111"), true);
   assertEquals(channelTargets[1].title.includes("C222"), true);
+});
+
+Deno.test("Config lists default MVP triggers", async () => {
+  const raw = await Deno.readTextFile(
+    new URL("../triggers.config.yaml", import.meta.url),
+  );
+  const config = parseTriggersConfig(raw);
+  const create = config.triggers.find((entry) => entry.id === "create-tes-event");
+  const onboarding = config.triggers.find((entry) =>
+    entry.id === "complete-onboarding"
+  );
+  assertEquals(create?.scope, "global");
+  assertEquals(create?.enabled, true);
+  assertEquals(onboarding?.scope, "global");
+  assertEquals(onboarding?.enabled, true);
+  assertEquals(onboarding?.trigger_def, "triggers/complete_onboarding.ts");
+  assertEquals(
+    config.triggers.some((entry) => entry.id === "tes-onboard"),
+    false,
+  );
+});
+
+Deno.test("expandProvisionTargets from repo config lists Create TES Event and Complete onboarding", async () => {
+  const raw = await Deno.readTextFile(
+    new URL("../triggers.config.yaml", import.meta.url),
+  );
+  const config = parseTriggersConfig(raw);
+  const targets = await expandProvisionTargets(config, {}, Deno.cwd());
+  const titles = targets.map((target) => target.title);
+  assertEquals(titles.includes("Create TES Event"), true);
+  assertEquals(titles.includes("Complete onboarding"), true);
+  assertEquals(targets.every((target) => target.scope === "global"), true);
 });
 
 Deno.test("expandProvisionTargets global scope has no channel suffix", async () => {
@@ -180,7 +212,7 @@ Deno.test("provisionTarget channel scope grants channel access after create", as
     runner,
     {
       configId: "legacy-channel",
-      triggerDef: "triggers/tes_onboard.ts",
+      triggerDef: "triggers/complete_onboarding.ts",
       scope: "channel",
       channelId: "C111",
       title: "TES Onboard (C111)",

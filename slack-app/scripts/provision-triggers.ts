@@ -9,7 +9,7 @@ import {
   type ListedTrigger,
   type ProvisionTarget,
 } from "../lib/triggers-config.ts";
-import { buildWorkflowTriggerEnvVars } from "../lib/workflow-trigger-registry.ts";
+import { buildCompleteOnboardingTriggerEnvVars } from "../lib/complete-onboarding-grant.ts";
 import {
   type SlackCommandRunner,
   unsetOnboardingEnvVars,
@@ -138,7 +138,7 @@ export async function syncWorkflowTriggerEnvVars(
   token: string,
   listed: ListedTrigger[],
 ): Promise<void> {
-  const envVars = buildWorkflowTriggerEnvVars(listed);
+  const envVars = buildCompleteOnboardingTriggerEnvVars(listed);
 
   for (const [key, value] of Object.entries(envVars)) {
     const result = await runner.run([
@@ -164,7 +164,7 @@ export async function syncWorkflowTriggerEnvVars(
 
   if (!envVars.SLACK_ONBOARDING_TRIGGER_ID) {
     console.log(
-      "[workflow-env] Complete Onboarding trigger not listed — skipping SLACK_ONBOARDING_TRIGGER_ID sync",
+      "[workflow-env] Complete onboarding trigger not listed — skipping SLACK_ONBOARDING_TRIGGER_ID sync",
     );
   }
 }

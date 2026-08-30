@@ -1,4 +1,5 @@
 import { Manifest } from "@slack/deno-slack-sdk/mod.ts";
+import { TesEventContextDatastore } from "./datastores/tes_event_context.ts";
 import { loadSync } from "std/dotenv/mod.ts";
 import ProvisionChannelFunction from "./functions/provision_channel/mod.ts";
 import SeedChannelObjectsFunction from "./functions/seed_channel_objects/mod.ts";
@@ -40,6 +41,7 @@ export default Manifest({
     HandleThreadReplyFunction,
   ],
   workflows: [CreateTesEventWorkflow, OpenOnboardingWorkflow],
+  datastores: [TesEventContextDatastore],
   outgoingDomains: buildOutgoingDomains(
     Deno.env.get("AGENT_SERVICE_URL"),
     Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"),
@@ -57,7 +59,10 @@ export default Manifest({
     "lists:read",
     "lists:write",
     "bookmarks:write",
+    "pins:write",
     "triggers:write",
+    "datastore:read",
+    "datastore:write",
   ],
 });
 

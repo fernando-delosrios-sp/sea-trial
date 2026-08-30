@@ -21,10 +21,4 @@ triggers:
     trigger_def: triggers/complete_onboarding.ts
     scope: global
     channels: []
-    enabled: false  # per-channel Onboarding Link Trigger is created at provision
-
-  - id: tes-onboard
-    trigger_def: triggers/tes_onboard.ts
-    scope: channel
-    channels: []
-    enabled: false
+    enabled: true

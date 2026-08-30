@@ -2,16 +2,15 @@ import type { OnboardingForm } from "@sea-trial/shared/types/index.ts";
 import {
   deserializeEventContext,
   MISSING_ONBOARDING_SNAPSHOT_ERROR,
-  MISSING_ONBOARDING_TRIGGER_ID_ERROR,
 } from "./event-context.ts";
 import { processOnboardingSubmit } from "./onboarding-submit.ts";
 import { replaceCanvasContent, type CanvasSectionsClient } from "./canvas.ts";
 import { richTextValueToText } from "./content/rich-text.ts";
 import { renderDashboardCanvasForSlack, type CanvasAssetUploadClient } from "./content/canvas-assets.ts";
 import {
-  updateOnboardingTriggerSnapshot,
-  type WorkflowTriggerClient,
-} from "./onboarding-channel-trigger.ts";
+  putTesEventContext,
+  type TesEventContextStoreClient,
+} from "./tes-event-context-store.ts";
 
 export function getInputValue(
   state: Record<string, Record<string, unknown>>,
@@ -73,7 +72,7 @@ export interface OnboardingViewMetadata {
 }
 
 export interface SlackOnboardingSubmitClient
-  extends CanvasSectionsClient, CanvasAssetUploadClient, WorkflowTriggerClient {
+  extends CanvasSectionsClient, CanvasAssetUploadClient, TesEventContextStoreClient {
   chat: {
     postMessage: (params: { channel: string; text: string }) => Promise<unknown>;
   };
@@ -89,8 +88,8 @@ export interface SlackOnboardingSubmitClient
 }
 
 /**
- * Processes an onboarding modal submission: updates context, dashboard, and posts confirmation.
- * Uses the trigger context snapshot in private metadata — does not read canvas markdown.
+ * Processes an onboarding modal submission: updates context, store, and dashboard.
+ * Uses the TES Event Context Store — does not read canvas markdown.
  */
 export async function executeOnboardingSubmit(
   client: SlackOnboardingSubmitClient,
@@ -108,13 +107,6 @@ export async function executeOnboardingSubmit(
     };
   }
 
-  if (!existingContext.onboardingTriggerId?.trim()) {
-    return {
-      ok: false,
-      error: MISSING_ONBOARDING_TRIGGER_ID_ERROR,
-    };
-  }
-
   const firstComplete = existingContext.onboardingComplete === false;
   const { context } = processOnboardingSubmit(
     existingContext,
@@ -122,12 +114,7 @@ export async function executeOnboardingSubmit(
   );
 
   try {
-    await updateOnboardingTriggerSnapshot(
-      client,
-      metadata.channel_id,
-      context.dashboardCanvasId,
-      context,
-    );
+    await putTesEventContext(client, context);
   } catch (error) {
     return {
       ok: false,

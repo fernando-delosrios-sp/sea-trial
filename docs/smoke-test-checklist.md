@@ -24,23 +24,25 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 - [ ] Dashboard, Requirements, Infrastructure canvases exist
 - [ ] Deliverables and Incidents lists exist
 - [ ] Deliverables and Incidents appear as channel bookmarks (channel header) linking to each list
-- [ ] Dashboard includes a Complete onboarding markdown link (Workflows tab is not required)
-- [ ] **New channel required** after this change — existing channels need Create TES Event again or `repair-workflow-tab.ts` with `TES_EVENT_CONTEXT_JSON`
+- [ ] Dashboard tells the Sales Engineer to run **Complete onboarding** (no `https://slack.com/shortcuts/` href)
+- [ ] **New channel required** after this change — existing channels need Create TES Event again or `repair-tes-event-context.ts` with `TES_EVENT_CONTEXT_JSON` and `SLACK_ONBOARDING_TRIGGER_ID`
 - [ ] Pinned index message links all objects
-- [ ] Onboarding CTA visible when onboarding incomplete
+- [ ] Pinned index has no Complete onboarding or Edit onboarding button
+- [ ] Seed grants Complete onboarding to the new channel
 
 ## Onboarding
 
-- [ ] Click Complete onboarding on the Dashboard canvas → modal opens with all fields
-- [ ] Click "Complete onboarding" on pinned index → modal opens with all fields
-- [ ] Account field pre-filled from the **create-time** account name (editable) on both the Dashboard link and the pinned button
-- [ ] Submit form → Dashboard updated, `onboardingComplete` true, Account reflects submitted value; Dashboard Onboarding tasks shows a ticked Complete onboarding link (still clickable to edit)
-- [ ] After first submit, click Dashboard Complete onboarding again → modal prefills last submitted fields (suite, stakeholders, etc.)
+- [ ] In a TES Event Channel, run **Complete onboarding** from the shortcut menu → modal opens with all fields
+- [ ] In `#oppties`, a TES member sees at most one **Complete onboarding**; invoking it fails clearly (not a TES Event Channel)
+- [ ] A user in no TES Event Channel does not see **Complete onboarding**
+- [ ] Account field pre-filled from the **create-time** account name
+- [ ] Submit form → Dashboard updated, `onboardingComplete` true, Account reflects submitted value; store row replaced; Onboarding tasks shows a ticked Complete onboarding instruction
+- [ ] After first submit, run Complete onboarding again → modal prefills last submitted fields
 - [ ] Edit fields and submit again → Dashboard opportunity details update; **no second** agent-available channel message
 - [ ] Identity Security Cloud → correct components derived
 - [ ] Channel message announces agent available when summoned (@mention) **only on first complete**
 
-> **Existing channels:** Triggers without a snapshot stay broken. Re-run Create TES Event, or run `scripts/repair-workflow-tab.ts` with `CHANNEL_ID`, `DASHBOARD_CANVAS_ID`, and `TES_EVENT_CONTEXT_JSON` (compact snapshot — the script does not read canvas markdown). Shared "Complete Onboarding" shortcuts titled exactly that name may still appear until `cleanup-onboarding-triggers` runs.
+> **Existing channels:** Store miss fails open. Re-run Create TES Event, or run `scripts/repair-tes-event-context.ts` with `CHANNEL_ID`, `SLACK_ONBOARDING_TRIGGER_ID`, and `TES_EVENT_CONTEXT_JSON`. Then run `scripts/cleanup-onboarding-triggers.ts` so the menu has `Create TES Event` plus one `Complete onboarding` (no `Complete Onboarding ({channelId})` names).
 
 ## Agent gate
 

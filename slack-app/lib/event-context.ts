@@ -3,16 +3,19 @@ import type { OnboardingForm, TesEventContext } from "@sea-trial/shared/types/in
 export const METADATA_MARKER = "<!-- tes-event-context -->";
 
 export const MISSING_ONBOARDING_SNAPSHOT_ERROR =
-  "Onboarding is missing a trigger context snapshot. Re-run Create TES Event, or repair with TES_EVENT_CONTEXT_JSON.";
-
-export const MISSING_ONBOARDING_TRIGGER_ID_ERROR =
-  "Onboarding is missing a trigger id. Re-run Create TES Event, or repair with TES_EVENT_CONTEXT_JSON.";
+  "TES Event Context Store row is missing or invalid. Re-run Create TES Event, or repair.";
 
 /**
- * Compact JSON snapshot for Onboarding Link Trigger inputs and pinned button values.
+ * Compact JSON snapshot for the TES Event Context Store.
  */
 export function serializeEventContextSnapshot(context: TesEventContext): string {
-  return JSON.stringify(context);
+  const snapshot = { ...context } as TesEventContext & {
+    onboardingTriggerId?: string;
+    onboardingLinkUrl?: string;
+  };
+  delete snapshot.onboardingTriggerId;
+  delete snapshot.onboardingLinkUrl;
+  return JSON.stringify(snapshot);
 }
 
 /**

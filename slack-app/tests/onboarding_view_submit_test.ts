@@ -1,16 +1,19 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   MISSING_ONBOARDING_SNAPSHOT_ERROR,
-  MISSING_ONBOARDING_TRIGGER_ID_ERROR,
   serializeEventContextSnapshot,
 } from "../lib/event-context.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import {
   executeOnboardingSubmit,
-  loadDashboardContentForButton,
   type SlackOnboardingSubmitClient,
 } from "../lib/onboarding-view-submit.ts";
-import { resolveDashboardCanvasContent, requireOnboardingSnapshot } from "../functions/open_onboarding/mod.ts";
+import { loadOnboardingContextFromStore } from "../functions/open_onboarding/mod.ts";
+import {
+  TES_EVENT_CONTEXT_STORE_MISS_ERROR,
+  tesEventContextStorePutError,
+} from "../lib/tes-event-context-store.ts";
+import { TES_EVENT_CONTEXT_DATASTORE_NAME } from "../datastores/tes_event_context.ts";
 
 const baseContext: TesEventContext = {
   channelId: "C1",
@@ -24,8 +27,6 @@ const baseContext: TesEventContext = {
   infrastructureCanvasId: "infra-1",
   situationReportCanvasId: "sr1",
   accountName: "Acme Corp",
-  onboardingLinkUrl: "https://slack.com/shortcuts/FtONBOARD1/secret",
-  onboardingTriggerId: "FtONBOARD1",
 };
 
 const onboardingForm = {
@@ -41,7 +42,10 @@ const onboardingForm = {
 };
 
 function submitClient(options?: {
-  update?: (payload: Record<string, unknown>) => Promise<{ ok: boolean; error?: string }>;
+  put?: (params: {
+    datastore: string;
+    item: { channel_id: string; snapshot: string };
+  }) => Promise<{ ok: boolean; error?: string }>;
   postMessage?: (params: { channel: string; text: string }) => Promise<unknown>;
   edit?: (params: {
     canvas_id: string;
@@ -49,7 +53,7 @@ function submitClient(options?: {
   }) => Promise<unknown>;
   lookup?: () => Promise<unknown>;
 }) {
-  const updatePayloads: Record<string, unknown>[] = [];
+  const puts: Array<{ datastore: string; item: { channel_id: string; snapshot: string } }> = [];
   const posted: Array<{ channel: string; text: string }> = [];
   const edited: string[] = [];
   let lookupCalled = false;
@@ -96,14 +100,15 @@ function submitClient(options?: {
         },
       },
     },
-    workflows: {
-      triggers: {
-        update: async (payload: Record<string, unknown>) => {
-          updatePayloads.push(payload);
-          return options?.update ? options.update(payload) : { ok: true };
-        },
-        permissions: {
-          add: async () => ({ ok: true }),
+    apps: {
+      datastore: {
+        get: async () => ({ ok: true, item: undefined }),
+        put: async (params: {
+          datastore: string;
+          item: { channel_id: string; snapshot: string };
+        }) => {
+          puts.push(params);
+          return options?.put ? options.put(params) : { ok: true };
         },
       },
     },
@@ -111,65 +116,68 @@ function submitClient(options?: {
 
   return {
     client: client as unknown as SlackOnboardingSubmitClient,
-    updatePayloads,
+    puts,
     posted,
     edited,
     lookupCalled: () => lookupCalled,
   };
 }
 
-Deno.test("Dashboard-link open with snapshot (no lookup)", () => {
+Deno.test("Open onboarding form from TES Event Context Store", async () => {
   const snapshot = serializeEventContextSnapshot(baseContext);
-  const client = {
-    canvases: {
-      sections: {
-        lookup: async () => {
-          throw new Error("readCanvasMarkdown must not be invoked");
+  const result = await loadOnboardingContextFromStore(
+    {
+      apps: {
+        datastore: {
+          get: async () => ({
+            ok: true,
+            item: { channel_id: "C1", snapshot },
+          }),
+          put: async () => ({ ok: true }),
         },
       },
     },
-  };
-
-  const content = resolveDashboardCanvasContent(client, {
-    dashboard_canvas_id: "dash-1",
-    dashboard_canvas_content: snapshot,
-  });
-
-  assertEquals(content, snapshot);
-});
-
-Deno.test("pinned button open with snapshot", () => {
-  const snapshot = serializeEventContextSnapshot(baseContext);
-  const content = loadDashboardContentForButton(
-    JSON.stringify({
-      dashboard_canvas_id: "dash-1",
-      dashboard_canvas_content: snapshot,
-    }),
-    "",
+    "C1",
   );
-
-  assertEquals(content, snapshot);
-  assertStringIncludes(content, "Acme Corp");
+  assertEquals(result, { ok: true, snapshot });
 });
 
-Deno.test("missing snapshot fails open with repair error", () => {
-  const result = requireOnboardingSnapshot({ dashboard_canvas_id: "dash-1" });
+Deno.test("Open onboarding from a non-TES channel fails clearly", async () => {
+  const result = await loadOnboardingContextFromStore(
+    {
+      apps: {
+        datastore: {
+          get: async () => ({ ok: true, item: undefined }),
+          put: async () => ({ ok: true }),
+        },
+      },
+    },
+    "C-oppties",
+  );
   assertEquals(result, {
     ok: false,
-    error: MISSING_ONBOARDING_SNAPSHOT_ERROR,
+    error: TES_EVENT_CONTEXT_STORE_MISS_ERROR,
   });
-  assertEquals(
-    loadDashboardContentForButton(
-      JSON.stringify({ dashboard_canvas_id: "dash-1" }),
-      "",
-    ),
-    "",
-  );
 });
 
-Deno.test("Open onboarding from Dashboard canvas link does not error as empty dashboard when canvas ID is baked", () => {
-  const content = resolveDashboardCanvasContent({}, {});
-  assertEquals(content, "");
+Deno.test("missing snapshot fails open with repair error", async () => {
+  const result = await loadOnboardingContextFromStore(
+    {
+      apps: {
+        datastore: {
+          get: async () => ({
+            ok: true,
+            item: { channel_id: "C1", snapshot: "{not-json" },
+          }),
+          put: async () => ({ ok: true }),
+        },
+      },
+    },
+    "C1",
+  );
+  assertEquals(result.ok, false);
+  if (result.ok) return;
+  assertStringIncludes(result.error, "Re-run Create TES Event, or repair");
 });
 
 Deno.test("readCanvasMarkdown not invoked from onboarding open or submit source", () => {
@@ -206,21 +214,22 @@ Deno.test("submit updates Dashboard from snapshot", async () => {
     assertStringIncludes(edited[0], "Acme Corp");
     assertStringIncludes(
       edited[0],
-      "- [x] **[Complete onboarding](https://slack.com/shortcuts/FtONBOARD1/secret)** — fill in opportunity details",
+      "- [x] Run **Complete onboarding** — fill in opportunity details",
     );
+    assertEquals(edited[0].includes("https://slack.com/shortcuts/"), false);
     assertEquals(edited[0].includes("<!-- tes-event-context -->"), false);
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-Deno.test("first submit updates trigger snapshot and posts announcement", async () => {
+Deno.test("first submit puts store row and posts announcement", async () => {
   const snapshot = serializeEventContextSnapshot(baseContext);
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(null, { status: 200 });
 
   try {
-    const { client, updatePayloads, posted } = submitClient();
+    const { client, puts, posted } = submitClient();
     const result = await executeOnboardingSubmit(
       client,
       {
@@ -231,12 +240,10 @@ Deno.test("first submit updates trigger snapshot and posts announcement", async 
     );
 
     assertEquals(result, { ok: true });
-    assertEquals(updatePayloads.length, 1);
-    assertEquals(updatePayloads[0]?.trigger_id, "FtONBOARD1");
-    const inputs = updatePayloads[0]?.inputs as Record<string, { value: string }>;
-    const updated = JSON.parse(inputs.dashboard_canvas_content.value) as TesEventContext;
+    assertEquals(puts.length, 1);
+    assertEquals(puts[0]?.datastore, TES_EVENT_CONTEXT_DATASTORE_NAME);
+    const updated = JSON.parse(puts[0]?.item.snapshot ?? "{}") as TesEventContext;
     assertEquals(updated.onboardingComplete, true);
-    assertEquals(updated.onboardingTriggerId, "FtONBOARD1");
     assertEquals(updated.onboarding?.sailpointSuite, "Identity Security Cloud");
     assertEquals(posted.length, 1);
     assertStringIncludes(posted[0].text, "Onboarding complete");
@@ -255,7 +262,7 @@ Deno.test("Re-submit refreshes snapshot without repeating announcement", async (
   globalThis.fetch = async () => new Response(null, { status: 200 });
 
   try {
-    const { client, updatePayloads, posted, edited, lookupCalled } = submitClient();
+    const { client, puts, posted, edited, lookupCalled } = submitClient();
     const result = await executeOnboardingSubmit(
       client,
       {
@@ -267,9 +274,8 @@ Deno.test("Re-submit refreshes snapshot without repeating announcement", async (
 
     assertEquals(result, { ok: true });
     assertEquals(lookupCalled(), false);
-    assertEquals(updatePayloads.length, 1);
-    const inputs = updatePayloads[0]?.inputs as Record<string, { value: string }>;
-    const updated = JSON.parse(inputs.dashboard_canvas_content.value) as TesEventContext;
+    assertEquals(puts.length, 1);
+    const updated = JSON.parse(puts[0]?.item.snapshot ?? "{}") as TesEventContext;
     assertEquals(updated.accountName, "Renamed Account");
     assertEquals(updated.onboarding?.notes, "Edited notes");
     assertEquals(posted.length, 0);
@@ -281,7 +287,7 @@ Deno.test("Re-submit refreshes snapshot without repeating announcement", async (
 });
 
 Deno.test("executeOnboardingSubmit missing snapshot errors without canvas read", async () => {
-  const { client, lookupCalled, updatePayloads, edited } = submitClient({
+  const { client, lookupCalled, puts, edited } = submitClient({
     edit: async () => {
       throw new Error("should not write dashboard");
     },
@@ -297,14 +303,14 @@ Deno.test("executeOnboardingSubmit missing snapshot errors without canvas read",
     error: MISSING_ONBOARDING_SNAPSHOT_ERROR,
   });
   assertEquals(lookupCalled(), false);
-  assertEquals(updatePayloads.length, 0);
+  assertEquals(puts.length, 0);
   assertEquals(edited.length, 0);
 });
 
-Deno.test("Submit fails when trigger update fails", async () => {
+Deno.test("Submit fails when store write fails", async () => {
   const snapshot = serializeEventContextSnapshot(baseContext);
-  const { client, lookupCalled, updatePayloads, edited, posted } = submitClient({
-    update: async () => ({ ok: false, error: "restricted_action" }),
+  const { client, lookupCalled, puts, edited, posted } = submitClient({
+    put: async () => ({ ok: false, error: "restricted_action" }),
     edit: async () => {
       throw new Error("should not write dashboard");
     },
@@ -317,35 +323,9 @@ Deno.test("Submit fails when trigger update fails", async () => {
 
   assertEquals(result.ok, false);
   if (result.ok) return;
-  assertStringIncludes(result.error, "restricted_action");
+  assertEquals(result.error, tesEventContextStorePutError("restricted_action"));
   assertEquals(lookupCalled(), false);
-  assertEquals(updatePayloads.length, 1);
-  assertEquals(edited.length, 0);
-  assertEquals(posted.length, 0);
-});
-
-Deno.test("Submit fails when trigger id is missing", async () => {
-  const snapshot = serializeEventContextSnapshot({
-    ...baseContext,
-    onboardingTriggerId: undefined,
-  });
-  const { client, lookupCalled, updatePayloads, edited, posted } = submitClient({
-    edit: async () => {
-      throw new Error("should not write dashboard");
-    },
-  });
-  const result = await executeOnboardingSubmit(
-    client,
-    { channel_id: "C1", dashboard_canvas_content: snapshot },
-    onboardingForm,
-  );
-
-  assertEquals(result, {
-    ok: false,
-    error: MISSING_ONBOARDING_TRIGGER_ID_ERROR,
-  });
-  assertEquals(lookupCalled(), false);
-  assertEquals(updatePayloads.length, 0);
+  assertEquals(puts.length, 1);
   assertEquals(edited.length, 0);
   assertEquals(posted.length, 0);
 });

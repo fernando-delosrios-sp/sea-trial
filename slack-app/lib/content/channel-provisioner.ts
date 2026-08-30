@@ -14,7 +14,6 @@ import {
   type CanvasStep,
   type CompositionManifest,
   type CompositionStep,
-  type ListStep,
 } from "./composition-resolver.ts";
 import {
   renderDashboardCanvasForSlack,
@@ -30,12 +29,15 @@ import {
   renderPinnedIndexMessage,
 } from "./message-renderer.ts";
 import { isKindProvisionable } from "./kind-registry.ts";
-import { buildOnboardingCanvasLink } from "../onboarding-canvas-link.ts";
 import {
-  provisionWorkflowChannelAssociation,
-  withOnboardingTriggerIdentity,
-  type WorkflowTriggerClient,
-} from "../onboarding-channel-trigger.ts";
+  grantCompleteOnboardingToChannel,
+  requireCompleteOnboardingTriggerId,
+  type CompleteOnboardingGrantClient,
+} from "../complete-onboarding-grant.ts";
+import {
+  putTesEventContext,
+  type TesEventContextStoreClient,
+} from "../tes-event-context-store.ts";
 
 function resolveProvisionTeamId(
   env?: Record<string, string | undefined>,
@@ -61,13 +63,13 @@ export interface ProvisionInputs {
 
 export interface ChannelProvisionClient
   extends SlackCanvasClient, SlackListClient, CanvasAssetUploadClient,
-    WorkflowTriggerClient {
+    TesEventContextStoreClient, CompleteOnboardingGrantClient {
   chat: {
     postMessage: (params: {
       channel: string;
       text: string;
       blocks?: Record<string, unknown>[];
-    }) => Promise<{ ts?: string }>;
+    }) => Promise<{ ts?: string; ok?: boolean; error?: string }>;
   };
   pins: {
     add: (params: { channel: string; timestamp: string }) => Promise<unknown>;
@@ -75,7 +77,6 @@ export interface ChannelProvisionClient
 }
 
 function shouldProvisionStep(step: CompositionStep): boolean {
-  if (step.kind === "workflow") return true;
   if (step.kind === "canvas" || step.kind === "list") {
     return isKindProvisionable(step.kind);
   }
@@ -162,34 +163,13 @@ async function provisionListStep(
   return listId;
 }
 
-async function provisionWorkflowStep(
-  client: ChannelProvisionClient,
-  step: CompositionStep & { kind: "workflow" },
-  channelId: string,
-  context: TesEventContext,
-) {
-  if (!context.dashboardCanvasId) {
-    throw new Error(
-      `Workflow step "${step.id}" requires dashboard canvas to be provisioned first`,
-    );
-  }
-
-  return await provisionWorkflowChannelAssociation(
-    client,
-    channelId,
-    step.link,
-    context.dashboardCanvasId,
-    context,
-  );
-}
-
 async function postPinnedIndex(
   client: ChannelProvisionClient,
   channelId: string,
   context: TesEventContext,
   composition: CompositionManifest,
   env?: Record<string, string | undefined>,
-): Promise<string | undefined> {
+): Promise<string> {
   const navOptions = { teamId: resolveProvisionTeamId(env) };
   const indexMessage = await client.chat.postMessage({
     channel: channelId,
@@ -197,42 +177,27 @@ async function postPinnedIndex(
     blocks: renderPinnedIndexBlocks(context, composition, navOptions),
   });
 
-  if (indexMessage.ts) {
-    await client.pins.add({ channel: channelId, timestamp: indexMessage.ts });
+  const timestamp = indexMessage.ts?.trim();
+  if (indexMessage.ok === false || !timestamp) {
+    const detail = indexMessage.error ? `: ${indexMessage.error}` : "";
+    throw new Error(`Failed to post pinned index${detail}`);
   }
 
-  return indexMessage.ts;
+  await client.pins.add({ channel: channelId, timestamp });
+  return timestamp;
 }
 
 async function finalizeDashboardCanvas(
   client: ChannelProvisionClient,
   channelId: string,
   context: TesEventContext,
-  pinnedMessageTs?: string,
-  onboardingShortcutUrl?: string,
-  env?: Record<string, string | undefined>,
-  requireTriggerShareUrl = false,
 ): Promise<void> {
   if (!context.dashboardCanvasId) return;
 
-  if (requireTriggerShareUrl && !onboardingShortcutUrl) {
-    throw new Error(
-      "Cannot seed Dashboard onboarding link: trigger share URL is missing",
-    );
-  }
-
-  const onboardingLink = onboardingShortcutUrl ??
-    (requireTriggerShareUrl ? undefined : buildOnboardingCanvasLink(
-      channelId,
-      pinnedMessageTs,
-      env,
-    ));
   const content = await renderDashboardCanvasForSlack(
     client,
     channelId,
     context,
-    undefined,
-    onboardingLink ? { onboardingLink } : undefined,
   );
 
   await replaceCanvasContent(client, context.dashboardCanvasId, content);
@@ -270,8 +235,6 @@ export async function provisionChannel(
   };
 
   const stepIds: Record<string, string> = {};
-  let onboardingShortcutUrl: string | undefined;
-  let hadWorkflowStep = false;
 
   for (const step of composition.steps) {
     if (!shouldProvisionStep(step)) continue;
@@ -300,24 +263,12 @@ export async function provisionChannel(
         context = applyStepIds(context, stepIds);
         break;
       }
-      case "workflow": {
-        hadWorkflowStep = true;
-        const trigger = await provisionWorkflowStep(
-          client,
-          step,
-          inputs.channel_id,
-          context,
-        );
-        onboardingShortcutUrl = trigger.shareUrl;
-        context = withOnboardingTriggerIdentity(context, trigger);
-        break;
-      }
       default:
         throw new Error(`Unsupported step kind "${(step as CompositionStep).kind}"`);
     }
   }
 
-  const pinnedMessageTs = await postPinnedIndex(
+  await postPinnedIndex(
     client,
     inputs.channel_id,
     context,
@@ -329,10 +280,13 @@ export async function provisionChannel(
     client,
     inputs.channel_id,
     context,
-    pinnedMessageTs,
-    onboardingShortcutUrl,
-    inputs.env,
-    hadWorkflowStep,
+  );
+
+  await putTesEventContext(client, context);
+  await grantCompleteOnboardingToChannel(
+    client,
+    requireCompleteOnboardingTriggerId(inputs.env),
+    inputs.channel_id,
   );
 
   return context;

@@ -44,7 +44,7 @@
 - [x] 7.1 Extend `cleanup-onboarding-triggers.ts` to match `Complete Onboarding ({channelId})` and exact `Complete Onboarding`; never match `Create TES Event`
 - [x] 7.2 Repair script `put`s a store row and grants the global shortcut; creates no per-channel trigger; rename away from "workflow tab"
 - [x] 7.3 Tests for title matching and repair outputs
-- [ ] 7.4 After deploy, run cleanup and confirm the shortcut menu has `Create TES Event` plus one `Complete onboarding` (no per-channel names)
+- [x] 7.4 After deploy, run cleanup and confirm the shortcut menu has `Create TES Event` plus one `Complete onboarding` (no per-channel names)
 
 ## 8. Verification
 

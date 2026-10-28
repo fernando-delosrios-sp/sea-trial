@@ -1,6 +1,7 @@
 ---
 name: openspec-init
-description: Use when the user asks to initialize or update an OpenSpec project — schema refresh, config/rules sync, agent routing fragments, and companion skills. Triggers include "update openspec", "upgrade schema", and "refresh ferspec".
+description: Initialize or update an OpenSpec project — schema, config/rules, agent routing, companion skills.
+disable-model-invocation: true
 ---
 
 # openspec-init
@@ -10,10 +11,7 @@ description: Use when the user asks to initialize or update an OpenSpec project 
 Steps that say "stop and wait" are **_gates_**. At each gate:
 
 1. Build options from discovered candidates (schemas/, inferred domains, yes/no).
-2. Present with the first available adapter: native decision tool → `<decision_prompt>` block → minimal prose fallback.
-3. One gate per message; halt until the user responds.
-4. Mark the recommended option; use `multi_select` for domain lists.
-5. Do not print numbered option lists in chat when using a native tool or block.
+2. Present them per the **structured-choices** skill — one gate per message, recommended option first, multi-select for domain lists.
 
 Record the chosen option by `id` (schema dir name, domain slug, yes/no/skip).
 

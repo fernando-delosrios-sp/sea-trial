@@ -52,7 +52,7 @@ artifacts:
 
       **C4 diagram (conditional)** — change touches 3+ containers (apps, services, databases,
       queues, external systems):
-      - Invoke **c4-diagram** via Skill tool when present.
+      - Invoke **c4-diagram** via Skill tool when present (or read `.agents/skills/c4-diagram/SKILL.md`).
       - Write `diagrams/<change-name>.drawio` in this change directory.
       - Link from design.md §Architecture.
       - Skill absent → skip diagram; do not block design.
@@ -70,7 +70,7 @@ artifacts:
     instruction: |
       Write one delta spec per capability in proposal Capabilities using @./templates/spec.md.
 
-      Invoke **gherkin-authoring** via Skill tool when present.
+      Invoke **gherkin-authoring** via Skill tool when present (or read `.agents/skills/gherkin-authoring/SKILL.md`).
 
       **Promote Language**: terms marked `promote` in discovery.md → ADDED or MODIFIED entries
       in `specs/ubiquitous-language/spec.md` (or the project's ubiquitous-language spec).
@@ -80,6 +80,9 @@ artifacts:
 
       MODIFIED: copy the full requirement block from `openspec/specs/<capability>/spec.md`, edit,
       paste under `## MODIFIED Requirements`. Partial diffs fail at archive.
+
+      One scenario per behavior — when a decision changes later, rewrite the affected scenario
+      title and steps together rather than adding a parallel scenario beside it.
 
       Done when every proposal capability has a delta spec and every requirement has ≥1 scenario.
     requires:
@@ -109,70 +112,32 @@ apply:
   requires: [tasks]
   tracks: tasks.md
   instruction: |
-    Invoke **apply-code-changes** via Skill tool when present (OpenSpec adapter — default
-    for `/opsx:apply`; skill also supports Direct adapter for explicit task folders).
+    Invoke **apply-code-changes** via Skill tool when present (OpenSpec adapter for `/opsx:apply`;
+    Direct adapter for explicit task folders). Venue, bind, and handoff live in the skill only.
 
-    Pre-flight: resolve paths from CLI — never assume repo-local `openspec/changes/<name>/`. A
-    hint-derived `--store` is only a probe; an explicit store overrides feature-branch tracking.
-    When no hint is available before the first status call, load tracking from that resolved root
-    and re-run the CLI once if it names a store. A store in an otherwise unreachable tree requires
-    an explicit `--store` or OpenSpec declared/default store. Run
-    `openspec status --change "<name>" --json` and `openspec instructions apply --change "<name>" --json`
-    (append `--store` when applicable) for `changeRoot`, `planningHome`, `artifactPaths`, and
-    `contextFiles`. Adapter output is planning-only; after apply-code-changes **bind** (step 2),
-    all artifact reads and edits use `ACTIVE_CHANGE_ROOT = WORK_CHECKOUT + CHANGE_ROOT_REL` on the
-    bound checkout — see skill workspace matrix. Never edit artifacts via pre-bind `changeRoot` after bind.
+    Pre-flight: run `openspec status --change "<name>" --json` and
+    `openspec instructions apply --change "<name>" --json` (append `--store` when set) for paths
+    and `operationGuidance`. After bind, artifact I/O uses `ACTIVE_CHANGE_ROOT` on the bound checkout.
 
-    **Fallback** (skill absent): resolve paths as above; read tasks.md, specs, design from bound
-    checkout when resuming on the feature branch; execute tasks in order; invoke **tdd** when present;
-    delegate commits to **git-commit**; run **changelog-generator** for the Changelog group.
+    **Fallback** (skill absent): execute tasks in order; invoke **tdd** when present; delegate
+    commits to **git-commit**; run **changelog-generator** for the Changelog group.
 
-    **Completion gate** (blocking — all must pass):
-    1. All tasks.md checkboxes `[x]`
-    2. Canonical test command exit 0
-    3. Every `#### Scenario:` in delta specs → named automated test
-    4. `openspec validate --all --json` (from `planningHome.root`, with `--store` when set) — all `"valid": true`
-    5. design.md decisions reflected in specs — material drift = FAIL
-    6. Changelog task complete (generated during apply, not archive)
+    **Delta spec reconciliation** (apply owns this): when shipped behavior diverges from a
+    scenario — a design fork re-resolved mid-apply — edit this change's `specs/**` as the
+    divergence happens. Rewrite the steps and rename the title together; delete scenarios the
+    new design supersedes instead of leaving them beside their replacements; keep
+    `specs/ubiquitous-language/spec.md` entries matching shipped behavior. Superseded titles
+    over rewritten bodies fail verify.
 
-    **Branch resolution** (both modes): when FEATURE_BRANCH exists only on origin (not locally —
-    e.g. CI resume or fresh clone), check it out as a local tracking branch; never recreate it from
-    ORIGINAL_BRANCH, which would discard remote commits. Only create fresh from ORIGINAL_BRANCH when
-    the branch exists nowhere. **Exception — worktree + single:** resolve the branch as a ref only
-    (`git branch`/`git branch --track`, no checkout) in both cases above; checking it out on main
-    would block bind's worktree creation, which needs ORIGINAL_BRANCH still active there.
+    **Verify** (blocking last gate before handoff): run `/opsx:verify` on the verification ref
+    until CRITICAL, WARNING, and SUGGESTION are all empty. Fix every issue autonomously; repeat
+    after each fix. Findings that recommend a later phase ("before archive") are still apply's
+    when the fix lives inside the change directory. End with a **confirmation scorecard** pass
+    (scorecard-only — no new hunting).
+    Worktree: squash `apply-<name>` → `ORIGINAL_BRANCH` on main repo before verify.
 
-    **Interactive**: dialog (workspace: local | worktree × parallelism: single | subagent per
-    task group) — record both in TRACKING Presets and current-run preset overrides before bind;
-    complete worktree PRECHECK and explicit-store preset-override lock (setup steps 4–5) before
-    bind, not just the workspace/parallelism dialog; preserve those choices through the
-    feature-branch field-level merge → execute (incl. Changelog group) → gate → STOP.
-    Worktree + single: worktree on FEATURE_BRANCH; main stays on ORIGINAL_BRANCH; remove worktree
-    after gate report (no PR). Worktree + subagent-per-group: main on FEATURE_BRANCH for
-    orchestrator merges and artifact edits; one worktree per group on group branches. Local: main
-    on FEATURE_BRANCH. Subagent-per-group: sequential dispatch — never concurrent subagents on
-    shared git state.
+    **Never in apply**: archive, spec sync (delta → canonical `openspec/specs/`), archive commit,
+    `/opsx:archive`. Editing this change's own delta specs is not spec sync.
 
-    **Autonomous**: change adapter (step 0) — use an explicit/preloaded store when present, otherwise
-    re-probe once from the first resolved tracking.md;
-    always prepare a complete TRACKING baseline (`workspace: local` and `parallelism: single`),
-    then overlay non-empty hint values and set Change to the current adapter path — except Branch,
-    Issue, PR, and Presets keys, which only overlay when the hint's own Change matches the current
-    adapter path (otherwise a stale hint could name an unrelated branch, link the wrong tracker entry,
-    attach a previous change's pull request, or force unchecked worktree presets); hint Issue selects
-    autonomous mode only on a trusted hint (Change
-    matches the current adapter path); snapshot TRACKING_SETUP after setup; find the feature branch's
-    tracking.md by change name (not the current, possibly wrong-store, relative path) before
-    pre-bind merge; when a hint-derived store is unconfirmed, skip the field merge and re-resolve
-    store adoption first — restore TRACKING_SETUP before the restart — since an old-store root
-    naturally mismatches a correct-store Change; run the field merge only after Change aligns (or
-    STOP once store re-resolution has run for explicit store); add workspace and parallelism to the
-    current-run preset overrides so the setup-time (PRECHECK'd) workspace choice survives the merge —
-    bind must wait for this preset-override + PRECHECK step, never proceed on the bare step-1 baseline;
-    bind ACTIVE_CHANGE_ROOT per workspace matrix; PR via gh with --base ORIGINAL_BRANCH + issue link
-    → STOP.
-
-    **Never in apply**: archive, spec sync, archive commit, `/opsx-archive`.
-
-    Done when the gate passes and mode handoff completes (interactive: clean branch;
-    autonomous: PR open + issue linked).
+    Done when verify tiers are empty, delta specs match shipped behavior, and venue handoff
+    completes.

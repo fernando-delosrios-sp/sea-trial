@@ -38,7 +38,7 @@ Optional under the change folder:
 
 Match `/opsx-apply`: paths from CLI, not repo guesses.
 
-1. Resolve a source value from `/opsx:apply`, session context, or a **preloaded** `TRACKING_HINT` → Change. Set `NAME` to that value's canonical filesystem **basename** (strip trailing separators first); STOP if it is empty, `.` or `..`. `Change` is a full `CHANGE_ROOT` path, never a branch or worktree-name input.
+1. Resolve a source value from `/opsx:apply`, session context, or a **preloaded** `TRACKING_HINT` → Change. Set `NAME` to that value's canonical filesystem **basename** (strip trailing separators first); STOP if it is empty, `.` or `..`. `Change` is `CHANGE_ROOT_REL` (repo-relative); a legacy absolute `CHANGE_ROOT` is accepted when reading. Never a branch or worktree-name input.
 2. Resolve `--store` from user input or command hints first, else a **preloaded** `TRACKING_HINT` Presets → `store`. Set `STORE_SOURCE` to `explicit` for user/command input, otherwise `hint`; a hint-derived store is a probe only, not a merge override. When no preloaded hint exists, leave `STORE` unset for the first probe.
 3. Run `openspec status --change "<name>" --json` (append `--store` when set). Read `planningHome`, `changeRoot`, `artifactPaths`, `actionContext`.
 4. Run `openspec instructions apply --change "<name>" --json` (append `--store`). Read `contextFiles`.
@@ -52,7 +52,7 @@ Match `/opsx-apply`: paths from CLI, not repo guesses.
 
 **Gate validator:** `openspec validate --all --json` from `PLANNING_HOME` with `--store` when set (step 5 row 4).
 
-**Verify-fix:** invoke **openspec-verify-change** or `/opsx:verify` on the verification ref until ✅ PASS (step 6). Structural validate alone is insufficient.
+**Verify:** run `/opsx:verify` on the verification ref until CRITICAL, WARNING, and SUGGESTION are all empty (step 5). Structural validate alone is insufficient.
 
 **Never:** hardcode `openspec/changes/<name>/`; create on-disk `tracking.md`.
 

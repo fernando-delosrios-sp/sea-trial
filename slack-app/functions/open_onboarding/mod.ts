@@ -1,17 +1,17 @@
 /**
- * Opens and submits onboarding from the TES Event Context Store using the
+ * Opens the onboarding modal from the TES Event Context Store using the
  * shortcut channel in view. Does not read Dashboard canvas markdown.
+ *
+ * Submitting only hands the captured form to the next workflow step: Slack
+ * allows 3s to answer a view_submission, and the store write plus canvas
+ * render take longer than that.
  */
 import { DefineFunction, Schema, SlackFunction } from "@slack/deno-slack-sdk/mod.ts";
 import {
   buildOnboardingModalView,
   resolveAccountPrefill,
 } from "../../lib/onboarding-modal.ts";
-import {
-  executeOnboardingSubmit,
-  parseOnboardingForm,
-  type SlackOnboardingSubmitClient,
-} from "../../lib/onboarding-view-submit.ts";
+import { parseOnboardingForm } from "../../lib/onboarding-view-submit.ts";
 import { serializeEventContextSnapshot } from "../../lib/event-context.ts";
 import {
   getTesEventContext,
@@ -30,7 +30,14 @@ export const OpenOnboardingFunction = DefineFunction({
     },
     required: ["interactivity", "channel_id"],
   },
-  output_parameters: { properties: {}, required: [] },
+  output_parameters: {
+    properties: {
+      channel_id: { type: Schema.slack.types.channel_id },
+      snapshot: { type: Schema.types.string },
+      form_json: { type: Schema.types.string },
+    },
+    required: ["channel_id", "snapshot", "form_json"],
+  },
 });
 
 export async function loadOnboardingContextFromStore(
@@ -51,6 +58,84 @@ export async function loadOnboardingContextFromStore(
   }
 }
 
+/** Input block the modal shows submit failures under. */
+export const ONBOARDING_SUBMIT_ERROR_BLOCK_ID = "account_name";
+
+export interface OnboardingSubmitView {
+  private_metadata?: string;
+  state: { values: Record<string, Record<string, unknown>> };
+}
+
+export interface OnboardingCompletionClient {
+  functions: {
+    completeSuccess: (params: {
+      function_execution_id: string;
+      outputs: Record<string, unknown>;
+    }) => Promise<unknown>;
+  };
+}
+
+function parseOnboardingViewMetadata(
+  privateMetadata: string | undefined,
+): { channel_id: string; dashboard_canvas_content: string } | undefined {
+  if (!privateMetadata) return undefined;
+  try {
+    const parsed = JSON.parse(privateMetadata) as {
+      channel_id?: string;
+      dashboard_canvas_content?: string;
+    };
+    if (!parsed.channel_id) return undefined;
+    return {
+      channel_id: parsed.channel_id,
+      dashboard_canvas_content: parsed.dashboard_canvas_content ?? "",
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function submitFailure(message: string): Record<string, unknown> {
+  return {
+    response_action: "errors",
+    errors: { [ONBOARDING_SUBMIT_ERROR_BLOCK_ID]: message },
+  };
+}
+
+/**
+ * Completes the open step with the captured form so the modal closes well
+ * inside Slack's 3s view_submission budget. The Apply Onboarding step does the
+ * store write, canvas render, and announcement.
+ */
+export async function submitOnboardingView(
+  client: OnboardingCompletionClient,
+  view: OnboardingSubmitView,
+  functionExecutionId: string | undefined,
+): Promise<Record<string, unknown>> {
+  const metadata = parseOnboardingViewMetadata(view.private_metadata);
+  if (!metadata) {
+    return submitFailure(
+      "Missing onboarding metadata. Close this modal and run Complete onboarding again.",
+    );
+  }
+
+  if (!functionExecutionId) {
+    return submitFailure(
+      "Slack did not supply a function execution id for this submission. Close this modal and run Complete onboarding again.",
+    );
+  }
+
+  await client.functions.completeSuccess({
+    function_execution_id: functionExecutionId,
+    outputs: {
+      channel_id: metadata.channel_id,
+      snapshot: metadata.dashboard_canvas_content,
+      form_json: JSON.stringify(parseOnboardingForm(view.state.values)),
+    },
+  });
+
+  return {};
+}
+
 export default SlackFunction(
   OpenOnboardingFunction,
   async ({ inputs, client }) => {
@@ -64,43 +149,44 @@ export default SlackFunction(
     const dashboardCanvasContent = required.snapshot;
     const accountName = resolveAccountPrefill(dashboardCanvasContent);
 
-    await client.views.open({
+    const opened = await client.views.open({
       interactivity_pointer: inputs.interactivity.interactivity_pointer,
       view: buildOnboardingModalView({
         channelId: inputs.channel_id,
         dashboardCanvasContent,
         accountName,
       }),
-    });
+    }) as { ok?: boolean; error?: string };
+
+    if (!opened?.ok) {
+      return {
+        error:
+          `Could not open the onboarding modal (${opened?.error ?? "unknown"}).`,
+      };
+    }
 
     return { completed: false };
   },
 ).addViewSubmissionHandler(
   "submit_onboarding",
-  async ({ view, client }) => {
-    if (!view.private_metadata) {
-      return { error: "Missing onboarding metadata." };
+  async ({ view, body, client }) => {
+    const startedAt = Date.now();
+    try {
+      const response = await submitOnboardingView(
+        client as unknown as OnboardingCompletionClient,
+        view as unknown as OnboardingSubmitView,
+        body?.function_data?.execution_id,
+      );
+      console.log(
+        `[submit_onboarding] completed in ${Date.now() - startedAt}ms`,
+      );
+      return response;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      console.log(
+        `[submit_onboarding] failed after ${Date.now() - startedAt}ms: ${detail}`,
+      );
+      return submitFailure(`Onboarding submit failed: ${detail}`);
     }
-
-    const metadata = JSON.parse(view.private_metadata) as {
-      channel_id: string;
-      dashboard_canvas_id?: string;
-      dashboard_canvas_content?: string;
-    };
-
-    const result = await executeOnboardingSubmit(
-      client as unknown as SlackOnboardingSubmitClient,
-      {
-        channel_id: metadata.channel_id,
-        dashboard_canvas_content: metadata.dashboard_canvas_content ?? "",
-      },
-      parseOnboardingForm(view.state.values),
-    );
-
-    if (!result.ok) {
-      return { error: result.error };
-    }
-
-    return { completed: true };
   },
 );

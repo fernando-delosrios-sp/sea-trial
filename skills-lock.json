@@ -5,73 +5,73 @@
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/apply-code-changes/SKILL.md",
-      "computedHash": "a1aad612ef0fad337d7f12dd06849e50d0a85dfbef1d43ec5dba9d75b8047503"
+      "computedHash": "7384a51b8e53fe654478dde26754f1ad0ed5e326fe9766393c965c305ddad953"
     },
     "architecture-decision-records": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/architecture-decision-records/SKILL.md",
-      "computedHash": "868f5cb607295e50b6d537eb0314c43757ec21907cde5613cdf238f5d3459fc6"
+      "computedHash": "c6c27fd5e60300f4ad1731c37bd31671846de0bc3e14dccb8faedf987e583b1d"
     },
     "c4-diagram": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/c4-diagram/SKILL.md",
-      "computedHash": "0d2e0644b64d203d9941bba6b5b4ab886607fac2e2c8e8e91cc75e8345c55cf9"
+      "computedHash": "6f4a8af7c5cdf249f49f3954542254949b6b1f741438f4324e635ec6b67e2d7a"
     },
     "changelog-generator": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/changelog-generator/SKILL.md",
-      "computedHash": "e3cf9fecf18c726ad534ae23f4b5659052e6a20dd0147e6d70f8e580de9aba41"
+      "computedHash": "38cc7315e028e7e0cb21e09ee32a950882c7bfc335755450d2e5d408b0dcd884"
     },
     "code-review": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/code-review/SKILL.md",
-      "computedHash": "817842932bff4eb17a0c5f0031c22e0e0b6dc7b655fc3063828de27f4a07243a"
+      "computedHash": "a217628e57a6ddb6896fdf27bd5108e7e57ca9499c22604d818e49e708366fcd"
     },
     "code-simplification": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/code-simplification/SKILL.md",
-      "computedHash": "85bcb6db1b118e900884520632a31d5cc099489089fc03cf0897bae5bed6de5b"
+      "computedHash": "5efdc18bb9524f455dc2e6b6e0a6b9762b9b2b894ea176d49358ae9de12765ca"
     },
     "codebase-design": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/codebase-design/SKILL.md",
-      "computedHash": "0e3e45ea123f7151305dcad50e2cebb5569c910cc989fffab0832d591fcdd01f"
+      "computedHash": "3f7166798446764dbb47b454f26f7e4d345e1242d6fb03a24178f10c2d92974e"
     },
     "deploy-mate": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/deploy-mate/SKILL.md",
-      "computedHash": "9f43022585adb78b3cd17277d4177952a3aeb33a3e69248e35ed653a2f5ecfc6"
+      "computedHash": "984b171fd17e61100e684b851386cc0c58025e74626f057f079a53fa75c91d30"
     },
     "diagnosing-bugs": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/diagnosing-bugs/SKILL.md",
-      "computedHash": "48759936ebc8c9d77c3f317a6eaea8074597917556ba5f85988a3456263579bb"
+      "computedHash": "ff9386c1ed49c6349397a4bc1ad3f1fbe873291fa53be1065125f2bd5456a73d"
     },
     "domain-modeling": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/domain-modeling/SKILL.md",
-      "computedHash": "ecb23a236497618864e283ef3ca8257b1f6bab9bd15d1fc1d966de1c0ab4bdfd"
+      "computedHash": "33c368622524f8a2d42c736dbc3a787b22b916088100d6bca2b827335d4a9d8f"
     },
     "gherkin-authoring": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/gherkin-authoring/SKILL.md",
-      "computedHash": "f908f0665764ec6f9d3133b27eca41bccbbfb081d34d48a275195b142efdf4e9"
+      "computedHash": "e28e9f963b7e44290c737a651469a130c4ed6733ba07a62ed89a4555dfe026a4"
     },
     "git-commit": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/git-commit/SKILL.md",
-      "computedHash": "2e3d757693013afd1a9bf8ec2ad7c7a1f174590cf36b469525a69879bb46a502"
+      "computedHash": "71f3d2a300823034f1b6baaab39dc64368d7e96c413d69c6a8b837d2a2d952d0"
     },
     "grill-me": {
       "source": "fernando-delosrios-sp/skills",
@@ -83,85 +83,85 @@
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/grill-with-docs/SKILL.md",
-      "computedHash": "c2940724720fd91cba624bf8e301931bc8ad976030ff9b954476a3c336bc1d80"
+      "computedHash": "8ef8d83562c6e7ffe34a7ada4834118a6359beb91258c244d8a4c9a908c649c8"
     },
     "grilling": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/grilling/SKILL.md",
-      "computedHash": "d85f1bd3ca55c5a25802e50f47b5ba50d9d8060103ca92987ddd75d67b1aad05"
+      "computedHash": "b1b6ef414bf6ea61e46e450ac8e651ac7416a0d0f8f02b47563a535576ce72b5"
     },
     "handoff": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/handoff/SKILL.md",
-      "computedHash": "8ec3b7d76f413e8ef507b6e1131c754c6be9c903c4c7e510755f3d7a95f02e09"
+      "computedHash": "d7960f7cdd010f56d7c6402375d55439322cd6d789e11f86ab90476c6c42e0ee"
     },
     "improve": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/improve/SKILL.md",
-      "computedHash": "c518ee6c7eb4b84ff8275054c558607e9f44b2346c0fcfa4d841284b59bcfee7"
+      "computedHash": "960b8ed0807b85d10a37d6082a1cb66c6da7480fc9dadbaf06e10f56c3dda592"
     },
     "improve-codebase-architecture": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
-      "computedHash": "4e53a32a3ece633c90ddf019950bc7915e9e84c9cabf7d5ccf762015c0fe5ca3"
+      "computedHash": "f84873899dea410b59809836c656d63347878777e0766902998a701868ad149b"
     },
     "openspec-init": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/openspec-init/SKILL.md",
-      "computedHash": "4d7b542a9e847ea8803d5307f2885320648bb1c64c0319d5c8f3d9f4d8976ab0"
+      "computedHash": "ac29d2916b2c28c730f001feb098a7d1b34705727693a68b9de3a304377b5b14"
     },
     "risen-prompt": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/risen-prompt/SKILL.md",
-      "computedHash": "6d891756e824881e6b0bb908b740004ebd09cba993f034a29d92f53822187dbe"
+      "computedHash": "a2a7bfa6259b970c6cf1f5fc8a8293fb0bdd32e94453e8122fe2a2200030c1b3"
     },
     "search": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/search/SKILL.md",
-      "computedHash": "1f938c565e15baa94d6c3d3633d2d22c852698b1f9d63198941201f7b041904a"
+      "computedHash": "58e977fd68d5f9ec7cc67d82910ca8ecd66db65c5178b3e9e8346ffceac12a95"
     },
     "setup-matt-pocock-skills": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/setup-matt-pocock-skills/SKILL.md",
-      "computedHash": "2192405ff8dbce2133ac7a1670b8bd2af9ddc79d28ca893c8d802315e8593bff"
+      "computedHash": "85321503af121597387916d83660842d1927c9260e00248306a678948f93cc16"
     },
     "structured-choices": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/structured-choices/SKILL.md",
-      "computedHash": "9b530be9970555c13c72ca5c97cb3a17a4eebce014eefdc0cda7ff7c7ac6337b"
+      "computedHash": "0a2dbc7bba8edec968f62132b5557a01bfe7ad84c1d6090b95bb836d647fa46a"
     },
     "tdd": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/tdd/SKILL.md",
-      "computedHash": "715e9fba202260426e33c5aa1a522eb0294e20ad43d774f4b6349d56b6367387"
+      "computedHash": "fb4946e4555451d4df2b6d911233f53d7a112d15b261f62107e85431455eeff2"
     },
     "to-questionnaire": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/to-questionnaire/SKILL.md",
-      "computedHash": "28269976d2c428b08f448c12ae068c63118e300fc0367a86a580e2399e31172a"
+      "computedHash": "98bb28c87e5de03e43db1b5d3a6e8ad5c4261bd257666db1481797fb172b1ecf"
     },
     "writing-for-agents": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/writing-for-agents/SKILL.md",
-      "computedHash": "00439a2604d92a0210818ac51246a5b991aea817c29bb21dcc6b29dbec4d08ec"
+      "computedHash": "1897da820d787fc06b57d759df168c4dfb4ff9720c9eb8e23167435323cbe10a"
     },
     "zoom-out": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/zoom-out/SKILL.md",
-      "computedHash": "85d1e5849601c93de95f24aa60dcb9d3a75c9132e885a2d640f31031bf7ed6cf"
+      "computedHash": "9f47939ab1b8c7b7b52d67637737045b37c61168ff2eb7abba29bd31bb14bd4b"
     }
   }
 }

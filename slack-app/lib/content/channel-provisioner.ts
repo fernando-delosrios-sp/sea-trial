@@ -14,6 +14,7 @@ import {
   type CanvasStep,
   type CompositionManifest,
   type CompositionStep,
+  type ListStep,
 } from "./composition-resolver.ts";
 import {
   renderDashboardCanvasForSlack,

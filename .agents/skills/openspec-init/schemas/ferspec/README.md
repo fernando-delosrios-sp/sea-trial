@@ -72,42 +72,53 @@ See [templates/adopters/AGENTS.md.fragment.md](./templates/adopters/AGENTS.md.fr
 
 **Requires:** tasks · **Tracks:** tasks.md
 
-Invoke **apply-code-changes** when installed; schema carries a minimal fallback. The skill uses the **OpenSpec adapter** by default; **Direct adapter** applies any folder with `tasks.md` (no OpenSpec required).
+Invoke **apply-code-changes** when installed; schema carries a minimal fallback.
 
-### Completion gate (blocking)
+### Delta spec reconciliation (apply owns it)
 
-1. All tasks.md checkboxes `[x]`
-2. Canonical test command exit 0
-3. Every Gherkin scenario in delta specs → named automated test
-4. `openspec validate --all --json` (from `planningHome.root`, with `--store` when set) — all valid
-5. Design decisions reflected in specs (material drift = FAIL)
-6. Changelog task complete (during apply, not archive)
+Apply edits this change's `specs/**` whenever shipped behavior diverges from the scenario that drove it: rewrite title and steps together, delete superseded scenarios instead of parking them beside their replacements, and keep promoted ubiquitous-language entries matching shipped behavior. Merging deltas into canonical `openspec/specs/**` is spec sync and still waits for archive.
 
-### Interactive
+### Verify (blocking last gate)
 
-```text
-dialog (workspace × parallelism) → execute (incl. Changelog) → gate → STOP
-```
+Run `/opsx:verify` on the verification ref until **CRITICAL**, **WARNING**, and **SUGGESTION** are all empty. Fix every issue autonomously; end with a confirmation scorecard pass (scorecard-only — no new hunting).
 
-Commits on branch; no PR unless the user asks.
+A finding that recommends a later phase ("before archive, rename or drop those leftover titles") is still apply's to fix when the fix lives inside the change directory.
 
-### Autonomous
+**Worktree:** squash `apply-<name>` → `ORIGINAL_BRANCH` on main repo before verify.
+
+`operations.apply.guidance` in `openspec/config.yaml` surfaces via `openspec instructions apply --json` — "all tasks complete" is not handoff.
+
+### Apply flow
 
 ```text
-tracking.md → execute (incl. Changelog) → gate → PR + issue link → STOP
+venue gate → bind → execute (incl. Changelog) → [worktree merge] → verify → handoff
 ```
 
-PR is the handoff mechanism. Archive is **never** part of apply.
+Venue and handoff detail live in **apply-code-changes** only. Archive is **never** part of apply.
 
 ### Archive (manual)
 
-After PR merge or when interactive work is ready:
+After PR merge or when interactive work is ready. User runs `/opsx:archive` themselves — **never** part of apply.
+
+`/opsx:archive` MUST run the full sequence — sync, move, **commit**, gate. Archive is incomplete until the post-commit gate passes (including when re-running on a change already moved under `archive/` with uncommitted spec sync on disk).
 
 ```text
-sync → archive change → commit archive output
+sync → archive move → commit archive output → post-commit gate
 ```
 
-User runs `/opsx:archive` themselves.
+Load advisory steps first:
+
+```bash
+openspec instructions archive --change "<name>" --json
+```
+
+| Sub-step | Action |
+|---|---|
+| **A** | Built-in `/opsx:archive` steps 1–5: artifact/task checks, delta spec sync assessment, sync if chosen, move to `openspec/changes/archive/YYYY-MM-DD-<name>/` |
+| **B** | **Commit archive output** (required — CLI does NOT commit): `git status --porcelain` → if non-empty, stage `openspec/specs/` + `openspec/changes/` (+ any sync paths) → invoke **git-commit** via Skill tool, or conventional commit manually if skill absent (e.g. `docs(openspec): archive <change-name> and sync specs`) |
+| **C** | **Post-commit gate** (blocking): `git status --porcelain` empty; when change is under `archive/`, confirm latest commit includes synced specs and archive folder: `git log -1 --name-only -- openspec/specs/ openspec/changes/archive/` |
+
+> Skipping **B** because `git-commit` is missing is a schema violation — use the manual fallback instead.
 
 ---
 
@@ -119,10 +130,11 @@ User runs `/opsx:archive` themselves.
 | Design | c4-diagram | Optional; 3+ containers |
 | Specs | gherkin-authoring | Gherkin delta specs |
 | Apply | apply-code-changes | **Required for full apply UX**; schema has fallback |
+| Verify | `/opsx:verify` | Blocking last gate inside apply before handoff |
 | TDD | tdd | Optional invoke; gate requires tests green |
-| Commits | git-commit | Spec drift warn + user ack |
+| Commits | git-commit | Apply + archive commit (archive manual fallback if absent) |
 | Changelog | changelog-generator | During apply |
-| PR (autonomous) | gh / issue-tracker doc | Via apply-code-changes |
+| PR (remote venue) | gh / issue-tracker doc | Via apply-code-changes |
 
 ---
 
@@ -134,7 +146,8 @@ User runs `/opsx:archive` themselves.
 | One-shot planning | `/opsx:ff <name> --schema ferspec` |
 | Continue planning | `/opsx:continue <name>` |
 | Implement | `/opsx:apply <name>` |
-| Archive (manual) | `/opsx:archive <name>` |
+| Re-run verify after interruption | `/opsx:verify <name>` (non-empty tiers → return to apply) |
+| Archive (manual — sync + move + commit) | `/opsx:archive <name>` |
 | Validate | `openspec validate --all --json` (cwd `planningHome.root`; append `--store` when set) |
 
 ---
@@ -146,7 +159,7 @@ User runs `/opsx:archive` themselves.
 | Schema major | `schema.yaml: version: 1` | Graph contract — breaking changes bump this |
 | Bundle release | [VERSION](./VERSION) | SemVer of this bundle |
 
-Current bundle: **1.0.0**
+Current bundle: **1.3.0**
 
 ---
 

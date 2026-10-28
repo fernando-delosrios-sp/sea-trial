@@ -8,6 +8,8 @@
 - When a topic could go deep, **offer to develop it further** — do not unprompted long dissertations or essay-length replies.
 - When you need input, **ask one question at a time** and wait for the answer before the next.
 
+<!-- User gates: structured-choices Install owns AGENTS.md / CLAUDE.md User gates (### under Agent skills, or ## standalone). Run install after setup-matt-pocock-skills. -->
+
 ## Workflow routing (read on session start)
 
 This repo uses the **ferspec** OpenSpec schema. Artifact instructions inject at each `/opsx:*` step; skills carry execution detail.
@@ -48,3 +50,6 @@ When all 5 hold → proactively suggest "ready to `/opsx:propose`?" — wait for
 - Promoting to opsx with unresolved blocking TBDs
 - Opening a change for bug fix / typo
 - Running archive or spec sync inside apply — user runs `/opsx:archive` after merge or when ready
+- Reporting apply complete while `/opsx:verify` still has CRITICAL, WARNING, or SUGGESTION issues — return to apply
+- Leaving superseded scenario titles or duplicate scenarios in a change's delta specs — apply reconciles them before verify; archive only syncs deltas into `openspec/specs/`
+- Reporting archive complete without committing synced specs and the moved change folder — archive requires commit + post-commit gate (see ferspec README § Archive)

@@ -30,7 +30,7 @@ Block update when `openspec --version` is below the minimum above.
 | Path | Action | Gate |
 |---|---|---|
 | `openspec/schemas/ferspec/` | Full replace from bundled copy | Diff + ack before overwrite |
-| `openspec/config.yaml` | Refresh rules; preserve `context:` and custom rules | Diff + ack |
+| `openspec/config.yaml` | Refresh rules, `operations.archive`, and `operations.apply`; preserve `context:` and custom rules | Diff + ack |
 | `AGENTS.md` / `CLAUDE.md` (project root) | Section diff/replace or append from `templates/adopters/AGENTS.md.fragment.md` | Diff + ack; never whole-file replace |
 | Companion skills | Full `INSTALL.md` Skills list (idempotent) | Gate once before commands |
 | `openspec/specs/**` | Never modify existing content | — |
@@ -56,6 +56,8 @@ Fragment: `openspec/schemas/ferspec/templates/adopters/AGENTS.md.fragment.md`
 ### Graph version unchanged (bundle VERSION patch/minor)
 
 Prose and template updates only. In-flight changes under `openspec/changes/` remain valid. Re-running `/opsx:continue` or `/opsx:apply` on existing artifacts uses new template wording on next overwrite of that artifact.
+
+**1.2.0 → 1.3.0:** Apply now owns delta spec reconciliation and its verify PRECHECK adds a delta-spec self-consistency row. In-flight changes stay valid; the next `/opsx:apply` run may report leftover scenario titles that earlier runs deferred — fix them in apply. Refresh `operations.apply.guidance` in `openspec/config.yaml` so the two reconciliation lines surface via `openspec instructions apply --json`.
 
 ### Graph version bump (future)
 

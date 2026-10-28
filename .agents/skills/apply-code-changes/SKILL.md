@@ -1,17 +1,17 @@
 ---
 name: apply-code-changes
-description: Execute a planned change from tasks.md through verify-aligned gate, verify-fix loop, and handoff — OpenSpec ferspec apply via /opsx:apply, or any folder with tasks.md (Direct adapter). TDD, commits, changelog; venue gate (local, worktree, remote).
+description: Apply tasks.md through verify last gate and handoff.
 ---
 
 # Apply Code Changes
 
-Orchestrate **apply**: execute `tasks.md` in order (Changelog group last), run the **verify-aligned** gate and **verify-fix** loop, then hand off per **venue**.
+Orchestrate **apply**: execute `tasks.md` in order (Changelog group last), run the **verify** last gate, then hand off per **venue**.
 
-**Core** = steps 0–7. **Change adapter** = pre-flight path resolution — [change-adapters.md](references/change-adapters.md).
+**Core** = steps 0–6. **Change adapter** = pre-flight path resolution — [change-adapters.md](references/change-adapters.md).
 
-**Verification ref** — branch where gate and verify-fix run: `ORIGINAL_BRANCH` (local/worktree); `FEATURE_BRANCH` (remote).
+**Verification ref** — branch where verify runs: `ORIGINAL_BRANCH` (local/worktree); `FEATURE_BRANCH` (remote).
 
-**Never in apply:** archive, spec sync, archive commit, `/opsx:archive`.
+**Never in apply:** archive, spec sync (merging deltas into `openspec/specs/**`), archive commit, `/opsx:archive`. The change's own `specs/**` deltas **are** apply-editable — see step 3.
 
 ## Invariant
 
@@ -37,7 +37,7 @@ Orchestrate **apply**: execute `tasks.md` in order (Changelog group last), run t
 
 ## Venue matrix (single source of truth)
 
-After bind, follow the row for `venue` × `parallelism`. Step 2 implements bind; step 5 implements handoff — do not contradict this table elsewhere.
+After bind, follow the row for `venue` × `parallelism`. Step 2 implements bind; step 6 implements handoff — do not contradict this table elsewhere.
 
 | Venue | Parallelism | Main repo branch | `WORK_CHECKOUT` | Work ref | Handoff |
 |---|---|---|---|---|---|
@@ -56,13 +56,13 @@ After bind, paths are under `ACTIVE_CHANGE_ROOT`. Prefer OpenSpec `artifactPaths
 | Priority | Source | Purpose |
 |---|---|---|
 | HIGH | `tasks.md` | Checkbox progress |
-| HIGH | `specs/**/*.md` | Scenario → test coverage gate |
+| HIGH | `specs/**/*.md` | Scenario → test coverage gate; reconciled in place when shipped behavior diverges (step 3) |
 | HIGH | `design.md` | Design/spec coherence gate |
 | MED | `proposal.md` | Changelog scope |
 | MED | `TRACKING` / `tracking.md` | Issue/PR linkage + resume Presets |
 | LOW | `docs/agents/issue-tracker.md` | Issue workflow when present |
 
-**Trusted hint:** `TRACKING_HINT` loaded and its Change equals `CHANGE_ROOT`. Branch, Issue, PR, and Presets from an untrusted hint are ignored for merge overlay.
+**Trusted hint:** `TRACKING_HINT` loaded and its Change equals `CHANGE_ROOT_REL` (legacy: equals `CHANGE_ROOT`). Branch, Issue, PR, and Presets from an untrusted hint are ignored for merge overlay.
 
 ## Steps
 
@@ -76,7 +76,7 @@ After bind, paths are under `ACTIVE_CHANGE_ROOT`. Prefer OpenSpec `artifactPaths
 
 **Interactive host** — **structured-choices** venue gate (one message; **must run** — a trusted Issue or filled Presets does not skip it):
 
-1. Initialize **`TRACKING`**: copy non-empty `TRACKING_HINT` fields **field-by-field**, **except Branch, Issue, PR, and Presets keys** — copy those only on a **trusted hint**; set **Change** = full `CHANGE_ROOT`. Initialize empty **`PRESET_OVERRIDES`**. **Do not write to disk.**
+1. Initialize **`TRACKING`**: copy non-empty `TRACKING_HINT` fields **field-by-field**, **except Branch, Issue, PR, and Presets keys** — copy those only on a **trusted hint**; set **Change** = `CHANGE_ROOT_REL`. Initialize empty **`PRESET_OVERRIDES`**. **Do not write to disk.**
 2. **Venue:** `local` | `worktree` | `remote` → set `TRACKING` Presets → `venue` **and** `PRESET_OVERRIDES` → `venue`.
 3. When the OpenSpec adapter set `STORE`, set Presets → `store`; add to `PRESET_OVERRIDES` **only** when `STORE_SOURCE` is `explicit`.
 4. **Parallelism** (agent — not a user gate): choose `single` | `subagent-per-group` using the criteria below; set Presets → `parallelism` and `PRESET_OVERRIDES` → `parallelism`; note one-line rationale in session.
@@ -84,7 +84,7 @@ After bind, paths are under `ACTIVE_CHANGE_ROOT`. Prefer OpenSpec `artifactPaths
 
 **Done when:** `PRESET_OVERRIDES` contains `venue` and `parallelism`; interactive hosts completed step 2 via structured-choices.
 
-**Non-interactive host** (CI): skip step 2 gate; set `venue` from merged Presets → `venue` (legacy `workspace`), else **`remote`** when shipping intent is clear, else **`local`**; choose `parallelism` per same criteria; lock both in `PRESET_OVERRIDES`; snapshot `TRACKING_SETUP`.
+**Non-interactive host** (CI — no user present to answer; not merely a tool you cannot see): skip step 2 gate; set `venue` from merged Presets → `venue` (legacy `workspace`), else **`remote`** when shipping intent is clear, else **`local`**; choose `parallelism` per same criteria; lock both in `PRESET_OVERRIDES`; snapshot `TRACKING_SETUP`.
 
 #### Parallelism criteria (all venues, including remote)
 
@@ -106,7 +106,7 @@ Optional: invoke a **git worktree skill** when present for naming/cleanup conven
 
 1. Merge on-disk `tracking.md` at adapter `CHANGE_ROOT` when present (field-by-field; trusted-hint rules for Issue/PR/Branch).
 2. When Presets → `venue` is **`remote`**: candidate `FEATURE_BRANCH` = `TRACKING` → Branch, else adapter default. When that branch exists locally or on `origin`, read `CHANGE_ROOT_REL/tracking.md` from it (prefer local, else `origin/<branch>`). When `STORE_SOURCE` is `hint` and path absent, search branch tree for `.../NAME/tracking.md`. Non-empty on-disk Branch ≠ candidate: **STOP**. Change mismatch: defer per store-adoption rules below.
-3. **Merge** remote-branch tracking (step 2 only): non-empty Issue, Branch, PR win; Presets keys merge individually. Overlay `PRESET_OVERRIDES`; set **Change** = full `CHANGE_ROOT`. Never replace `Presets` wholesale.
+3. **Merge** remote-branch tracking (**Pre-bind tracking merge** step 2 only): non-empty Issue, Branch, PR win; Presets keys merge individually. Overlay `PRESET_OVERRIDES`; set **Change** = `CHANGE_ROOT_REL`. Never replace `Presets` wholesale.
 4. **Store adoption** (unchanged intent): when `STORE_SOURCE` is `hint` and Change mismatch deferred or branch Presets → `store` differs, adopt store, rerun adapter, **restore `TRACKING` from `TRACKING_SETUP`**, restart merge once.
 5. Map legacy Presets → `workspace` to `venue` when `venue` empty.
 
@@ -123,10 +123,10 @@ Optional: invoke a **git worktree skill** when present for naming/cleanup conven
 |---|---|
 | **`local`** | Checkout `ORIGINAL_BRANCH` on main → `WORK_CHECKOUT` = main repo |
 | **`worktree`** | Main on `ORIGINAL_BRANCH`. `git worktree add <path> -b APPLY_REF ORIGINAL_BRANCH` (or attach existing clean `APPLY_REF`) → `WORK_CHECKOUT` = worktree path |
-| **`remote`** | Main on `ORIGINAL_BRANCH`. Resolve `FEATURE_BRANCH` per step 2. Checkout `FEATURE_BRANCH` in worktree or runner checkout; push `-u origin FEATURE_BRANCH` when new. Create **Issue** when empty and `docs/agents/issue-tracker.md` exists. Dispatch cloud/CI runner when platform supports; else orchestrate on `FEATURE_BRANCH` locally |
+| **`remote`** | Main on `ORIGINAL_BRANCH`. Resolve `FEATURE_BRANCH` per **Branch resolution** step 2. Checkout `FEATURE_BRANCH` in worktree or runner checkout; push `-u origin FEATURE_BRANCH` when new. Create **Issue** when empty and `docs/agents/issue-tracker.md` exists. Dispatch cloud/CI runner when platform supports; else orchestrate on `FEATURE_BRANCH` locally |
 
-10. **Persist `tracking.md`** at `ACTIVE_CHANGE_ROOT` (reconcile; never wholesale Presets replace).
-11. **Re-read** planning artifacts from `ACTIVE_CHANGE_ROOT`.
+1. **Persist `tracking.md`** at `ACTIVE_CHANGE_ROOT` (reconcile; never wholesale Presets replace).
+2. **Re-read** planning artifacts from `ACTIVE_CHANGE_ROOT`.
 
 ### 3. Execute tasks
 
@@ -139,8 +139,9 @@ Per implementation task:
 1. Map related `#### Scenario:` blocks; name tests after scenarios.
 2. Invoke **tdd** when present (non-blocking if absent).
 3. Implement; mark `- [ ]` → `- [x]` only when tests pass.
-4. Invoke **git-commit** for logical units on the active work ref (`ORIGINAL_BRANCH`, `APPLY_REF`, or `FEATURE_BRANCH` per venue matrix).
-5. After each `##` group (or end when `single`), invoke **code-review** when present — fixed point = `ORIGINAL_BRANCH`.
+4. **Reconcile the delta spec** whenever shipped behavior differs from the scenario that drove it — see [Delta spec reconciliation](#delta-spec-reconciliation) below.
+5. Invoke **git-commit** for logical units on the active work ref (`ORIGINAL_BRANCH`, `APPLY_REF`, or `FEATURE_BRANCH` per venue matrix). Commit this unit's in-scope paths; **changelog-generator** runs in the Changelog group.
+6. After each `##` group (or end when `single`), invoke **code-review** when present — fixed point = `ORIGINAL_BRANCH`.
 
 **Parallelism `subagent-per-group`:**
 
@@ -148,11 +149,25 @@ Per implementation task:
 - **`worktree`:** optional group worktrees on `apply-<name>-<slug>`; orchestrator merges into `APPLY_REF`; merge gate (step 4) squash-merges to `ORIGINAL_BRANCH` before verify.
 - **`remote`:** subagents on runner checkout; orchestrator commits on `FEATURE_BRANCH`.
 
-Documentation group: update files from proposal Impact and tasks. Changelog group: invoke **changelog-generator**.
+Documentation group: update files from proposal Impact and tasks. Changelog group: invoke **changelog-generator** with `ACTIVE_CHANGE_ROOT` as the change root.
+
+#### Delta spec reconciliation
+
+Delta specs under `ACTIVE_CHANGE_ROOT/specs/**` describe the behavior this change ships. When a design fork is re-resolved mid-apply, apply edits them in place — this is not spec sync, which stays archive-only.
+
+| Divergence | Edit |
+|---|---|
+| Scenario body no longer matches shipped behavior | Rewrite the steps **and** rename the title to the behavior that shipped |
+| New design supersedes an existing scenario | Delete the superseded scenario — never leave it beside its replacement |
+| Two scenarios assert the same behavior | Keep one |
+| Requirement wording contradicts its own scenarios | Rewrite the requirement |
+| Promoted term no longer describes shipped behavior | Rename or remove the `specs/ubiquitous-language/spec.md` delta entry |
+
+Superseded titles over rewritten bodies are the common failure — a title naming behavior the `THEN` clauses now forbid. Fix it when the divergence happens; deferring it to archive, to a later phase, or to the user fails the verify gate in step 5.
 
 ### 4. Merge gate (worktree only — blocking)
 
-When `venue` is **`worktree`**, squash to **`ORIGINAL_BRANCH`** before step 5. Do not run verify-aligned or verify-fix on the worktree checkout.
+When `venue` is **`worktree`**, squash to **`ORIGINAL_BRANCH`** before step 5. Do not run verify on the worktree checkout.
 
 1. Checkout main repo → **`ORIGINAL_BRANCH`**
 2. Squash merge **`APPLY_REF`** → **`ORIGINAL_BRANCH`** (one commit preferred)
@@ -161,36 +176,30 @@ When `venue` is **`worktree`**, squash to **`ORIGINAL_BRANCH`** before step 5. D
 
 **Done when:** implementation commits live on **`ORIGINAL_BRANCH`** and the session is on main repo — not the worktree path.
 
-### 5. Completion gate — verify-aligned (blocking)
+### 5. Verify (blocking last gate)
 
-Re-run on the **verification ref** at `ACTIVE_CHANGE_ROOT` until every row passes:
+Run on the **verification ref** at `ACTIVE_CHANGE_ROOT`. Repeat until `/opsx:verify` reports empty **CRITICAL**, **WARNING**, and **SUGGESTION** tiers:
 
-1. All `tasks.md` checkboxes `[x]` (including Documentation and Changelog)
-2. Canonical test command from `tasks.md` — exit 0; every `#### Scenario:` has a passing named automated test
-3. Lint/format when `tasks.md` or repo docs name commands — zero new warnings from this change
-4. **Adapter validator** — OpenSpec: `openspec validate --all --json` from `PLANNING_HOME` with `--store` when set; Direct: skip unless user requests
-5. Material `design.md` decisions reflected in specs — material drift = FAIL
-6. Documentation tasks reflect actual behavior
-7. Changelog task complete
-8. `git status --porcelain` empty on the **verification ref**
+1. **PRECHECK** (fix before hunting if any row fails):
+   - All `tasks.md` checkboxes `[x]` (including Documentation and Changelog)
+   - Canonical test command from `tasks.md` — exit 0; every `#### Scenario:` has a passing named automated test
+   - Lint/format when `tasks.md` or repo docs name commands — zero new warnings from this change
+   - **Adapter validator** — OpenSpec: `openspec validate --all --json` from `PLANNING_HOME` with `--store` when set; Direct: skip unless user requests
+   - Material `design.md` decisions reflected in specs — material drift = FAIL
+   - **Delta specs self-consistent** — every `#### Scenario:` title describes its own GIVEN/WHEN/THEN; no superseded titles, no duplicate scenarios, no requirement contradicting its scenarios (see [Delta spec reconciliation](#delta-spec-reconciliation))
+   - Ubiquitous-language delta entries name behavior this change actually ships
+   - Documentation tasks reflect actual behavior
+   - Changelog task complete
+   - `git status --porcelain` empty on the **verification ref**
+2. Run `/opsx:verify` on the verification ref.
+3. On any CRITICAL, WARNING, or SUGGESTION: fix immediately; return to (1). A finding whose recommendation names a later phase ("before archive", "at archive", "the user should") is still apply's to fix when the fix lives in the working tree or under `ACTIVE_CHANGE_ROOT` — restating it is not fixing it.
+4. **Confirmation scorecard** — run `/opsx:verify` again scorecard-only (no new hunting). All three tiers must stay empty.
 
-On FAIL: fix immediately; do not enter verify-fix or hand off.
+**Done when:** a standalone `/opsx:verify` after this step has no CRITICAL, WARNING, or SUGGESTION issues. Interruption re-runs route failures back here.
 
-### 6. Verify-fix loop (blocking)
+### 6. Handoff
 
-Apply owns verification on the **verification ref**. Repeat until **`openspec-verify-change`** (or `/opsx:verify`) reports ✅ PASS with no unresolved warnings:
-
-1. Invoke **openspec-verify-change** via Skill tool, or run `/opsx:verify`
-2. On ❌ FAIL or new warnings: fix immediately; re-run step 5; return to (1)
-3. Proceed to handoff only on ✅ PASS
-
-**Done when:** a standalone `/opsx:verify` after this step would confirm PASS — not surface new FAILs or warnings. Interruption re-runs route failures back here.
-
-Verify-fix checks implementation vs specs, design, and tasks — beyond structural `openspec validate`. Step 5 owns git housekeeping and lint; verify-fix does not re-check a dirty tree.
-
-### 7. Handoff
-
-**Done when:** verify-fix PASS and the venue handoff row below completes.
+**Done when:** verify tiers empty and the venue handoff row below completes.
 
 | Venue | Parallelism | Handoff |
 |---|---|---|
@@ -208,31 +217,26 @@ Verify-fix checks implementation vs specs, design, and tasks — beyond structur
 | Commits | git-commit | Preferred |
 | Changelog | changelog-generator | Changelog group |
 | Review | code-review | Optional |
-| Verify-fix | openspec-verify-change (`/opsx:verify`) | Blocking before handoff |
+| Verify | `/opsx:verify` | Blocking last gate before handoff |
 | PR / issue | gh + issue-tracker doc | Remote handoff |
 | Cloud dispatch | SDK / Task `environment: cloud` | Remote when available |
 
-## Narrowing
+## Invariants
 
-- No archive or spec sync inside apply.
-- No marking tasks `[x]` before tests pass.
-- No PR before verify-fix PASS (**remote**).
-- No handoff before verify-fix PASS.
-- No verify-fix or verify-aligned gate on a worktree checkout — merge gate (step 4) first.
-- No treating `openspec validate` alone as sufficient — verify-fix is mandatory for OpenSpec apply.
-- No deferring verify FAILs or warnings to the user.
-- No durable feature branch on **local** or **worktree** — only `ORIGINAL_BRANCH` (+ ephemeral `apply-<name>`).
-- No skipping the interactive **venue** gate because Issue or Presets are prefilled.
-- No `FEATURE_BRANCH` on local/worktree bind.
-- No recreating **`FEATURE_BRANCH`** from `ORIGINAL_BRANCH` when it exists on `origin`.
-- No skipping Changelog.
-- No hardcoded `openspec/changes/<name>/`.
-- No concurrent subagents on shared git state.
-- No adapter creating on-disk `tracking.md`.
-- No bind without Presets → `venue` and `parallelism`.
-- No wholesale `Presets` replace during tracking merge.
-- No inheritance of `Change` from a tracking file — always current adapter `CHANGE_ROOT`.
-- No post-bind artifact I/O via pre-bind `CHANGE_ROOT`.
-- No `gh pr create` without `--base ORIGINAL_BRANCH`.
-- No worktree handoff before merge gate (step 4) completes.
-- No mixing superpowers-bridge apply with this skill on the same change.
+Venue-specific handoff and bind semantics live in the **Venue matrix** above. These apply on every apply run:
+
+- Archive and spec sync run only via `/opsx:archive` — never inside apply. Editing this change's own delta specs is apply's job, not spec sync.
+- Delta specs under `ACTIVE_CHANGE_ROOT` must match shipped behavior before verify passes — no superseded titles, no duplicate scenarios.
+- Mark tasks `[x]` only after tests pass.
+- Run verify to empty CRITICAL/WARNING/SUGGESTION tiers before handoff; remote PR creation waits on verify PASS.
+- On **worktree**, complete merge gate (step 4) on `ORIGINAL_BRANCH` before verify.
+- OpenSpec apply requires verify PASS — `openspec validate` alone is insufficient.
+- Fix verify issues in-session — do not defer to the user or to a later phase.
+- **Local** and **worktree** integrate on `ORIGINAL_BRANCH` (+ ephemeral `apply-<name>`); `FEATURE_BRANCH` exists only for **remote**.
+- Interactive hosts run the venue gate via structured-choices even when Issue or Presets are prefilled.
+- Changelog group runs; paths resolve via adapter `CHANGE_ROOT_REL`, not hardcoded `openspec/changes/<name>/`.
+- Subagents run sequentially — never concurrent on shared git state.
+- Adapters do not create on-disk `tracking.md`; bind requires Presets → `venue` and `parallelism`.
+- Tracking merge is field-by-field; **Change** always equals current adapter `CHANGE_ROOT_REL`.
+- Post-bind artifact I/O uses `ACTIVE_CHANGE_ROOT` only.
+- Remote PRs use `--base ORIGINAL_BRANCH`.

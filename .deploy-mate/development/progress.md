@@ -1,7 +1,7 @@
 # deploy-mate progress — development
 
 Started: 2026-08-05 (re-run)
-Status: slack-app local deploy 2026-08-25; manual Slack smoke pending
+Status: slack-app local deploy 2026-08-30; suggest `/deploy-mate verify` then onboarding smoke
 
 ## Phase checklist
 - [x] Recon — environment selected (development, re-run)
@@ -14,7 +14,7 @@ Status: slack-app local deploy 2026-08-25; manual Slack smoke pending
 - [x] Harvest — finished 2026-08-07 (round 2 re-validation after Sea Trial migration; local-dev token placeholders accepted)
 - [x] Forge — deployment artifacts
 - [x] Inject CI — GitHub Secrets/Variables — done 2026-08-05
-- [x] Deploy — local 2026-08-25: Sea Trial slack deploy ✓, trigger provision ✓ (`Create TES Event` Ft0BQ20WHJV8)
+- [x] Deploy — local 2026-08-30: Sea Trial slack deploy ✓, trigger provision ✓ (`Create TES Event` Ft0BQ20WHJV8, `Complete onboarding` Ft0BTM0V3YG6), retired per-channel onboarding triggers deleted
 - [x] Verify — automated checks passed 2026-08-13; manual smoke checklist pending
 
 ## Arm-ready audit (2026-08-05)
@@ -45,6 +45,13 @@ User ack: yes — 2026-08-05
 | `OTEL_LOGS_ENABLED` | repo variable | created |
 
 Verify: `gh secret list` → 4 secrets; `gh variable list` → 5 variables.
+
+## Deploy (2026-08-30)
+
+| Run | URL | Outcome |
+|-----|-----|---------|
+| local | `slack deploy -s --app A0BNHB84NCT` + `provision-triggers.sh` + `cleanup-onboarding-triggers.ts` | **success** — Sea Trial (`A0BNHB84NCT`); Create TES Event `Ft0BQ20WHJV8` updated; Complete onboarding `Ft0BTM0V3YG6` created and `SLACK_ONBOARDING_TRIGGER_ID` set; deleted 6 retired `Complete Onboarding (C…)` triggers |
+| local (re-deploy) | `slack deploy -s --app A0BNHB84NCT` | **success** — smoke fix: onboarding submit now completes the function execution so the modal closes |
 
 ## Deploy (2026-08-25)
 

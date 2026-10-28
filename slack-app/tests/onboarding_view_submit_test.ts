@@ -8,7 +8,17 @@ import {
   executeOnboardingSubmit,
   type SlackOnboardingSubmitClient,
 } from "../lib/onboarding-view-submit.ts";
-import { loadOnboardingContextFromStore } from "../functions/open_onboarding/mod.ts";
+import {
+  loadOnboardingContextFromStore,
+  ONBOARDING_SUBMIT_ERROR_BLOCK_ID,
+  type OnboardingCompletionClient,
+  submitOnboardingView,
+} from "../functions/open_onboarding/mod.ts";
+import {
+  applyOnboarding,
+  type ApplyOnboardingClient,
+  ONBOARDING_FORM_PARSE_ERROR,
+} from "../functions/apply_onboarding/mod.ts";
 import {
   TES_EVENT_CONTEXT_STORE_MISS_ERROR,
   tesEventContextStorePutError,
@@ -56,9 +66,23 @@ function submitClient(options?: {
   const puts: Array<{ datastore: string; item: { channel_id: string; snapshot: string } }> = [];
   const posted: Array<{ channel: string; text: string }> = [];
   const edited: string[] = [];
+  const completions: Array<
+    { function_execution_id: string; outputs: Record<string, unknown> }
+  > = [];
   let lookupCalled = false;
 
   const client = {
+    functions: {
+      completeSuccess: async (
+        params: {
+          function_execution_id: string;
+          outputs: Record<string, unknown>;
+        },
+      ) => {
+        completions.push(params);
+        return { ok: true };
+      },
+    },
     chat: {
       postMessage: async (params: { channel: string; text: string }) => {
         posted.push(params);
@@ -116,12 +140,27 @@ function submitClient(options?: {
 
   return {
     client: client as unknown as SlackOnboardingSubmitClient,
+    submitClient: client as unknown as OnboardingCompletionClient,
+    applyClient: client as unknown as ApplyOnboardingClient,
     puts,
     posted,
     edited,
+    completions,
     lookupCalled: () => lookupCalled,
   };
 }
+
+const onboardingViewState = {
+  account_name: { value: onboardingForm.accountName },
+  main_prospect_goal: { value: onboardingForm.mainProspectGoal },
+  deal_history: { value: onboardingForm.dealHistory },
+  project_type: { value: onboardingForm.projectType },
+  stakeholders: { value: onboardingForm.stakeholders },
+  competitors: { value: onboardingForm.competitors },
+  sailpoint_suite: { value: onboardingForm.sailpointSuite },
+  deadline: { value: onboardingForm.deadline },
+  notes: { value: onboardingForm.notes },
+};
 
 Deno.test("Open onboarding form from TES Event Context Store", async () => {
   const snapshot = serializeEventContextSnapshot(baseContext);
@@ -328,4 +367,135 @@ Deno.test("Submit fails when store write fails", async () => {
   assertEquals(puts.length, 1);
   assertEquals(edited.length, 0);
   assertEquals(posted.length, 0);
+});
+
+Deno.test("Submit hands the form to the next step without doing slow work", async () => {
+  const snapshot = serializeEventContextSnapshot(baseContext);
+  const { submitClient: client, completions, puts, edited, posted } =
+    submitClient();
+
+  const response = await submitOnboardingView(
+    client,
+    {
+      private_metadata: JSON.stringify({
+        channel_id: "C1",
+        dashboard_canvas_content: snapshot,
+      }),
+      state: { values: onboardingViewState },
+    },
+    "Fx-exec-1",
+  );
+
+  assertEquals(response, {});
+  assertEquals(completions.length, 1);
+  assertEquals(completions[0]?.function_execution_id, "Fx-exec-1");
+  assertEquals(completions[0]?.outputs.channel_id, "C1");
+  assertEquals(completions[0]?.outputs.snapshot, snapshot);
+  assertEquals(
+    JSON.parse(String(completions[0]?.outputs.form_json)),
+    onboardingForm,
+  );
+
+  // Store, canvas, and announcement belong to Apply Onboarding — doing them
+  // here is what pushed the response past Slack's 3s view_submission budget.
+  assertEquals(puts.length, 0);
+  assertEquals(edited.length, 0);
+  assertEquals(posted.length, 0);
+});
+
+Deno.test("Submit without usable metadata reports an error instead of throwing", async () => {
+  const { submitClient: client, completions } = submitClient();
+
+  const response = await submitOnboardingView(
+    client,
+    { private_metadata: "{not-json", state: { values: onboardingViewState } },
+    "Fx-exec-3",
+  );
+
+  assertEquals(
+    (response as { response_action?: string }).response_action,
+    "errors",
+  );
+  assertEquals(completions.length, 0);
+});
+
+Deno.test("Submit without an execution id reports an error", async () => {
+  const snapshot = serializeEventContextSnapshot(baseContext);
+  const { submitClient: client, completions } = submitClient();
+
+  const response = await submitOnboardingView(
+    client,
+    {
+      private_metadata: JSON.stringify({
+        channel_id: "C1",
+        dashboard_canvas_content: snapshot,
+      }),
+      state: { values: onboardingViewState },
+    },
+    undefined,
+  );
+
+  assertEquals(
+    (response as { errors?: Record<string, string> })
+      .errors?.[ONBOARDING_SUBMIT_ERROR_BLOCK_ID] !== undefined,
+    true,
+  );
+  assertEquals(completions.length, 0);
+});
+
+Deno.test("Apply Onboarding does the store write, canvas, and announcement", async () => {
+  const snapshot = serializeEventContextSnapshot(baseContext);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(null, { status: 200 });
+
+  try {
+    const { applyClient: client, puts, edited, posted } = submitClient();
+    const result = await applyOnboarding(client, {
+      channel_id: "C1",
+      snapshot,
+      form_json: JSON.stringify(onboardingForm),
+    });
+
+    assertEquals(result, { ok: true });
+    assertEquals(puts.length, 1);
+    assertEquals(edited.length, 1);
+    assertEquals(posted.length, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+Deno.test("Apply Onboarding reports a store failure in the channel", async () => {
+  const snapshot = serializeEventContextSnapshot(baseContext);
+  const { applyClient: client, posted } = submitClient({
+    put: async () => ({ ok: false, error: "restricted_action" }),
+  });
+
+  const result = await applyOnboarding(client, {
+    channel_id: "C1",
+    snapshot,
+    form_json: JSON.stringify(onboardingForm),
+  });
+
+  assertEquals(result.ok, false);
+  if (result.ok) return;
+  assertEquals(result.error, tesEventContextStorePutError("restricted_action"));
+  assertEquals(posted.length, 1);
+  assertStringIncludes(posted[0].text, "Onboarding was not saved");
+  assertStringIncludes(posted[0].text, "restricted_action");
+});
+
+Deno.test("Apply Onboarding rejects an unreadable form", async () => {
+  const snapshot = serializeEventContextSnapshot(baseContext);
+  const { applyClient: client, puts, posted } = submitClient();
+
+  const result = await applyOnboarding(client, {
+    channel_id: "C1",
+    snapshot,
+    form_json: "{not-json",
+  });
+
+  assertEquals(result, { ok: false, error: ONBOARDING_FORM_PARSE_ERROR });
+  assertEquals(puts.length, 0);
+  assertEquals(posted.length, 1);
 });

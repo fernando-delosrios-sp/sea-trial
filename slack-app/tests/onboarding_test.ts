@@ -319,7 +319,7 @@ Deno.test("Submit onboarding updates context and dashboard", () => {
   assertEquals(result.context.onboardingComplete, true);
   assertEquals(result.context.accountName, "Acme Corp");
   assertEquals(result.context.derivedComponents.includes("IdentityNow"), true);
-  assertEquals(result.dashboardContent.includes("Acme Corp"), true);
+  assertEquals(result.requirementsContent.includes("Acme Corp"), true);
   assertStringIncludes(
     result.dashboardContent,
     "- [x] Run **Complete onboarding** — fill in opportunity details",
@@ -341,7 +341,7 @@ Deno.test("Submit onboarding overwrites context accountName when Account is edit
   });
 
   assertEquals(result.context.accountName, "Renamed Account");
-  assertEquals(result.dashboardContent.includes("Renamed Account"), true);
+  assertEquals(result.requirementsContent.includes("Renamed Account"), true);
 });
 
 Deno.test("Submit onboarding does not invoke the Requirements Agent", () => {

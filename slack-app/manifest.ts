@@ -69,6 +69,7 @@ export default Manifest({
     "lists:write",
     "bookmarks:write",
     "pins:write",
+    "app_mentions:read",
     "triggers:write",
     "datastore:read",
     "datastore:write",

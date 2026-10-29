@@ -82,8 +82,6 @@ Deno.test("composition canvas steps expose tab opt-in", () => {
 
   assertEquals(tabbed.map((step) => step.id), [
     "dashboard",
-    "situation_report",
-    "infrastructure",
   ]);
   const requirements = composition.steps.find((step) => step.id === "requirements");
   assertEquals(requirements?.kind, "canvas");
@@ -549,8 +547,8 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
   assertEquals(context.situationReportCanvasId, "C-Situation Report [proj-demo-tes]");
   assertEquals(context.materialsDropMessageTs, "1234.5678");
   assertEquals(createOrder.indexOf("canvas:Dashboard [proj-demo-tes]"), 0);
-  assertEquals(createOrder.indexOf("canvas:Situation Report [proj-demo-tes]"), 1);
-  assertEquals(createOrder.indexOf("canvas:Infrastructure [proj-demo-tes]"), 2);
+  assertEquals(createOrder.indexOf("canvas-standalone:Situation Report [proj-demo-tes]"), 1);
+  assertEquals(createOrder.indexOf("canvas-standalone:Infrastructure [proj-demo-tes]"), 2);
   assertEquals(createOrder.indexOf("canvas-standalone:Requirements [proj-demo-tes]"), 3);
   assertEquals(createOrder.indexOf("list:Deliverables [proj-demo-tes]"), 4);
   assertEquals(createOrder.indexOf("list:Incidents [proj-demo-tes]"), 5);

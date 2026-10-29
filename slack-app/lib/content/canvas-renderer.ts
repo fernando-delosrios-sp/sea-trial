@@ -40,7 +40,7 @@ function formatEntries(value: string | undefined): string {
   return `\n${lines.map((line) => `    - ${line}`).join("\n")}`;
 }
 
-function buildDashboardViewModel(
+function buildCanvasViewModel(
   context: TesEventContext,
   form?: OnboardingForm,
   options?: DashboardRenderOptions,
@@ -78,7 +78,7 @@ export function renderDashboardCanvas(
   options?: DashboardRenderOptions,
 ): string {
   const template = loadTemplate("canvases/dashboard.hbs.md");
-  let body = template(buildDashboardViewModel(context, form, options)).trim();
+  let body = template(buildCanvasViewModel(context, form, options)).trim();
   if (options?.assetUrls && Object.keys(options.assetUrls).length > 0) {
     body = applyCanvasAssetUrls(body, options.assetUrls);
   }
@@ -86,9 +86,13 @@ export function renderDashboardCanvas(
 }
 
 /** Renders the Requirements canvas from declarative template. */
-export function renderRequirementsCanvas(): string {
+export function renderRequirementsCanvas(
+  context?: TesEventContext,
+  form?: OnboardingForm,
+): string {
   const template = loadTemplate("canvases/requirements.hbs.md");
-  return template({}).trim();
+  const data = context ? buildCanvasViewModel(context, form) : {};
+  return template(data).trim();
 }
 
 /** Renders the Infrastructure canvas from declarative template. */
@@ -129,8 +133,11 @@ export function dashboardTemplate(
 }
 
 /** Backward-compatible alias for requirements rendering. */
-export function requirementsTemplate(): string {
-  return renderRequirementsCanvas();
+export function requirementsTemplate(
+  context?: TesEventContext,
+  form?: OnboardingForm,
+): string {
+  return renderRequirementsCanvas(context, form);
 }
 
 /** Backward-compatible alias for infrastructure rendering. */

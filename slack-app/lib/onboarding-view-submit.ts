@@ -7,6 +7,7 @@ import { processOnboardingSubmit } from "./onboarding-submit.ts";
 import { replaceCanvasContent, type CanvasSectionsClient } from "./canvas.ts";
 import { richTextValueToText } from "./content/rich-text.ts";
 import { renderDashboardCanvasForSlack, type CanvasAssetUploadClient } from "./content/canvas-assets.ts";
+import { renderRequirementsCanvas } from "./content/canvas-renderer.ts";
 import {
   putTesEventContext,
   type TesEventContextStoreClient,
@@ -134,6 +135,15 @@ export async function executeOnboardingSubmit(
     context.dashboardCanvasId,
     dashboardContent,
   );
+
+  if (context.requirementsCanvasId) {
+    const requirementsContent = renderRequirementsCanvas(context, form);
+    await replaceCanvasContent(
+      client,
+      context.requirementsCanvasId,
+      requirementsContent,
+    );
+  }
 
   if (firstComplete) {
     await client.chat.postMessage({

@@ -12,15 +12,13 @@
       "id": "situation_report",
       "kind": "canvas",
       "ref": "situation-report",
-      "title": "Situation Report",
-      "tab": true
+      "title": "Situation Report"
     },
     {
       "id": "infrastructure",
       "kind": "canvas",
       "ref": "infrastructure",
-      "title": "Infrastructure",
-      "tab": true
+      "title": "Infrastructure"
     },
     {
       "id": "requirements",

@@ -107,11 +107,23 @@ async function provisionCanvasStep(
   const baseTitle = step.title ?? step.ref;
   const canvasTitle = `${baseTitle} [${channelName}]`;
 
-  const canvasId = await createCanvas(client, {
-    ...(step.tab === true ? { channelId } : {}),
-    title: canvasTitle,
-    content,
-  });
+  let canvasId: string;
+  try {
+    canvasId = await createCanvas(client, {
+      ...(step.tab === true ? { channelId } : {}),
+      title: canvasTitle,
+      content,
+    });
+  } catch (error) {
+    if (step.tab === true) {
+      canvasId = await createCanvas(client, {
+        title: canvasTitle,
+        content,
+      });
+    } else {
+      throw error;
+    }
+  }
 
   await setCanvasChannelAccess(client, {
     canvasId,
@@ -130,7 +142,7 @@ async function renderCanvasContent(
 ): Promise<string> {
   switch (ref) {
     case "requirements":
-      return renderRequirementsCanvas();
+      return renderRequirementsCanvas(context);
     case "infrastructure":
       return renderInfrastructureCanvas();
     case "situation-report":

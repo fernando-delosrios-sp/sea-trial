@@ -3,7 +3,7 @@ import {
   richTextValueToLines,
   richTextValueToText,
 } from "../lib/content/rich-text.ts";
-import { dashboardTemplate } from "../lib/content/canvas-renderer.ts";
+import { requirementsTemplate } from "../lib/content/canvas-renderer.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 
 function section(...text: string[]) {
@@ -95,8 +95,8 @@ const baseContext: TesEventContext = {
   accountName: "Acme Corp",
 };
 
-Deno.test("Dashboard renders multi-entry stakeholders as a nested list", () => {
-  const markdown = dashboardTemplate(baseContext, {
+Deno.test("Requirements canvas renders multi-entry stakeholders as a nested list", () => {
+  const markdown = requirementsTemplate(baseContext, {
     accountName: "Acme Corp",
     mainProspectGoal: "Prove identity governance",
     dealHistory: "Renewal cycle",

@@ -248,9 +248,9 @@ Deno.test("submit updates Dashboard from snapshot", async () => {
 
     assertEquals(result, { ok: true });
     assertEquals(lookupCalled(), false);
-    assertEquals(edited.length, 1);
+    assertEquals(edited.length, 2);
     assertEquals(posted.length, 1);
-    assertStringIncludes(edited[0], "Acme Corp");
+    assertStringIncludes(edited[1], "Acme Corp");
     assertStringIncludes(
       edited[0],
       "- [x] Run **Complete onboarding** — fill in opportunity details",
@@ -318,8 +318,8 @@ Deno.test("Re-submit refreshes snapshot without repeating announcement", async (
     assertEquals(updated.accountName, "Renamed Account");
     assertEquals(updated.onboarding?.notes, "Edited notes");
     assertEquals(posted.length, 0);
-    assertEquals(edited.length, 1);
-    assertStringIncludes(edited[0], "Renamed Account");
+    assertEquals(edited.length, 2);
+    assertStringIncludes(edited[1], "Renamed Account");
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -458,7 +458,7 @@ Deno.test("Apply Onboarding does the store write, canvas, and announcement", asy
 
     assertEquals(result, { ok: true });
     assertEquals(puts.length, 1);
-    assertEquals(edited.length, 1);
+    assertEquals(edited.length, 2);
     assertEquals(posted.length, 1);
   } finally {
     globalThis.fetch = originalFetch;

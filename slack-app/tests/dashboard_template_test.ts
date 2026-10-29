@@ -5,6 +5,7 @@ import {
 import {
   dashboardTemplate,
   renderDashboardCanvas,
+  requirementsTemplate,
 } from "../lib/content/canvas-renderer.ts";
 import { pinnedIndexBlocks } from "../lib/content/message-renderer.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
@@ -59,8 +60,8 @@ Deno.test("renderDashboardCanvas substitutes provided asset URLs", () => {
   );
 });
 
-Deno.test("dashboardTemplate Project section includes Account and Salesforce URL when set on context", () => {
-  const markdown = dashboardTemplate(baseContext);
+Deno.test("requirementsTemplate Project section includes Account and Salesforce URL when set on context", () => {
+  const markdown = requirementsTemplate(baseContext);
 
   assertStringIncludes(markdown, "Acme Corp");
   assertStringIncludes(markdown, "https://acme.my.salesforce.com/0061");
@@ -69,8 +70,8 @@ Deno.test("dashboardTemplate Project section includes Account and Salesforce URL
   assertStringIncludes(markdown, "Kickoff scheduled for next week");
 });
 
-Deno.test("dashboardTemplate Project section falls back gracefully when creation fields are unset", () => {
-  const markdown = dashboardTemplate({
+Deno.test("requirementsTemplate Project section falls back gracefully when creation fields are unset", () => {
+  const markdown = requirementsTemplate({
     channelId: "C123",
     projectName: "Acme",
     onboardingComplete: false,
@@ -80,11 +81,16 @@ Deno.test("dashboardTemplate Project section falls back gracefully when creation
     deliverablesListId: "list1",
     incidentsListId: "list2",
     infrastructureCanvasId: "infra1",
-  situationReportCanvasId: "sr1",
+    situationReportCanvasId: "sr1",
   });
 
   assertStringIncludes(markdown, "## Project");
   assertStringIncludes(markdown, "_Not set_");
+});
+
+Deno.test("dashboardTemplate does not include Project section", () => {
+  const markdown = dashboardTemplate(baseContext);
+  assertEquals(markdown.includes("## Project"), false);
 });
 
 Deno.test("Dashboard instructs the user to run Complete onboarding", () => {

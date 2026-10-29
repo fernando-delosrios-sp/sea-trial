@@ -110,6 +110,7 @@ export async function provisionTarget(
       "--grant",
       "--channels",
       target.channelId,
+      "--include-app-collaborators",
       "--app",
       appId,
       "--token",

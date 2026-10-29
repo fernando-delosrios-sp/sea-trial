@@ -11,7 +11,10 @@ export type LogEventName =
   | "request.failed"
   | "delivery.consolidation.received"
   | "delivery.consolidation.completed"
-  | "delivery.consolidation.failed";
+  | "delivery.consolidation.failed"
+  | "verification.format.received"
+  | "verification.format.completed"
+  | "verification.format.failed";
 
 export interface LogEvent {
   name: LogEventName;

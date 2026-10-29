@@ -29,5 +29,5 @@ fi
 export SLACK_APP_ID="$APP_ID"
 
 deno run -q --config=deno.jsonc \
-  --allow-read --allow-env --allow-run \
+  --allow-read --allow-write --allow-env --allow-run --allow-net \
   scripts/provision-triggers.ts

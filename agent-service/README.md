@@ -76,8 +76,10 @@ Legacy clients may send `documents[].content` (base64) instead of `files[].conte
 | Type | Purpose |
 |------|---------|
 | `FilePayload` | Transport: raw file bytes as base64 in JSON |
-| `ParsedDocument` | Parser output: `{ filename, mimeType, text, supported, error? }` |
+| `DocumentImagePayload` | Visual payload: page screenshot or figure buffer/base64 |
+| `ParsedDocument` | Parser output: `{ filename, mimeType, text, images?, supported, error? }` |
 | `DocumentInput` | Internal decoded bytes after HTTP decode |
+| `RequirementsProposal` | Staged proposal summary, candidate deliverables, and canvas diff |
 
 **Response:**
 
@@ -88,11 +90,18 @@ Legacy clients may send `documents[].content` (base64) instead of `files[].conte
     {
       "taskId": "TES-001",
       "category": "Requirements",
-      "requirements": "...",
-      "sourceDocRef": "...",
+      "requirements": "[Architecture.pdf] Configure SSO...",
+      "sourceDocRef": "Architecture.pdf",
+      "provenanceTag": "[Architecture.pdf]",
       "suggestedStatus": "Not started"
     }
   ],
+  "proposal": {
+    "summary": "Proposed 1 requirement deliverable(s)...",
+    "sourceFiles": ["Architecture.pdf"],
+    "candidateDeliverables": [...],
+    "proposedCanvasMarkdown": "..."
+  },
   "agentMessage": "Extracted N deliverable proposal(s)...",
   "needsClarification": false,
   "clarificationQuestions": []
@@ -103,16 +112,17 @@ Legacy clients may send `documents[].content` (base64) instead of `files[].conte
 
 - `500` with `{ "error": "..." }` when LLM config missing or processing fails
 
-## Document parsing
+## Document parsing & Multimodal Vision Pipeline
 
-Parsing runs in `src/parsers/` using Node libraries:
+Parsing runs in `src/parsers/` using Node-compatible rendering and parsers:
 
 - **TXT/MD** — UTF-8 pass-through
 - **DOCX** — mammoth
 - **XLSX** — sheetjs/xlsx
-- **PDF** — pdf-parse v2 (`PDFParse.getText()`)
+- **PDF** — pdf-parse v2 (`PDFParse.getText()` and `PDFParse.getScreenshot()` for rendering page images)
+- **PNG / JPEG** — native visual payload parser with magic byte validation
 
-Unsupported formats and image-only PDFs return `supported: false` with a human-readable error. The LangGraph `parseDocuments` node runs before semantic analysis; results appear in the canvas **Documents processed** section.
+Scanned and image-rich PDFs render pages to image buffers alongside any extractable text. Corrupt or unrenderable image files return `supported: false` with human-readable extraction errors. The LangGraph `parseDocuments` node extracts text and page image buffers; `analyzeRequirements` forwards visual payloads to the vision LLM, tags each requirement with `[filename.ext]` source provenance, and reconciles revisions against existing canvas requirements. Results appear in the canvas **Documents processed** section.
 
 ## Environment
 
@@ -120,7 +130,7 @@ Unsupported formats and image-only PDFs return `supported: false` with a human-r
 |----------|----------|-------------|
 | `LLM_API_KEY` | Yes | OpenAI-compatible API key |
 | `LLM_BASE_URL` | No | Default: `https://api.openai.com/v1` |
-| `LLM_MODEL` | No | Default: `gpt-4o` |
+| `LLM_MODEL` | No | Default: `gpt-4o` (multimodal vision LLM recommended) |
 | `PORT` | No | Default: `3000` |
 
 ## Observability (Grafana Cloud OTLP)

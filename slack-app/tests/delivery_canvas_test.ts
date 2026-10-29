@@ -22,14 +22,14 @@ const baseContext: TesEventContext = {
   infrastructureCanvasId: "infra1",
 };
 
-Deno.test("shouldCreateDeliveryCanvas true on Validation required without link", () => {
-  assertEquals(shouldCreateDeliveryCanvas("Validation required"), true);
-  assertEquals(shouldCreateDeliveryCanvas("Validation required", ""), true);
+Deno.test("shouldCreateDeliveryCanvas true on Accepted without link", () => {
+  assertEquals(shouldCreateDeliveryCanvas("Accepted"), true);
+  assertEquals(shouldCreateDeliveryCanvas("Accepted", ""), true);
 });
 
 Deno.test("shouldCreateDeliveryCanvas false when deliverable already linked", () => {
   assertEquals(
-    shouldCreateDeliveryCanvas("Validation required", "canvas:abc"),
+    shouldCreateDeliveryCanvas("Accepted", "canvas:abc"),
     false,
   );
 });

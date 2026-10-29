@@ -3,11 +3,16 @@ import { toSlackListSelectValue } from "../../lib/content/slack-list-schema.ts";
 import type { DeliverableProposal } from "@sea-trial/shared/types/index.ts";
 import { replaceCanvasContent } from "../../lib/canvas.ts";
 import {
+  handleAcceptProposalAction,
   processAcceptProposals,
   resolveReviewAction,
   reviewActionMessage,
   shouldWriteToList,
 } from "../../lib/review-gate.ts";
+import {
+  getTesEventContext,
+  type TesEventContextStoreClient,
+} from "../../lib/tes-event-context-store.ts";
 import { withLogger } from "../../lib/logger.ts";
 
 export const AcceptProposalsFunction = DefineFunction({
@@ -103,6 +108,54 @@ export default SlackFunction(
       });
 
       return { outputs: { accepted_count: proposals.length } };
+    });
+  },
+).addBlockActionsHandler(
+  "accept_proposals",
+  async ({ action, body, client, env }) => {
+    return await withLogger(env, async (logger) => {
+      const channelId = body.channel?.id;
+      if (!channelId) {
+        return { error: "Missing channel context for accept button." };
+      }
+      const messageTs = body.message?.ts;
+      const threadTs = body.message?.thread_ts ?? messageTs ?? "";
+      let canvasId: string | undefined;
+      let proposedMarkdown = "# Requirements\n";
+
+      if (client.apps?.datastore) {
+        const context = await getTesEventContext(
+          client as unknown as TesEventContextStoreClient,
+          channelId,
+        );
+        canvasId = context?.requirementsCanvasId;
+      }
+
+      if (action.value) {
+        try {
+          const parsed = JSON.parse(action.value);
+          if (parsed.canvasId) canvasId = parsed.canvasId;
+          if (parsed.proposedMarkdown) proposedMarkdown = parsed.proposedMarkdown;
+        } catch {
+          // Action value was not JSON
+        }
+      }
+
+      await handleAcceptProposalAction({
+        client: client as any,
+        channelId,
+        messageTs,
+        threadTs,
+        requirementsCanvasId: canvasId,
+        proposedMarkdown,
+      });
+
+      logger.emit("proposal_gate.accepted", {
+        channelId,
+        messageTs,
+      });
+
+      return { completed: true };
     });
   },
 );

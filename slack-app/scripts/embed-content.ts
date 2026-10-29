@@ -39,7 +39,7 @@ const TEXT_FILES = [
   "content/canvases/requirements.hbs.md",
   "content/canvases/infrastructure.hbs.md",
   "content/canvases/situation-report.hbs.md",
-  "content/canvases/delivery.hbs.md",
+  "content/canvases/delivery.fragment.hbs.md",
   "content/messages/pinned-index.hbs.json",
 ] as const;
 
@@ -54,7 +54,7 @@ const TEMPLATE_FILES = [
   { file: "content/canvases/requirements.hbs.md", export: "requirementsHbsMd" },
   { file: "content/canvases/infrastructure.hbs.md", export: "infrastructureHbsMd" },
   { file: "content/canvases/situation-report.hbs.md", export: "situationReportHbsMd" },
-  { file: "content/canvases/delivery.hbs.md", export: "deliveryHbsMd" },
+  { file: "content/canvases/delivery.fragment.hbs.md", export: "deliveryFragmentHbsMd" },
   { file: "content/messages/pinned-index.hbs.json", export: "pinnedIndexHbsJson" },
 ] as const;
 

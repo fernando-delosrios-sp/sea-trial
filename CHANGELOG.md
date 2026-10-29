@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-29 · v0.1.4
+
+### ✨ New Features
+
+- **Multimodal Document Vision Pipeline** — Upgraded document parsing in `agent-service` to render PDF pages and visual diagrams into image buffers, enabling multimodal vision LLMs to extract requirements, architecture diagrams, and scanned specifications alongside text. Added native PNG and JPEG image support.
+- **Staged Requirements Proposal Review Gate** — Requirements Agent invocation now posts a candidate requirements proposal in the Slack invocation thread with an `[Accept & Update Canvas]` action button. Requirements Canvas markdown is preserved untouched until explicit user review and acceptance.
+- **Source Provenance Tagging & Revision Superseding** — Each synthesized requirement is tagged with its source document name (`[filename.ext]`). When revised specification documents are uploaded (e.g. `Architecture_v2.pdf`), the agent automatically detects revisions, supersedes outdated prior requirements, and synchronizes the canvas cleanly without duplicate items.
+
+---
+
 ## 2026-10-29 · v0.1.3
 
 ### ✨ New Features

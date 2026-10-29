@@ -197,6 +197,36 @@ The glossary SHALL define **Plan Deliverables Action Link** as the workflow link
 - **WHEN** the ubiquitous-language spec is updated
 - **THEN** a Plan Deliverables Action Link term entry SHALL exist with definition, context, and aliases
 
+### Requirement: Multimodal Document Pipeline term
+
+The glossary SHALL define **Multimodal Document Pipeline** as the document parsing and extraction subsystem in `agent-service` that renders document pages and visual figures into image buffers alongside text to feed multimodal vision LLMs.
+
+#### Scenario: Multimodal Document Pipeline term in glossary
+
+- **GIVEN** this change archives
+- **WHEN** the ubiquitous-language spec is updated
+- **THEN** a Multimodal Document Pipeline term entry SHALL exist with definition, aliases, and notes
+
+### Requirement: Source Provenance Tag term
+
+The glossary SHALL define **Source Provenance Tag** as an explicit document origin identifier (e.g., `[PRD-v1.pdf]`) prefixed to each synthesized requirement in the Requirements Canvas markdown, enabling deterministic replacement or retraction when a source document is updated or discarded.
+
+#### Scenario: Source Provenance Tag term in glossary
+
+- **GIVEN** this change archives
+- **WHEN** the ubiquitous-language spec is updated
+- **THEN** a Source Provenance Tag term entry SHALL exist with definition, aliases, and notes
+
+### Requirement: Requirements Proposal Gate term
+
+The glossary SHALL define **Requirements Proposal Gate** as the Block Kit review interaction in the Slack invocation thread where the agent presents a summarized diff of candidate requirements and awaits explicit user acceptance (`[Accept & Update Canvas]`) before modifying the Requirements Canvas.
+
+#### Scenario: Requirements Proposal Gate term in glossary
+
+- **GIVEN** this change archives
+- **WHEN** the ubiquitous-language spec is updated
+- **THEN** a Requirements Proposal Gate term entry SHALL exist with definition, aliases, and notes
+
 ## Term entries
 
 ### Term: Sea Trial
@@ -342,3 +372,21 @@ The glossary SHALL define **Plan Deliverables Action Link** as the workflow link
 **Definition**: Manual action that reads Deliverables List rows, maps statuses to customer buckets, writes a new Current situation to the Situation Report canvas, sets Generated date, and appends the prior snapshot as a Changelog row.
 **Aliases**: publish situation report
 **Notes**: Does not modify list rows; does not run on a schedule at MVP.
+
+### Term: Multimodal Document Pipeline
+**Context**: requirements-agent
+**Definition**: The document parsing and extraction subsystem in `agent-service` that renders document pages and visual figures into image buffers alongside plain text to feed multimodal vision LLMs.
+**Aliases**: multimodal pipeline, vision parsing pipeline
+**Notes**: Supports PDF page rendering, PNG, and JPEG formats in Node.js.
+
+### Term: Source Provenance Tag
+**Context**: requirements-agent
+**Definition**: An explicit document origin identifier (e.g., `[PRD-v1.pdf]`) prefixed to each synthesized requirement in the Requirements Canvas markdown, enabling deterministic replacement or retraction when a source document is updated or discarded.
+**Aliases**: provenance tag, source tag
+**Notes**: Enables Canvas-as-Truth state management with zero external database dependencies.
+
+### Term: Requirements Proposal Gate
+**Context**: requirements-agent
+**Definition**: The Block Kit review interaction in the Slack invocation thread where the agent presents a summarized diff of candidate requirements and awaits explicit user acceptance (`[Accept & Update Canvas]`) before modifying the Requirements Canvas.
+**Aliases**: proposal gate, staged requirements gate
+**Notes**: Preserves human-in-the-loop control; Requirements Canvas is never modified until the user explicitly accepts the proposal.

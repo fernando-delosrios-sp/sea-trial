@@ -148,11 +148,15 @@ export async function callDeliveryAgent(
 }
 
 /**
- * Builds Block Kit blocks for a deliverable proposal with Accept/Edit/Reject actions.
+ * Builds Block Kit blocks for a deliverable proposal with Accept & Update Canvas action and refinement guidance.
  */
 export function buildProposalBlocks(
   proposals: DeliverableProposal[],
   threadTs: string,
+  options?: {
+    canvasId?: string;
+    proposedMarkdown?: string;
+  },
 ): Record<string, unknown>[] {
   const blocks: Record<string, unknown>[] = [
     {
@@ -183,16 +187,30 @@ export function buildProposalBlocks(
     });
   }
 
+  let buttonValue = threadTs;
+  if (options?.canvasId) {
+    const payload = JSON.stringify({
+      canvasId: options.canvasId,
+      proposedMarkdown:
+        (options.proposedMarkdown?.length ?? 0) < 1500
+          ? options.proposedMarkdown
+          : undefined,
+    });
+    if (payload.length < 2000) {
+      buttonValue = payload;
+    }
+  }
+
   blocks.push({
     type: "actions",
     block_id: `proposal_actions_${threadTs}`,
     elements: [
       {
         type: "button",
-        text: { type: "plain_text", text: "Accept" },
+        text: { type: "plain_text", text: "Accept & Update Canvas" },
         style: "primary",
         action_id: "accept_proposals",
-        value: threadTs,
+        value: buttonValue,
       },
       {
         type: "button",
@@ -206,6 +224,16 @@ export function buildProposalBlocks(
         style: "danger",
         action_id: "reject_proposals",
         value: threadTs,
+      },
+    ],
+  });
+
+  blocks.push({
+    type: "context",
+    elements: [
+      {
+        type: "mrkdwn",
+        text: "💡 *Refinement guidance:* Reply in this thread with `@Sea Trial requirements [instructions]` to refine or revise these requirements before accepting.",
       },
     ],
   });

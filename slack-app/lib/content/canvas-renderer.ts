@@ -104,34 +104,20 @@ export function renderSituationReportSeedCanvas(
   return buildSituationReportSeedMarkdown(context);
 }
 
-export interface DeliveryCanvasViewModel {
-  taskId: string;
-  category: string;
-  author: string;
-  draftVersion: number;
-  generatedAt: string;
-  reviewPending: boolean;
-  businessValue: string;
-  visualProof: string;
-  sailpointComponents: string;
-  externalTechnologies: string;
+export interface DeliveryFragmentViewModel {
   customerSummary: string;
-  artefactRows: string;
-  configuration: string;
-  notes: string;
-  consolidateActionUrl?: string;
-  markReviewedActionUrl?: string;
+  visualProofUrl?: string;
+  sailpointComponents?: string;
+  externalTechnologies?: string;
+  artefactsAndConfig?: string;
 }
 
-/** Renders a Delivery Template Canvas from the declarative template. */
-export function renderDeliveryCanvas(
-  viewModel: DeliveryCanvasViewModel,
+/** Renders the Delivery Proof fragment from the declarative template. */
+export function renderDeliveryFragment(
+  viewModel: DeliveryFragmentViewModel,
 ): string {
-  const template = loadTemplate("canvases/delivery.hbs.md");
-  return template({
-    ...viewModel,
-    reviewPending: viewModel.reviewPending,
-  }).trim();
+  const template = loadTemplate("canvases/delivery.fragment.hbs.md");
+  return template(viewModel).trim();
 }
 
 /** Backward-compatible alias for dashboard rendering. */

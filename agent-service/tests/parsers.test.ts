@@ -140,7 +140,7 @@ describe("parseDocument — XLSX", () => {
 });
 
 describe("parseDocument — PDF", () => {
-  it("extracts text from text-based PDF", async () => {
+  it("extracts text and renders pages from text-based PDF", async () => {
     const result = await parseDocument({
       filename: "sample-text.pdf",
       mimeType: "application/pdf",
@@ -149,38 +149,104 @@ describe("parseDocument — PDF", () => {
 
     expect(result.supported).toBe(true);
     expect(result.text).toContain("Configure SSO");
+    expect(result.images).toBeDefined();
+    expect(result.images!.length).toBeGreaterThan(0);
+    expect(result.images![0].mimeType).toBe("image/png");
+    expect(result.images![0].dataBase64).toBeDefined();
   });
 
-  it("rejects image-only PDF without throwing", async () => {
+  it("renders pages for image-only/scanned PDF with supported: true", async () => {
     const result = await parseDocument({
       filename: "sample-image.pdf",
       mimeType: "application/pdf",
       content: loadFixture("sample-image.pdf"),
     });
 
-    expect(result.supported).toBe(false);
-    expect(result.error).toContain("no extractable text");
+    expect(result.supported).toBe(true);
+    expect(result.images).toBeDefined();
+    expect(result.images!.length).toBe(1);
+    expect(result.images![0].pageNumber).toBe(1);
+    expect(result.images![0].mimeType).toBe("image/png");
+    expect(result.images![0].dataBase64).toBeDefined();
   });
-});
 
-describe("parseDocument — unsupported", () => {
-  it("rejects unsupported formats gracefully", async () => {
+  it("rejects corrupt or unrenderable PDF without throwing", async () => {
+    const corruptPdf = new TextEncoder().encode("%PDF-1.4 corrupt content without valid structure");
     const result = await parseDocument({
-      filename: "image.png",
-      mimeType: "image/png",
-      content: new Uint8Array([0x89, 0x50]),
+      filename: "corrupt.pdf",
+      mimeType: "application/pdf",
+      content: corruptPdf,
     });
 
     expect(result.supported).toBe(false);
     expect(result.error).toBeDefined();
   });
+});
+
+describe("parseDocument — Images (PNG & JPEG)", () => {
+  it("parses valid PNG image", async () => {
+    const pngBytes = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+    ]);
+    const result = await parseDocument({
+      filename: "diagram.png",
+      mimeType: "image/png",
+      content: pngBytes,
+    });
+
+    expect(result.supported).toBe(true);
+    expect(result.images).toBeDefined();
+    expect(result.images!.length).toBe(1);
+    expect(result.images![0].mimeType).toBe("image/png");
+    expect(result.images![0].dataBase64).toBeDefined();
+  });
+
+  it("parses valid JPEG image", async () => {
+    const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+    const result = await parseDocument({
+      filename: "architecture.jpg",
+      mimeType: "image/jpeg",
+      content: jpegBytes,
+    });
+
+    expect(result.supported).toBe(true);
+    expect(result.images).toBeDefined();
+    expect(result.images!.length).toBe(1);
+    expect(result.images![0].mimeType).toBe("image/jpeg");
+  });
+
+  it("rejects corrupt image files without throwing", async () => {
+    const corruptBytes = new Uint8Array([0x89, 0x50]); // invalid PNG signature
+    const result = await parseDocument({
+      filename: "corrupt.png",
+      mimeType: "image/png",
+      content: corruptBytes,
+    });
+
+    expect(result.supported).toBe(false);
+    expect(result.error).toContain("corrupt or invalid");
+  });
+});
+
+describe("parseDocument — unsupported", () => {
+  it("rejects unsupported format .zip gracefully", async () => {
+    const result = await parseDocument({
+      filename: "archive.zip",
+      mimeType: "application/zip",
+      content: new Uint8Array([0x50, 0x4b]),
+    });
+
+    expect(result.supported).toBe(false);
+    expect(result.error).toContain("Unsupported format");
+  });
 
   it("does not throw on unsupported format", async () => {
     await expect(
       parseDocument({
-        filename: "archive.zip",
-        mimeType: "application/zip",
-        content: new Uint8Array([0x50, 0x4b]),
+        filename: "audio.mp3",
+        mimeType: "audio/mpeg",
+        content: new Uint8Array([0xff, 0xfb]),
       }),
     ).resolves.toMatchObject({ supported: false });
   });

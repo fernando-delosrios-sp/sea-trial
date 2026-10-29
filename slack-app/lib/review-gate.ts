@@ -1,4 +1,5 @@
 import type { DeliverableProposal } from "@sea-trial/shared/types/index.ts";
+import { replaceCanvasContent, type CanvasEditClient } from "./canvas.ts";
 import {
   markPromotedInCanvas,
   proposalToRowInput,
@@ -111,4 +112,65 @@ export function reviewActionMessage(action: ReviewAction, count: number): string
     default:
       return "No action taken. Deliverables list unchanged.";
   }
+}
+
+export interface HandleAcceptProposalActionParams {
+  client: {
+    canvases?: {
+      edit?: (params: unknown) => Promise<unknown>;
+    };
+    chat?: {
+      update?: (params: Record<string, unknown>) => Promise<unknown>;
+      postMessage: (params: Record<string, unknown>) => Promise<unknown>;
+    };
+  };
+  channelId: string;
+  messageTs?: string;
+  threadTs: string;
+  requirementsCanvasId?: string;
+  proposedMarkdown: string;
+}
+
+/**
+ * Handles user acceptance of a staged requirements proposal,
+ * applying proposed markdown to the Requirements Canvas and updating the message.
+ */
+export async function handleAcceptProposalAction(
+  params: HandleAcceptProposalActionParams,
+): Promise<{ ok: boolean }> {
+  if (params.requirementsCanvasId && params.client.canvases?.edit) {
+    await replaceCanvasContent(
+      params.client as unknown as CanvasEditClient,
+      params.requirementsCanvasId,
+      params.proposedMarkdown,
+    );
+  }
+
+  const confirmationText =
+    "✅ Requirements proposal accepted and Requirements Canvas updated.";
+
+  if (params.client.chat?.update && params.messageTs) {
+    await params.client.chat.update({
+      channel: params.channelId,
+      ts: params.messageTs,
+      text: confirmationText,
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `✅ *Requirements proposal accepted.* The Requirements Canvas has been updated.`,
+          },
+        },
+      ],
+    });
+  } else if (params.client.chat?.postMessage) {
+    await params.client.chat.postMessage({
+      channel: params.channelId,
+      thread_ts: params.threadTs,
+      text: confirmationText,
+    });
+  }
+
+  return { ok: true };
 }

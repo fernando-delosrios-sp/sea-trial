@@ -19,6 +19,7 @@ _No requirements extracted yet. Drop specification documents into the pinned Mat
 - **Customer Summary:** 
 - **Visual Proof:** 
 - **Components:** 
+- **External Technologies:** 
 - **Artefacts & Config:** 
 
 ## Deliverable Candidates

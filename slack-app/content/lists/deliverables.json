@@ -69,7 +69,7 @@
     "field_change": [
       {
         "column": "status",
-        "value": "Validation required",
+        "value": "Accepted",
         "function": "on_validation_required"
       }
     ]

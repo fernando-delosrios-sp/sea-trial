@@ -69,4 +69,18 @@ describe("VerificationAgent", () => {
     expect(result.proofBlockMarkdown).not.toContain("sk-secret-token-123");
     expect(result.proof.artefactsAndConfig).toContain("[Configuration sanitized");
   });
+
+  it("formats external technologies as separate bullet", () => {
+    const result = runVerificationAgent({
+      ...baseRequest,
+      proofInputs: {
+        ...baseRequest.proofInputs,
+        externalTechnologies: ["Microsoft Entra ID", "Okta"],
+      },
+    });
+
+    expect(result.proofBlockMarkdown).toContain("- **Components:** SailPoint Identity Security Cloud, Entra ID Connector");
+    expect(result.proofBlockMarkdown).toContain("- **External Technologies:** Microsoft Entra ID, Okta");
+    expect(result.proof.externalTechnologies).toEqual(["Microsoft Entra ID", "Okta"]);
+  });
 });

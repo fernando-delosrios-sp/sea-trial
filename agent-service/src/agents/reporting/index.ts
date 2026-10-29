@@ -3,6 +3,7 @@ export interface ExtractedRequirementProof {
   customerSummary: string;
   visualProofUrl?: string;
   components?: string[];
+  externalTechnologies?: string[];
   artefactsAndConfig?: string;
 }
 
@@ -30,6 +31,7 @@ export function extractRequirementProofsFromCanvas(
     const summaryMatch = proofText.match(/- \*\*Customer Summary:\*\*\s*(.+)/);
     const visualMatch = proofText.match(/- \*\*Visual Proof:\*\*\s*(.+)/);
     const compMatch = proofText.match(/- \*\*Components:\*\*\s*(.+)/);
+    const techMatch = proofText.match(/- \*\*External Technologies:\*\*\s*(.+)/);
     const configMatch = proofText.match(/- \*\*Artefacts & Config:\*\*\s*(.+)/);
 
     const customerSummary = summaryMatch?.[1]?.trim() ?? "";
@@ -40,11 +42,16 @@ export function extractRequirementProofsFromCanvas(
       ? compMatch[1].split(",").map((c) => c.trim())
       : undefined;
 
+    const externalTechnologies = techMatch?.[1] && techMatch[1] !== "_None specified_"
+      ? techMatch[1].split(",").map((t) => t.trim())
+      : undefined;
+
     proofs.push({
       requirementRef,
       customerSummary,
       visualProofUrl: urlMatch?.[0],
       components,
+      externalTechnologies,
       artefactsAndConfig: configMatch?.[1]?.trim(),
     });
   }

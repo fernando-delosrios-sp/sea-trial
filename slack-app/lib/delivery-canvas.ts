@@ -58,7 +58,7 @@ export function shouldCreateDeliveryCanvas(
   newStatus: string,
   existingDeliverableUrl?: string,
 ): boolean {
-  return newStatus === "Validation required" &&
+  return newStatus === "Accepted" &&
     !(existingDeliverableUrl?.trim());
 }
 

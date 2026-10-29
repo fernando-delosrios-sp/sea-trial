@@ -366,14 +366,8 @@ export async function runInvokeAgentHandler(
       logger.correlationId,
     );
 
-    if (context.requirementsCanvasId) {
-      await replaceCanvas(
-        client,
-        context.requirementsCanvasId,
-        response.canvasMarkdown,
-      );
-    }
-
+    // Staged Proposal Review Gate: do NOT modify Requirements Canvas immediately.
+    // Canvas is updated only when the user explicitly clicks [Accept & Update Canvas].
     const proposalMessage = await client.chat.postMessage({
       channel: inputs.channel_id,
       thread_ts: activeThreadTs,
@@ -381,6 +375,10 @@ export async function runInvokeAgentHandler(
       blocks: buildProposalBlocks(
         response.proposals,
         activeThreadTs,
+        {
+          canvasId: context.requirementsCanvasId,
+          proposedMarkdown: response.canvasMarkdown,
+        },
       ),
     });
 

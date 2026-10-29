@@ -19,11 +19,11 @@ Deno.test("parseFieldChangeRule validates deliverables rule shape", () => {
   assertEquals(rule?.function, "on_validation_required");
 });
 
-Deno.test("deliverables.json declares Validation required field_change", () => {
+Deno.test("deliverables.json declares Accepted field_change", () => {
   resetListCacheForTests();
   const rules = getListFieldChangeRules("deliverables");
   assertEquals(
-    matchFieldChangeFunctions(rules, "status", "Validation required"),
+    matchFieldChangeFunctions(rules, "status", "Accepted"),
     ["on_validation_required"],
   );
 });
@@ -34,10 +34,10 @@ Deno.test("shouldRunValidationRequiredHandler when status changes", () => {
       listName: "deliverables",
       column: "status",
       previousValue: "In progress",
-      newValue: "Validation required",
+      newValue: "Accepted",
       row: {
         taskId: "TES-001",
-        status: "Validation required",
+        status: "Accepted",
         situation: "Testing",
         category: "SSO",
         requirements: "Configure SSO",

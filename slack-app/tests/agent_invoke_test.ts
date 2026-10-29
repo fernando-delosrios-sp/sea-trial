@@ -7,6 +7,9 @@ import {
   encodeFilePayload,
 } from "../lib/agent-client.ts";
 import { isThreadContinuation, shouldProceedWithAgent } from "../lib/agent-gate.ts";
+import { runInvokeAgentHandler } from "../lib/invoke-agent-handler.ts";
+import { handleAcceptProposalAction } from "../lib/review-gate.ts";
+import { createLogger } from "../lib/logger.ts";
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 
 const completeContext: TesEventContext = {
@@ -139,6 +142,129 @@ Deno.test("Delta spec: Summon-only invocation — channel create does not invoke
   };
   assertEquals(noSummon.text, undefined);
   assertEquals(noSummon.threadTs, undefined);
+});
+
+Deno.test("Staged proposal gate — does not update canvas on agent invocation", async () => {
+  let canvasModified = false;
+  let postedMessage: any = null;
+  const logger = createLogger({ OTEL_LOGS_ENABLED: "false" }, "test-corr");
+
+  const client = {
+    token: "xoxb-test",
+    files: { info: async () => ({ ok: false }) },
+    chat: {
+      postMessage: async (args: Record<string, unknown>) => {
+        postedMessage = args;
+        return { ts: "9999.0002" };
+      },
+    },
+    apps: {
+      datastore: {
+        get: async () => ({
+          ok: true,
+          item: { channel_id: "C1", snapshot: JSON.stringify(completeContext) },
+        }),
+      },
+    },
+  };
+
+  await runInvokeAgentHandler(
+    {
+      channel_id: "C1",
+      user_id: "U1",
+      message_ts: "1000.0002",
+      thread_ts: "1000.0001",
+      text: "@Sea Trial requirements process docs",
+    },
+    client as any,
+    { AGENT_SERVICE_URL: "http://localhost:3000" },
+    logger,
+    {
+      callAgent: async () => ({
+        canvasMarkdown: "# Proposed Canvas Update",
+        proposals: [{
+          taskId: "TES-001",
+          category: "Security",
+          requirements: "[Architecture.pdf] Configure SSO",
+          sourceDocRef: "Architecture.pdf",
+          suggestedStatus: "Not started",
+        }],
+        agentMessage: "Requirements proposed",
+        needsClarification: false,
+      }),
+      replaceCanvas: async () => {
+        canvasModified = true;
+      },
+    },
+  );
+
+  // Canvas MUST NOT be modified at invocation time
+  assertEquals(canvasModified, false);
+  // Proposal message posted to thread with blocks
+  assertEquals(postedMessage !== null, true);
+  assertEquals(postedMessage?.thread_ts, "1000.0001");
+});
+
+Deno.test("Staged proposal gate — Accept & Update Canvas button and refinement guidance", () => {
+  const proposals: DeliverableProposal[] = [{
+    taskId: "TES-001",
+    category: "Security",
+    requirements: "[spec.pdf] Enable MFA",
+    sourceDocRef: "spec.pdf",
+    suggestedStatus: "Not started",
+  }];
+
+  const blocks = buildProposalBlocks(proposals, "1234.5678", {
+    canvasId: "r1",
+    proposedMarkdown: "# Requirements\n- MFA",
+  });
+
+  const actions = blocks.find((b) => b.type === "actions") as {
+    elements: Array<{ action_id: string; text: { text: string }; value: string }>;
+  };
+  const acceptButton = actions.elements.find((e) => e.action_id === "accept_proposals");
+  assertEquals(acceptButton?.text.text, "Accept & Update Canvas");
+  assertEquals(acceptButton?.value.includes("r1"), true);
+
+  const contextBlock = blocks.find((b) => b.type === "context") as {
+    elements: Array<{ text: string }>;
+  };
+  assertEquals(contextBlock?.elements[0].text.includes("Refinement guidance"), true);
+});
+
+Deno.test("Staged proposal gate — handleAcceptProposalAction edits canvas and confirms acceptance", async () => {
+  let editedCanvasId = "";
+  let updatedMessage: any = null;
+
+  const mockClient = {
+    canvases: {
+      edit: async (params: any) => {
+        editedCanvasId = params.canvas_id;
+        return { ok: true };
+      },
+    },
+    chat: {
+      update: async (params: Record<string, unknown>) => {
+        updatedMessage = params;
+        return { ok: true };
+      },
+      postMessage: async () => ({ ok: true }),
+    },
+  };
+
+  const result = await handleAcceptProposalAction({
+    client: mockClient as any,
+    channelId: "C1",
+    messageTs: "2000.0001",
+    threadTs: "1000.0001",
+    requirementsCanvasId: "r1",
+    proposedMarkdown: "# Updated Requirements",
+  });
+
+  assertEquals(result.ok, true);
+  assertEquals(editedCanvasId, "r1");
+  assertEquals(updatedMessage !== null, true);
+  assertEquals((updatedMessage?.text as string).includes("Requirements proposal accepted"), true);
 });
 
 

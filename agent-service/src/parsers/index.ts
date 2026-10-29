@@ -1,10 +1,20 @@
-import type { ParsedDocument } from "@sea-trial/shared";
+import type { DocumentImagePayload, ParsedDocument } from "@sea-trial/shared";
 import { parseDocx } from "./docx.js";
-import { IMAGE_ONLY_ERROR, parsePdf } from "./pdf.js";
+import { parseImage } from "./image.js";
+import { IMAGE_ONLY_ERROR, PDF_EXTRACTION_FAILED_ERROR, parsePdf } from "./pdf.js";
 import { parseText } from "./text.js";
 import { parseXlsx } from "./xlsx.js";
 
-const SUPPORTED_EXTENSIONS = new Set([".pdf", ".docx", ".xlsx", ".txt", ".md"]);
+const SUPPORTED_EXTENSIONS = new Set([
+  ".pdf",
+  ".docx",
+  ".xlsx",
+  ".txt",
+  ".md",
+  ".png",
+  ".jpg",
+  ".jpeg",
+]);
 
 export const NO_EXTRACTABLE_TEXT_ERROR =
   "Document contains no extractable text";
@@ -21,7 +31,7 @@ export interface ParseDocumentInput {
 }
 
 /**
- * Parses an uploaded document and returns extracted text or an unsupported result.
+ * Parses an uploaded document and returns extracted text and/or visual image payloads.
  */
 export async function parseDocument(
   input: ParseDocumentInput,
@@ -42,20 +52,32 @@ export async function parseDocument(
   }
 
   try {
-    let text: string;
+    let text = "";
+    let images: DocumentImagePayload[] | undefined;
 
     switch (ext) {
-      case ".pdf":
-        text = await parsePdf(input.content);
-        if (!text) {
+      case ".pdf": {
+        const pdfResult = await parsePdf(input.content);
+        text = pdfResult.text;
+        images = pdfResult.images;
+        if (!text && (!images || images.length === 0)) {
           return {
             ...base,
             text: "",
             supported: false,
-            error: IMAGE_ONLY_ERROR,
+            error: PDF_EXTRACTION_FAILED_ERROR,
           };
         }
         break;
+      }
+      case ".png":
+      case ".jpg":
+      case ".jpeg": {
+        const imageResult = parseImage(input.content, input.filename, input.mimeType);
+        text = imageResult.text;
+        images = imageResult.images;
+        break;
+      }
       case ".docx":
         text = await parseDocx(input.content);
         break;
@@ -76,7 +98,7 @@ export async function parseDocument(
     }
 
     const trimmed = text.trim();
-    if (!trimmed) {
+    if (!trimmed && (!images || images.length === 0)) {
       return {
         ...base,
         text: "",
@@ -87,7 +109,8 @@ export async function parseDocument(
 
     return {
       ...base,
-      text: trimmed,
+      text: trimmed || (images && images.length > 0 ? `[Visual document: ${input.filename}]` : ""),
+      images: images && images.length > 0 ? images : undefined,
       supported: true,
     };
   } catch (error) {
@@ -101,4 +124,5 @@ export async function parseDocument(
 }
 
 export { parseText } from "./text.js";
+export { IMAGE_ONLY_ERROR, PDF_EXTRACTION_FAILED_ERROR } from "./pdf.js";
 

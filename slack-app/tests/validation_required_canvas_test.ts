@@ -78,14 +78,14 @@ Deno.test("updateDeliverableStatus dispatches Validation required canvas creatio
         category: "SSO",
         requirements: "Configure SSO integration",
       },
-      newStatus: "Validation required",
+      newStatus: "Accepted",
       env: {
         AGENT_SERVICE_URL: "http://localhost:3000",
         SLACK_TEAM_ID: "T123",
       },
     });
 
-    assertEquals(updatedStatus, "validation_required");
+    assertEquals(updatedStatus, "accepted");
     assertEquals(result.canvasResult?.created, true);
     assertEquals(result.canvasResult?.canvasId, "canvas-delivery-1");
     assertEquals(replacedMarkdown.includes("consolidate_delivery"), true);

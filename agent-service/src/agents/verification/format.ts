@@ -47,7 +47,17 @@ export function formatVerificationProof(
       : ["SailPoint Identity Security Cloud"];
   const componentsMarkdown = componentsList.join(", ");
 
-  // 4. Artefacts & Config
+  // 4. External technologies
+  const externalTechnologiesList = (proofInputs.externalTechnologies && proofInputs.externalTechnologies.length > 0)
+    ? proofInputs.externalTechnologies
+    : deliverable.category && deliverable.category !== "Uncategorized"
+      ? [deliverable.category]
+      : [];
+  const externalTechnologiesMarkdown = externalTechnologiesList.length > 0
+    ? externalTechnologiesList.join(", ")
+    : "_None specified_";
+
+  // 5. Artefacts & Config
   const artefactsAndConfig = sanitizeConfiguration(proofInputs.configuration);
 
   // Markdown block conforming to canonical schema
@@ -57,6 +67,7 @@ export function formatVerificationProof(
     `- **Customer Summary:** ${customerSummary}`,
     `- **Visual Proof:** ${visualProofMarkdown}`,
     `- **Components:** ${componentsMarkdown}`,
+    `- **External Technologies:** ${externalTechnologiesMarkdown}`,
     `- **Artefacts & Config:** ${artefactsAndConfig}`,
   ].join("\n");
 
@@ -64,6 +75,7 @@ export function formatVerificationProof(
     customerSummary,
     visualProofUrl: visualProofUrl || undefined,
     components: componentsList,
+    externalTechnologies: externalTechnologiesList,
     artefactsAndConfig,
   };
 

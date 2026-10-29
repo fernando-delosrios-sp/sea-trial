@@ -8,7 +8,7 @@ const CANVAS_TEMPLATE_PATHS = [
   "canvases/requirements.hbs.md",
   "canvases/infrastructure.hbs.md",
   "canvases/situation-report.hbs.md",
-  "canvases/delivery.hbs.md",
+  "canvases/delivery.fragment.hbs.md",
 ] as const;
 
 Deno.test("loadValidatedCanvasTemplate validates source before returning precompiled template", () => {

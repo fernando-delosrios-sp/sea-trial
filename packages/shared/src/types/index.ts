@@ -69,6 +69,7 @@ export interface DeliverableProposal {
   similarityNotes?: string;
   suggestedStatus: DeliverableStatus;
   openQuestions?: string[];
+  provenanceTag?: string;
 }
 
 /** Raw file bytes for HTTP transport (base64-encoded in JSON). */
@@ -85,13 +86,34 @@ export interface DocumentInput {
   content: Uint8Array;
 }
 
+/** Visual payload representing a rendered page or detected diagram/figure. */
+export interface DocumentImagePayload {
+  pageNumber?: number;
+  dataBase64?: string;
+  buffer?: Uint8Array;
+  mimeType: string;
+  description?: string;
+}
+
 /** Result of format extraction in agent-service parsers. */
 export interface ParsedDocument {
   filename: string;
   mimeType: string;
   text: string;
+  images?: DocumentImagePayload[];
   supported: boolean;
   error?: string;
+}
+
+export type RequirementsProposalGateAction = "accept" | "edit" | "reject";
+
+export interface RequirementsProposal {
+  summary: string;
+  diffMarkdown?: string;
+  sourceFiles: string[];
+  candidateDeliverables: DeliverableProposal[];
+  proposedCanvasMarkdown: string;
+  supersededRequirementRefs?: string[];
 }
 
 export interface ProcessRequirementsRequest {
@@ -100,11 +122,14 @@ export interface ProcessRequirementsRequest {
   existingDeliverables: DeliverableProposal[];
   documents: DocumentInput[];
   threadHistory?: string;
+  feedback?: string;
+  priorProposal?: RequirementsProposal;
 }
 
 export interface ProcessRequirementsResponse {
   canvasMarkdown: string;
   proposals: DeliverableProposal[];
+  proposal?: RequirementsProposal;
   agentMessage: string;
   needsClarification: boolean;
   clarificationQuestions?: string[];
@@ -125,6 +150,7 @@ export interface DeliveryProofBlock {
   customerSummary: string;
   visualProofUrl?: string;
   components?: string[];
+  externalTechnologies?: string[];
   artefactsAndConfig?: string;
 }
 
@@ -137,6 +163,7 @@ export interface VerificationRequest {
     notes?: string;
     configuration?: string;
     components?: string[];
+    externalTechnologies?: string[];
   };
   requirementsCanvasMarkdown?: string;
 }

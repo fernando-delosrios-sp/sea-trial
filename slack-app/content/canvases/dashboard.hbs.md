@@ -49,7 +49,7 @@
 - [ ] Identify the main stakeholders
 - [ ] Identify the partner
 - [ ] Identify the competition
-- [ ] **Lead SE:** Drop customer specifications into the pinned *📁 Materials & Requirements Drop* thread
+- [ ] **Lead SE:** Run **Plan deliverables** or @mention the bot with customer specifications
 - [ ] **Tech Specialist:** Verify tenant access and sandbox environment availability
 
 ### Phase 2: Scoping & Architecture (Day 1)

@@ -77,6 +77,8 @@ export interface ChannelProvisionClient
       channel: string;
       text: string;
       blocks?: Record<string, unknown>[];
+      unfurl_links?: boolean;
+      unfurl_media?: boolean;
     }) => Promise<{ ts?: string; ok?: boolean; error?: string }>;
   };
   pins: {
@@ -253,6 +255,8 @@ async function postPinnedIndex(
     channel: channelId,
     text: renderPinnedIndexMessage(context, composition, navOptions),
     blocks: renderPinnedIndexBlocks(context, composition, navOptions),
+    unfurl_links: false,
+    unfurl_media: false,
   });
 
   const timestamp = indexMessage.ts?.trim();
@@ -374,12 +378,6 @@ export async function provisionChannel(
         throw new Error(`Unsupported step kind "${(step as CompositionStep).kind}"`);
     }
   }
-
-  const materialsDropTs = await postPinnedMaterialsDrop(
-    client,
-    inputs.channel_id,
-  );
-  context = { ...context, materialsDropMessageTs: materialsDropTs };
 
   await postPinnedIndex(
     client,

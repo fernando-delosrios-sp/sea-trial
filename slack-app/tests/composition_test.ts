@@ -547,7 +547,7 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
   assertEquals(context.deliverablesListId, "L-Deliverables [proj-demo-tes]");
   assertEquals(context.incidentsListId, "L-Incidents [proj-demo-tes]");
   assertEquals(context.situationReportCanvasId, "C-Situation Report [proj-demo-tes]");
-  assertEquals(context.materialsDropMessageTs, "1234.5678");
+  assertEquals(context.materialsDropMessageTs, undefined);
   assertEquals(createOrder.indexOf("canvas:Dashboard [proj-demo-tes]"), 0);
   assertEquals(createOrder.indexOf("canvas-standalone:Situation Report [proj-demo-tes]"), 1);
   assertEquals(createOrder.indexOf("canvas-standalone:Infrastructure [proj-demo-tes]"), 2);

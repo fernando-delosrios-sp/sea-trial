@@ -36,7 +36,7 @@
 ---
 
 ## Extracted Requirements
-_No requirements extracted yet. Drop specification documents into the pinned Materials & Requirements Drop thread to summon the Requirements Agent._
+_No requirements extracted yet. Run **Plan deliverables** or @mention the bot with specification documents to summon the Requirements Agent._
 
 ## REQ-01: Sample Requirement Title
 - **Status:** Open

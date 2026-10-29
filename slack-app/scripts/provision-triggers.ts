@@ -125,6 +125,26 @@ export async function provisionTarget(
         `[${target.configId}] slack trigger access failed: ${accessResult.stderr || accessResult.stdout}`,
       );
     }
+
+    // Ensure permission is strictly channel-scoped without user grants
+    if (token) {
+      try {
+        await fetch("https://slack.com/api/workflows.triggers.permissions.set", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            trigger_id: triggerId,
+            permission_type: "named_entities",
+            channel_ids: [target.channelId],
+          }),
+        });
+      } catch {
+        // Best effort API sync; CLI grant succeeded
+      }
+    }
   }
 
   if (target.configId === "complete-onboarding") {

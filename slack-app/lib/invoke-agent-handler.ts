@@ -144,13 +144,19 @@ export function resolveAgentInvocationRoute(params: {
       if (subCommand === "delivery") {
         return { type: "delivery", threadTs: activeThreadTs };
       }
+      if (params.hasFiles) {
+        return { type: "requirements", threadTs: activeThreadTs };
+      }
       return { type: "help", threadTs: activeThreadTs };
     }
   }
 
-  // 3. File uploaded in general chatter outside the Materials Drop thread
+  // 3. File uploaded in general chatter
   if (params.hasFiles) {
-    return { type: "redirect_materials", threadTs: activeThreadTs };
+    if (params.materialsDropMessageTs) {
+      return { type: "redirect_materials", threadTs: activeThreadTs };
+    }
+    return { type: "requirements", threadTs: activeThreadTs };
   }
 
   return { type: "ignore" };
@@ -188,7 +194,7 @@ export async function runInvokeAgentHandler(
     );
   });
 
-  const activeThreadTs = inputs.thread_ts ?? inputs.message_ts;
+  const activeThreadTs = inputs.thread_ts ?? inputs.message_ts ?? "";
 
   let context: TesEventContext | null = null;
   if (inputs.dashboard_canvas_content) {
@@ -230,7 +236,7 @@ export async function runInvokeAgentHandler(
     if (route.type === "redirect_materials") {
       await client.chat.postMessage({
         channel: inputs.channel_id,
-        thread_ts: activeThreadTs,
+        thread_ts: activeThreadTs || undefined,
         text: materialsRedirectMessage(),
       });
       return { outputs: { thread_ts: activeThreadTs } };
@@ -239,7 +245,7 @@ export async function runInvokeAgentHandler(
     if (route.type === "help") {
       await client.chat.postMessage({
         channel: inputs.channel_id,
-        thread_ts: activeThreadTs,
+        thread_ts: activeThreadTs || undefined,
         text: agentUsageHelpMessage(),
       });
       return { outputs: { thread_ts: activeThreadTs } };
@@ -248,7 +254,7 @@ export async function runInvokeAgentHandler(
     if (route.type === "delivery") {
       await client.chat.postMessage({
         channel: inputs.channel_id,
-        thread_ts: activeThreadTs,
+        thread_ts: activeThreadTs || undefined,
         text: "Delivery Agent is scheduled for delivery phase validation.",
       });
       return { outputs: { thread_ts: activeThreadTs } };
@@ -258,7 +264,7 @@ export async function runInvokeAgentHandler(
   if (!shouldProceedWithAgent(context)) {
     await client.chat.postMessage({
       channel: inputs.channel_id,
-      thread_ts: activeThreadTs,
+      thread_ts: activeThreadTs || undefined,
       text: onboardingGateMessage(),
     });
     return {
@@ -370,7 +376,7 @@ export async function runInvokeAgentHandler(
     // Canvas is updated only when the user explicitly clicks [Accept & Update Canvas].
     const proposalMessage = await client.chat.postMessage({
       channel: inputs.channel_id,
-      thread_ts: activeThreadTs,
+      thread_ts: activeThreadTs || undefined,
       text: response.agentMessage,
       blocks: buildProposalBlocks(
         response.proposals,

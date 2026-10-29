@@ -189,6 +189,7 @@ function formatChangelogTableRows(rows: ChangelogRow[]): string {
 export interface BuildSituationReportOptions {
   generatedAt?: string;
   previousMarkdown?: string;
+  refreshReportUrl?: string;
 }
 
 /** Builds full Situation Report markdown from deliverable rows. */
@@ -212,6 +213,7 @@ export function buildSituationReportMarkdown(
     projectName: context.projectName,
     accountDisplay: context.accountName ?? NOT_SET,
     generatedAt,
+    refreshReportUrl: options.refreshReportUrl,
     executiveSummaryNarrative: buildExecutiveSummaryNarrative(rows, counts),
     countInProgress: counts.in_progress,
     countNeedsInput: counts.needs_input,

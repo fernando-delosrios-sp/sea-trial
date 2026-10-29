@@ -1,6 +1,8 @@
 # Requirements Canvas
+{{#if planDeliverablesUrl}}
 
 [🚀 Plan Deliverables]({{planDeliverablesUrl}})
+{{/if}}
 
 ## Project
 - **Name:** {{projectName}}

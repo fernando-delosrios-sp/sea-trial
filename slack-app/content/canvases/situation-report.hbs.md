@@ -1,6 +1,8 @@
 # Situation Report — {{projectName}}
+{{#if refreshReportUrl}}
 
 [🔄 Refresh Report]({{refreshReportUrl}})
+{{/if}}
 
 **Generated:** {{generatedAt}}
 **Account:** {{accountDisplay}}

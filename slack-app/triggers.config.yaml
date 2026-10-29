@@ -13,7 +13,7 @@
 triggers:
   - id: create-tes-event
     trigger_def: triggers/create_tes_event.ts
-    scope: global
+    scope: channel
     channels: []
     enabled: true
 
@@ -22,3 +22,16 @@ triggers:
     scope: global
     channels: []
     enabled: true
+
+  - id: channel-message-posted
+    trigger_def: triggers/channel_message_posted.ts
+    scope: channel
+    channels: []
+    enabled: true
+
+  - id: plan-deliverables
+    trigger_def: triggers/plan_deliverables.ts
+    scope: channel
+    channels: []
+    enabled: true
+

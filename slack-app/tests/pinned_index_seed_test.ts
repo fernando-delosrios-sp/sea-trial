@@ -23,7 +23,9 @@ const baseContext: TesEventContext = {
   accountName: "Acme Corp",
 };
 
-function provisionClient(postMessage: () => Promise<{ ts?: string; ok?: boolean }>) {
+function provisionClient(
+  postMessage: (params?: { text?: string }) => Promise<{ ts?: string; ok?: boolean }>,
+) {
   return {
     files: {
       getUploadURLExternal: async () => ({
@@ -90,11 +92,18 @@ Deno.test("seeding fails when the pinned index post has no timestamp", async () 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(null, { status: 200 });
 
+  const postMessage = async (params?: { text?: string }) => {
+    if (params?.text?.includes("Materials")) {
+      return { ts: "drop.1234" };
+    }
+    return { ts: undefined };
+  };
+
   try {
     await assertRejects(
       () =>
         provisionChannel(
-          provisionClient(async () => ({ ts: undefined })),
+          provisionClient(postMessage),
           {
             channel_id: "C999",
             project_name: "Demo",

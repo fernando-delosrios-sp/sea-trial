@@ -9,6 +9,11 @@
       "is_primary_column": true
     },
     {
+      "key": "requirement_ref",
+      "name": "Requirement Ref",
+      "type": "text"
+    },
+    {
       "key": "assignee",
       "name": "Assignee",
       "type": "assignee"

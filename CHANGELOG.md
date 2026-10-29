@@ -1,5 +1,49 @@
 # Changelog
 
+## 2026-10-29 · v0.1.3
+
+### ✨ New Features
+
+- **Single Requirements Canvas Ledger & Proof Feedback** — Eliminated per-task delivery canvas sprawl (`Delivery: TASK-XX`) by establishing the Requirements Canvas as the single living technical ledger. Each requirement (`REQ-XX`) now hosts structured `### Acceptance Criteria` and `### Delivery Proof & Outcome` sections.
+- **Verification Agent** — Introduced the Verification Agent in `agent-service` and `slack-app` to validate completed deliverables when items reach `Validation required` or `Accepted`. The agent collects Loom demo links, component breakdowns, and configuration notes from Tech Specialists, sanitizes credentials, and syncs verified proof directly into the Requirements Canvas.
+- **Plan Deliverables Action Link & Workflow Trigger** — Added a header action link `[🚀 Plan Deliverables]` in the Requirements Canvas backed by a dedicated Slack workflow trigger (`plan_deliverables`), allowing users to launch deliverables scoping directly from the technical ledger.
+- **Channel Materials Drop Discipline** — File uploads outside the pinned Materials Drop thread are automatically redirected with guidance to keep project specification files consolidated.
+
+### 🔧 Improvements
+
+- **Deliverables List Requirement Linking** — Added a `requirement_ref` column to the Deliverables List schema and data types, mapping each deliverable task (`TASK-XX`) back to its source requirement (`REQ-XX`).
+- **Situation Report Proof Integration** — Updated the Situation Report canvas and Reporting Agent to extract customer summaries and demo proof links directly from `REQ-XX` proof blocks in the Requirements Canvas, and added the `[🔄 Refresh Report]` workflow trigger header.
+
+---
+
+## 2026-10-28 · v0.1.2
+
+### ✨ New Features
+
+- **Pinned Materials & Requirements Drop Thread** — Channel seeding automatically provisions a pinned `📁 Materials & Requirements Drop` message in every TES Event Channel, recording its timestamp in `TesEventContext.materialsDropMessageTs` so team members can drop specification files and requirement requests without needing unsupported Slack bookmark folders.
+- **Channel Message Trigger & Multi-Agent Dispatch** — Channel-scoped `message_posted` events route through `InvokeAgentWorkflow` and `invoke-agent-handler.ts`. The router cleanly dispatches explicit sub-commands (`@Sea Trial requirements` vs `@Sea Trial delivery`), replies with helpful usage instructions when unrecognized, and fast-exits (<50ms) on non-target chatter.
+- **Interactive Requirement Refinement & Review Gate** — Team members can upload documents and converse with the Requirements Agent inside the Materials Drop thread or via `@Sea Trial requirements`. The agent reads current canvas state, generates structured requirement proposals, and provides interactive review buttons directly in Slack.
+
+### 📚 Documentation
+
+- Updated README and smoke-test checklist with verification procedures for Materials Drop threads, `@Sea Trial requirements` invocations, and multi-agent dispatch.
+
+---
+
+## 2026-10-28 · v0.1.1
+
+### 🔧 Improvements
+
+- **Channel Resource Title Suffix** — All provisioned canvases (`Dashboard`, `Situation Report`, `Infrastructure`, `Requirements`) and lists (`Deliverables`, `Incidents`) are titled `<Base Title> [<channel-name>]` (e.g. `Dashboard [proj-acme-tes]`), disambiguating resources in workspace searches and preventing name collisions across event channels.
+- **Clean In-Channel Bookmarks** — Header bookmarks for lists and pinned index links continue to display clean base titles (`Deliverables`, `Incidents`, `Dashboard`) without the redundant channel suffix.
+- **Automatic Channel-Scoped Canvas Access** — Newly provisioned canvases explicitly grant channel-level write access (`canvases.access.set` with `channel_ids`), allowing present and future members who join the channel to inherit edit permissions automatically.
+
+### 📚 Documentation
+
+- Updated README to describe the `[<channel-name>]` title suffix convention and automatic channel-level access inheritance.
+
+---
+
 ## 2026-08-30 · v0.1.0
 
 ### ✨ New Features

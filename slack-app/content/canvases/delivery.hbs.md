@@ -1,3 +1,4 @@
+<!-- ARCHIVED: Retired in requirements-to-delivery-pipeline; delivery proof is now consolidated directly in the Requirements Canvas -->
 # Delivery: {{taskId}}
 
 > {{#if reviewPending}}⚠️ **Agent draft — pending review** · {{/if}}Draft v{{draftVersion}} · {{generatedAt}}

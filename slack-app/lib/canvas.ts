@@ -23,6 +23,11 @@ export interface SlackCanvasCreateResponse {
   canvas?: { id?: string };
 }
 
+export interface SlackCanvasAccessResponse {
+  ok?: boolean;
+  error?: string;
+}
+
 export interface SlackCanvasClient {
   canvases: {
     create: (params: {
@@ -30,6 +35,14 @@ export interface SlackCanvasClient {
       title: string;
       document_content: { type: string; markdown: string };
     }) => Promise<SlackCanvasCreateResponse>;
+    access?: {
+      set: (params: {
+        canvas_id: string;
+        access_level: "read" | "write";
+        channel_ids?: string[];
+        user_ids?: string[];
+      }) => Promise<SlackCanvasAccessResponse>;
+    };
     edit: (params: {
       canvas_id: string;
       changes: Array<{
@@ -118,6 +131,41 @@ export async function createCanvas(
   return canvasId;
 }
 
+export interface SetCanvasChannelAccessParams {
+  canvasId: string;
+  channelId: string;
+  accessLevel?: "read" | "write";
+}
+
+/**
+ * Grants channel-scoped access to a Slack canvas.
+ * When client.canvases.access.set is available, sets access for the channel.
+ * @param client - Slack API client with canvas scopes
+ * @param params - Canvas ID, Channel ID, and optional access level (defaults to "write")
+ */
+export async function setCanvasChannelAccess(
+  client: SlackCanvasClient,
+  params: SetCanvasChannelAccessParams,
+): Promise<void> {
+  if (!client.canvases.access?.set) {
+    return;
+  }
+
+  const accessLevel = params.accessLevel ?? "write";
+  const response = await client.canvases.access.set({
+    canvas_id: params.canvasId,
+    access_level: accessLevel,
+    channel_ids: [params.channelId],
+  });
+
+  if (response.error || response.ok === false) {
+    const detail = response.error ? `: ${response.error}` : "";
+    throw new Error(
+      `Failed to set channel access on canvas "${params.canvasId}"${detail}`,
+    );
+  }
+}
+
 /**
  * Updates a section of an existing canvas identified by a marker string in its markdown.
  * @param client - Slack API client with canvas scopes
@@ -199,6 +247,93 @@ export async function readCanvasMarkdown(
   }
 
   return content;
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Appends or updates the `### Delivery Proof & Outcome` section under a targeted `REQ-XX` heading
+ * and updates the requirement status to `Complete`.
+ */
+export function upsertDeliveryProofSection(
+  canvasMarkdown: string,
+  requirementRef: string,
+  proofBlockMarkdown: string,
+  options: { markComplete?: boolean } = {},
+): string {
+  const markComplete = options.markComplete ?? true;
+  const cleanRef = requirementRef.trim();
+
+  // Pattern to find the requirement heading: e.g. "## REQ-01:" or "## REQ-01"
+  const reqPattern = new RegExp(
+    `(^|\\n)(##\\s*${escapeRegex(cleanRef)}[:\\s][^\\n]*\\n)([\\s\\S]*?)(?=\\n## |$)`,
+  );
+  const match = canvasMarkdown.match(reqPattern);
+
+  if (!match) {
+    return canvasMarkdown;
+  }
+
+  const prefix = match[1];
+  const headingLine = match[2];
+  let reqBody = match[3];
+
+  if (markComplete) {
+    if (/- \*\*Status:\*\*/.test(reqBody)) {
+      reqBody = reqBody.replace(
+        /- \*\*Status:\*\*[^\n]*/,
+        "- **Status:** Complete",
+      );
+    }
+  }
+
+  // Check if ### Delivery Proof & Outcome already exists
+  const proofPattern = /(### Delivery Proof & Outcome[\s\S]*?)(?=\n### |\n## |$)/;
+  if (proofPattern.test(reqBody)) {
+    reqBody = reqBody.replace(proofPattern, proofBlockMarkdown.trim());
+  } else {
+    reqBody = `${reqBody.trimEnd()}\n\n${proofBlockMarkdown.trim()}\n`;
+  }
+
+  const updatedReqSection = `${prefix}${headingLine}${reqBody}`;
+  return canvasMarkdown.replace(match[0], updatedReqSection);
+}
+
+/**
+ * Extracts delivery proof details from the Requirements Canvas markdown for a given requirement.
+ */
+export function extractProofFromRequirementsCanvas(
+  canvasMarkdown?: string,
+  requirementRef?: string,
+): { customerSummary?: string; visualProofUrl?: string; visualProofMarkdown?: string } | null {
+  if (!canvasMarkdown) return null;
+  let targetSection = canvasMarkdown;
+  if (requirementRef) {
+    const reqPattern = new RegExp(
+      `(^|\\n)##\\s*${escapeRegex(requirementRef)}[:\\s][\\s\\S]*?(?=\\n## |$)`,
+    );
+    const match = canvasMarkdown.match(reqPattern);
+    if (match) {
+      targetSection = match[0];
+    }
+  }
+  const proofMatch = targetSection.match(
+    /### Delivery Proof & Outcome[\s\S]*?(?=\n## |\n### |$)/,
+  );
+  if (!proofMatch) return null;
+  const proofText = proofMatch[0];
+  const summaryMatch = proofText.match(/- \*\*Customer Summary:\*\*\s*(.+)/);
+  const visualMatch = proofText.match(/- \*\*Visual Proof:\*\*\s*(.+)/);
+  const customerSummary = summaryMatch?.[1]?.trim();
+  const visualProofMarkdown = visualMatch?.[1]?.trim();
+  const urlMatch = visualProofMarkdown?.match(/https?:\/\/[^\s)>]+/);
+  return {
+    customerSummary,
+    visualProofUrl: urlMatch?.[0],
+    visualProofMarkdown,
+  };
 }
 
 

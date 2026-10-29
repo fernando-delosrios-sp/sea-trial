@@ -212,15 +212,21 @@ export function getListName(listName: string): string {
   return loadList(listName).name;
 }
 
-/** Prefixes a list name with the TES account name for workspace-scoped lists. */
+/** Suffixes a list name with the channel name (e.g. `Deliverables [proj-acme-tes]`), falling back to account prefix. */
 export function formatScopedListName(
   listRef: string,
   accountName?: string,
+  channelName?: string,
 ): string {
   const baseName = getListName(listRef);
+  const trimmedChannel = channelName?.trim();
+  if (trimmedChannel) {
+    return `${baseName} [${trimmedChannel}]`;
+  }
   const trimmed = accountName?.trim();
   return trimmed ? `${trimmed} ${baseName}` : baseName;
 }
+
 
 /** Returns declarative field_change behavior rules for a list. */
 export function getListFieldChangeRules(listName: string): unknown[] {

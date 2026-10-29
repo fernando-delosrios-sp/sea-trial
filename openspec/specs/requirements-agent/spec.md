@@ -3,7 +3,9 @@
 ## Purpose
 
 Document parsing, LangGraph.js Requirements Agent, Deno/agent-service boundary, and Requirements Canvas synchronization.
+
 ## Requirements
+
 ### Requirement: Deno and agent-service boundary
 
 The slack-app SHALL act as a Slack adapter only. The agent-service SHALL own all
@@ -104,15 +106,23 @@ formatting. The graph nodes SHALL be: `loadContext`, `parseDocuments`,
 
 ### Requirement: Slack app agent invocation
 
-The slack-app SHALL wire @mention handling to the agent-service with gate checks and canvas sync. The agent SHALL only run when explicitly summoned by a user @mention (or thread continuation); it SHALL NOT auto-run on channel provisioning or onboarding completion.
+The slack-app SHALL wire agent invocation to the agent-service with onboarding gate checks, multi-agent sub-command dispatch, Materials Drop thread detection, and canvas sync. The Requirements Agent SHALL run when summoned by a user @mention with the explicit `requirements` sub-command, when files or replies are posted to the pinned Materials Drop thread, or during multi-turn thread continuation. The agent SHALL NOT auto-run on channel provisioning or onboarding completion. The slack-app SHALL ignore general channel chatter that does not target the agent or the Materials Drop thread without invoking the agent-service.
 
 #### Scenario: Successful agent run
 
-- **GIVEN** onboarding is complete and a user @mentions the bot with file attachments
+- **GIVEN** onboarding is complete and a user @mentions the bot with the `requirements` sub-command and file attachments
 - **WHEN** the invoke flow runs
 - **THEN** files SHALL be downloaded and sent to agent-service
 - **AND** the Requirements canvas SHALL be updated with agent output
 - **AND** proposals SHALL be posted in a Block Kit thread
+
+#### Scenario: Successful agent run via Materials Drop thread
+
+- **GIVEN** onboarding is complete and a user posts a file attachment to the pinned Materials Drop thread
+- **WHEN** the invoke flow runs
+- **THEN** files SHALL be downloaded and sent to agent-service
+- **AND** the Requirements canvas SHALL be updated with agent output
+- **AND** proposals SHALL be posted in the Materials Drop thread with Accept, Edit, and Reject actions
 
 #### Scenario: Multi-turn thread continuation
 
@@ -123,8 +133,21 @@ The slack-app SHALL wire @mention handling to the agent-service with gate checks
 #### Scenario: Summon-only invocation
 
 - **GIVEN** a TES Event Channel is created or onboarding completes
-- **WHEN** no user @mentions the bot
+- **WHEN** no user @mentions the bot and no file is posted to the Materials Drop thread
 - **THEN** the invoke flow SHALL NOT run
+
+#### Scenario: Multi-agent sub-command routing
+
+- **GIVEN** a user mentions `@Sea Trial` without a recognized sub-command
+- **WHEN** the router evaluates the message
+- **THEN** the app SHALL reply with usage guidance listing available sub-commands (`requirements`, `delivery`)
+- **AND** the app SHALL NOT call agent-service
+
+#### Scenario: General chatter fast-exit
+
+- **GIVEN** a message is posted in the channel outside the Materials Drop thread and without mentioning `@Sea Trial`
+- **WHEN** the channel message trigger evaluates the event
+- **THEN** the flow SHALL exit immediately without posting messages or invoking agent-service
 
 ### Requirement: Raw byte file transport
 
@@ -205,3 +228,31 @@ The agent-service SHALL update Requirements Canvas markdown incrementally, prese
 - **WHEN** the agent identifies out-of-scope items
 - **THEN** the canvas SHALL append a new `## Out of Scope` section with the identified items
 
+### Requirement: Materials drop thread enforcement
+
+The slack-app SHALL process document attachments only when posted to the pinned Materials & Requirements Drop thread, or when explicitly summoned via `@Sea Trial requirements` in that thread. Document attachments uploaded in general channel chatter SHALL NOT be automatically processed by the Requirements Agent; the bot MAY reply with instructions directing the user to the pinned Materials Drop thread.
+
+#### Scenario: Document dropped in materials thread processes
+
+- **GIVEN** onboarding is complete
+- **WHEN** a user posts a specification file in the pinned Materials Drop thread
+- **THEN** the Requirements Agent SHALL parse the document and update the Requirements Canvas
+
+#### Scenario: Document in general channel chatter ignored
+
+- **GIVEN** a message with a file attachment is posted in the channel outside the Materials Drop thread
+- **AND** the message does not mention `@Sea Trial requirements`
+- **WHEN** the message handler evaluates the event
+- **THEN** the file SHALL NOT be parsed by agent-service
+- **AND** the bot MAY post an ephemeral or thread reply directing uploads to the pinned thread
+
+### Requirement: Plan deliverables canvas action link
+
+The Requirements Canvas template and runtime renderer SHALL include a workflow link trigger (`[🚀 Plan Deliverables]({{planDeliverablesUrl}})`) enabling users to summon the Deliverables Agent to review requirements and generate the Deliverables List.
+
+#### Scenario: Canvas contains plan deliverables action
+
+- **GIVEN** a provisioned Requirements Canvas
+- **WHEN** the canvas is rendered or updated with extracted requirements
+- **THEN** the canvas header SHALL contain an action link referencing `planDeliverablesUrl`
+- **AND** clicking the link SHALL trigger the Deliverables Agent workflow

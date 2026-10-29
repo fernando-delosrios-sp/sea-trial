@@ -77,40 +77,22 @@ export default SlackFunction(
         return { error: "Could not load channel context from dashboard." };
       }
 
-      const row = buildRow(inputs);
-      const result = await runValidationRequiredIfNeeded(
-        {
-          listName: "deliverables",
-          column: "status",
-          previousValue: inputs.previous_status ?? "",
-          newValue: inputs.status,
-          row,
-        },
-        {
-          client,
-          channelId: inputs.channel_id,
-          listId: inputs.deliverables_list_id,
-          listItemId: inputs.list_item_id,
-          context: context as TesEventContext,
-          row,
-          env: env as Record<string, string | undefined>,
-        },
-      );
+      const assigneeMention = inputs.assignee ? `<@${inputs.assignee}>` : "team";
+      await client.chat.postMessage({
+        channel: inputs.channel_id,
+        text: `👋 Verification Agent summoned for *${inputs.task_id}* (${inputs.status}).\nHey ${assigneeMention}, please reply with your visual proof link (e.g. Loom video), configuration notes, and an outcome summary for customer reporting.`,
+      });
 
-      if (!result) {
-        return { outputs: { canvas_id: "", created: false } };
-      }
-
-      logger.emit("delivery.validation_required.completed", {
+      logger.emit("verification.summoned", {
         taskId: inputs.task_id,
-        canvasId: result.canvasId,
-        created: result.created,
+        status: inputs.status,
+        assignee: inputs.assignee,
       });
 
       return {
         outputs: {
-          canvas_id: result.canvasId,
-          created: result.created,
+          canvas_id: "",
+          created: false,
         },
       };
     });

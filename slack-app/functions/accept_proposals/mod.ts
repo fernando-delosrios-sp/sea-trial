@@ -74,6 +74,7 @@ export default SlackFunction(
           list_id: inputs.deliverables_list_id,
           initial_fields: [
             { column_id: "task_id", value: row.taskId },
+            { column_id: "requirement_ref", value: row.requirement_ref },
             { column_id: "assignee", value: row.assignee },
             { column_id: "status", value: toSlackListSelectValue(row.status) },
             { column_id: "situation", value: row.situation },

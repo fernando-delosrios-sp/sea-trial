@@ -25,6 +25,7 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 - [ ] Deliverables and Incidents lists exist
 - [ ] Deliverables and Incidents appear as channel bookmarks (channel header) linking to each list
 - [ ] Dashboard tells the Sales Engineer to run **Complete onboarding** (no `https://slack.com/shortcuts/` href)
+- [ ] Pinned `📁 Materials & Requirements Drop` message posted and pinned
 - [ ] **New channel required** after this change — existing channels need Create TES Event again or `repair-tes-event-context.ts` with `TES_EVENT_CONTEXT_JSON` and `SLACK_ONBOARDING_TRIGGER_ID`
 - [ ] Pinned index message links all objects
 - [ ] Pinned index has no Complete onboarding or Edit onboarding button
@@ -51,8 +52,12 @@ Run in Slack dev tenant after deploying slack-app and agent-service.
 
 ## Requirements Agent
 
+- [ ] Upload document to pinned `📁 Materials & Requirements Drop` thread → agent invokes automatically
 - [ ] Upload PDF/DOCX/XLSX/txt → agent processes
 - [ ] Upload unsupported format → graceful rejection
+- [ ] Post `@Sea Trial requirements [instructions]` → agent invoked
+- [ ] Post `@Sea Trial [unknown]` → bot responds with agent usage help
+- [ ] General channel chatter outside Materials Drop thread does not trigger bot
 - [ ] Requirements canvas updated with extracted content
 - [ ] Block Kit proposal thread with Accept/Edit/Reject
 - [ ] Thread reply re-invokes agent

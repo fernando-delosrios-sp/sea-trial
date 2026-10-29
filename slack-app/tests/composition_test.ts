@@ -436,6 +436,7 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
   const listBookmarkAdds: string[] = [];
   const listTabApiCalls: string[] = [];
   const canvasEditContents: string[] = [];
+  const canvasAccessCalls: Array<Record<string, unknown>> = [];
   const store = tesEventStoreMock();
   const grant = grantMock();
   const originalFetch = globalThis.fetch;
@@ -474,6 +475,12 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
             : `canvas-standalone:${params.title}`,
         );
         return { canvas_id: `C-${params.title}` };
+      },
+      access: {
+        set: async (params: Record<string, unknown>) => {
+          canvasAccessCalls.push(params);
+          return { ok: true };
+        },
       },
       edit: async (params: {
         canvas_id: string;
@@ -535,30 +542,40 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
 
   assertEquals(context.channelType, "tes-event");
   assertEquals(context.compositionVersion, "1.0.0");
-  assertEquals(context.dashboardCanvasId, "C-Dashboard");
-  assertEquals(context.requirementsCanvasId, "C-Requirements");
-  assertEquals(context.deliverablesListId, "L-Acme Corp Deliverables");
-  assertEquals(context.incidentsListId, "L-Acme Corp Incidents");
-  assertEquals(context.situationReportCanvasId, "C-Situation Report");
-  assertEquals(createOrder.indexOf("canvas:Dashboard"), 0);
-  assertEquals(createOrder.indexOf("canvas:Situation Report"), 1);
-  assertEquals(createOrder.indexOf("canvas:Infrastructure"), 2);
-  assertEquals(createOrder.indexOf("canvas-standalone:Requirements"), 3);
-  assertEquals(createOrder.indexOf("list:Acme Corp Deliverables"), 4);
-  assertEquals(createOrder.indexOf("list:Acme Corp Incidents"), 5);
+  assertEquals(context.dashboardCanvasId, "C-Dashboard [proj-demo-tes]");
+  assertEquals(context.requirementsCanvasId, "C-Requirements [proj-demo-tes]");
+  assertEquals(context.deliverablesListId, "L-Deliverables [proj-demo-tes]");
+  assertEquals(context.incidentsListId, "L-Incidents [proj-demo-tes]");
+  assertEquals(context.situationReportCanvasId, "C-Situation Report [proj-demo-tes]");
+  assertEquals(context.materialsDropMessageTs, "1234.5678");
+  assertEquals(createOrder.indexOf("canvas:Dashboard [proj-demo-tes]"), 0);
+  assertEquals(createOrder.indexOf("canvas:Situation Report [proj-demo-tes]"), 1);
+  assertEquals(createOrder.indexOf("canvas:Infrastructure [proj-demo-tes]"), 2);
+  assertEquals(createOrder.indexOf("canvas-standalone:Requirements [proj-demo-tes]"), 3);
+  assertEquals(createOrder.indexOf("list:Deliverables [proj-demo-tes]"), 4);
+  assertEquals(createOrder.indexOf("list:Incidents [proj-demo-tes]"), 5);
   assertEquals(listItemCreates.length, 2);
   assertEquals(listCreateParams.map((params) => params.name), [
-    "Acme Corp Deliverables",
-    "Acme Corp Incidents",
+    "Deliverables [proj-demo-tes]",
+    "Incidents [proj-demo-tes]",
   ]);
   assertEquals(listBookmarkAdds, [
-    `Acme Corp Deliverables:https://app.slack.com/lists/${navTeamId}/L-Acme Corp Deliverables`,
-    `Acme Corp Incidents:https://app.slack.com/lists/${navTeamId}/L-Acme Corp Incidents`,
+    `Deliverables:https://app.slack.com/lists/${navTeamId}/L-Deliverables [proj-demo-tes]`,
+    `Incidents:https://app.slack.com/lists/${navTeamId}/L-Incidents [proj-demo-tes]`,
   ]);
+  assertEquals(canvasAccessCalls.length, 4);
+  assertEquals(
+    canvasAccessCalls.every((call) =>
+      call.access_level === "write" &&
+      Array.isArray(call.channel_ids) &&
+      (call.channel_ids as string[])[0] === "C999"
+    ),
+    true,
+  );
   assertEquals(listTabApiCalls.length, 0);
   assertEquals(
-    createOrder.indexOf("canvas:Infrastructure") <
-      createOrder.indexOf("list:Acme Corp Deliverables"),
+    createOrder.indexOf("canvas:Infrastructure [proj-demo-tes]") <
+      createOrder.indexOf("list:Deliverables [proj-demo-tes]"),
     true,
   );
   assertEquals(grant.createPayloads.length, 0);
@@ -569,7 +586,7 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
   assertEquals(grant.featuredAdds, []);
   assertEquals(store.puts.length, 1);
   assertEquals(store.puts[0]?.channel_id, "C999");
-  assertEquals(JSON.parse(store.puts[0]?.snapshot ?? "{}").dashboardCanvasId, "C-Dashboard");
+  assertEquals(JSON.parse(store.puts[0]?.snapshot ?? "{}").dashboardCanvasId, "C-Dashboard [proj-demo-tes]");
   assertEquals(canvasEditContents.length > 0, true);
   assertEquals(
     canvasEditContents.some((content) =>
@@ -617,7 +634,7 @@ Deno.test("channel provisioner suffixes canvas and list names on collision", asy
         canvases: {
           create: async (params: { title: string; channel_id?: string }) => {
             canvasTitles.push(params.title);
-            if (params.title === "Dashboard") {
+            if (params.title === "Dashboard [proj-demo-tes]") {
               return { ok: false, error: "name_taken" };
             }
             return { canvas_id: `C-${params.title}` };
@@ -628,7 +645,7 @@ Deno.test("channel provisioner suffixes canvas and list names on collision", asy
         slackLists: {
           create: async (params: { name: string }) => {
             listNames.push(params.name);
-            if (params.name === "Acme Corp Deliverables") {
+            if (params.name === "Deliverables [proj-demo-tes]") {
               return { ok: false, error: "name_taken" };
             }
             return { list_id: `L-${params.name}` };
@@ -659,16 +676,19 @@ Deno.test("channel provisioner suffixes canvas and list names on collision", asy
       },
     );
 
-    assertEquals(context.dashboardCanvasId, "C-Dashboard1");
-    assertEquals(context.deliverablesListId, "L-Acme Corp Deliverables1");
-    assertEquals(canvasTitles.slice(0, 2), ["Dashboard", "Dashboard1"]);
+    assertEquals(context.dashboardCanvasId, "C-Dashboard [proj-demo-tes]1");
+    assertEquals(context.deliverablesListId, "L-Deliverables [proj-demo-tes]1");
+    assertEquals(canvasTitles.slice(0, 2), [
+      "Dashboard [proj-demo-tes]",
+      "Dashboard [proj-demo-tes]1",
+    ]);
     assertEquals(listNames.slice(0, 2), [
-      "Acme Corp Deliverables",
-      "Acme Corp Deliverables1",
+      "Deliverables [proj-demo-tes]",
+      "Deliverables [proj-demo-tes]1",
     ]);
     assertEquals(
       listBookmarkAdds.some((entry) =>
-        entry.startsWith("Acme Corp Deliverables1:")
+        entry.startsWith("Deliverables:")
       ),
       true,
     );
@@ -812,7 +832,7 @@ Deno.test("channel provisioner creates list without bookmark when flag absent", 
     composition,
   );
 
-  assertEquals(context.deliverablesListId, "L-Acme Corp Deliverables");
+  assertEquals(context.deliverablesListId, "L-Deliverables [proj-demo-tes]");
   assertEquals(listBookmarkAdds.length, 0);
 });
 

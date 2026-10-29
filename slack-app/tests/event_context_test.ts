@@ -63,6 +63,16 @@ Deno.test("serializeEventContext round-trips creation-modal fields", () => {
   assertEquals(deserialized, contextWithCreationFields);
 });
 
+Deno.test("serializeEventContextSnapshot round-trips materialsDropMessageTs", () => {
+  const contextWithDrop: TesEventContext = {
+    ...baseContext,
+    materialsDropMessageTs: "1729000000.123456",
+  };
+  const serialized = serializeEventContextSnapshot(contextWithDrop);
+  const deserialized = deserializeEventContext(serialized);
+  assertEquals(deserialized?.materialsDropMessageTs, "1729000000.123456");
+});
+
 Deno.test("serializeEventContextSnapshot omits onboardingTriggerId and onboardingLinkUrl", () => {
   const serialized = serializeEventContextSnapshot({
     ...baseContext,

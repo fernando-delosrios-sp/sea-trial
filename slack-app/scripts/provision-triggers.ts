@@ -125,6 +125,56 @@ export async function provisionTarget(
       );
     }
   }
+
+  if (target.configId === "complete-onboarding") {
+    const triggerId = existingId ?? extractTriggerId(result.stdout);
+    if (triggerId) {
+      let shouldRestrict = !existingId;
+      if (existingId) {
+        const infoResult = await runner.run([
+          "trigger",
+          "access",
+          "--trigger-id",
+          triggerId,
+          "--info",
+          "--app",
+          appId,
+          "--token",
+          token,
+          "-s",
+          "-f",
+          "--no-color",
+        ]);
+        if (infoResult.code === 0 && infoResult.stdout.includes('"everyone"')) {
+          shouldRestrict = true;
+        }
+      }
+
+      if (shouldRestrict) {
+        const accessResult = await runner.run([
+          "trigger",
+          "access",
+          "--trigger-id",
+          triggerId,
+          "--grant",
+          "--app-collaborators",
+          "--app",
+          appId,
+          "--token",
+          token,
+          "-s",
+          "-f",
+          "--no-color",
+        ]);
+
+        if (accessResult.code !== 0) {
+          throw new Error(
+            `[${target.configId}] slack trigger access failed: ${accessResult.stderr || accessResult.stdout}`,
+          );
+        }
+      }
+    }
+  }
 }
 
 function extractTriggerId(output: string): string | undefined {

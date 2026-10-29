@@ -6,13 +6,14 @@ import {
   readCorrelationId,
 } from "@sea-trial/observability";
 import type { ProcessRequirementsRequest } from "@sea-trial/shared";
-import type { DeliveryConsolidationRequest } from "@sea-trial/shared";
+import type { DeliveryConsolidationRequest, VerificationRequest } from "@sea-trial/shared";
 import {
   runRequirementsAgent,
   validateLlmConfig,
 } from "./agents/requirements/graph.js";
 import { runRequirementsGraph } from "./agents/requirements/langgraph.js";
 import { runDeliveryGraph } from "./agents/delivery/graph.js";
+import { runVerificationAgent } from "./agents/verification/graph.js";
 import { createRequestLogger } from "./observability/logger.js";
 import { requestContext } from "./observability/request-context.js";
 
@@ -150,6 +151,40 @@ async function handleRoute(
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         logger.emit("delivery.consolidation.failed", { message }, "ERROR");
+        sendJson(res, 500, { error: message });
+      } finally {
+        await logger.flush();
+      }
+    });
+    return;
+  }
+
+  if (method === "POST" && url === "/agents/verification/format") {
+    const correlationId = readCorrelationId(req.headers["x-correlation-id"]) ??
+      createCorrelationId();
+    const logger = createRequestLogger(correlationId);
+
+    await requestContext.run({ correlationId, logger }, async () => {
+      try {
+        const raw = await readBody(req);
+        const request = JSON.parse(raw) as VerificationRequest;
+
+        logger.emit("verification.format.received", {
+          taskId: request.deliverable.taskId,
+          channelId: request.context.channelId,
+        });
+
+        const response = runVerificationAgent(request);
+
+        logger.emit("verification.format.completed", {
+          taskId: request.deliverable.taskId,
+          status: response.status,
+        });
+
+        sendJson(res, 200, response);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        logger.emit("verification.format.failed", { message }, "ERROR");
         sendJson(res, 500, { error: message });
       } finally {
         await logger.flush();

@@ -336,3 +336,28 @@ Deno.test("createDeliverablesList retries tab create with suffix on name collisi
   assertEquals(tabCreateNames, ["Deliverables", "Deliverables1"]);
   assertEquals(createParams.length, 0);
 });
+
+Deno.test("createDeliverablesList suffixes channel name when channelName provided", async () => {
+  const { client, createParams } = buildListClient({});
+
+  const { listId, displayName } = await createDeliverablesList(client, "C123", {
+    channelName: "proj-acme-tes",
+  });
+
+  assertEquals(listId, "F-deliverables");
+  assertEquals(displayName, "Deliverables [proj-acme-tes]");
+  assertEquals(createParams[0].name, "Deliverables [proj-acme-tes]");
+});
+
+Deno.test("createIncidentsList suffixes channel name when channelName provided", async () => {
+  const { client, createParams } = buildListClient({});
+
+  const { listId, displayName } = await createIncidentsList(client, "C123", {
+    channelName: "proj-acme-tes",
+  });
+
+  assertEquals(listId, "F-deliverables");
+  assertEquals(displayName, "Incidents [proj-acme-tes]");
+  assertEquals(createParams[0].name, "Incidents [proj-acme-tes]");
+});
+

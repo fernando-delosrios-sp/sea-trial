@@ -74,6 +74,16 @@ TES Event Channel structure — which objects are seeded, in what order, and how
 
 Step ids bridge to flat `TesEventContext` fields via an internal convention map in the resolver (not in the manifest). Pinned index links are derived from steps that include a `title`, in manifest order. Tests in `composition_test.ts` enforce schema, provisioning order, tab/bookmark flags, and id bridging.
 
+Provisioned canvases and lists are titled with the channel name appended as a suffix (e.g. `Dashboard [proj-acme-tes]`, `Deliverables [proj-acme-tes]`) to prevent workspace-level naming collisions and clarify asset ownership. Channel bookmarks and the pinned index message display clean base titles (`Dashboard`, `Deliverables`). Each provisioned canvas is granted channel-scoped write access (`canvases.access.set` with `channel_ids`), allowing current and future channel members to inherit edit access automatically.
+
+#### Requirements Agent Invocation & Materials Drop
+
+The Requirements Agent extracts deliverable candidates from uploaded documents (PDF, DOCX, XLSX, TXT) and maintains the living Requirements Canvas.
+
+- **Pinned Materials Drop Thread**: Channel provisioning posts and pins a `📁 Materials & Requirements Drop` message. Any file attachment or reply posted in this thread automatically triggers the Requirements Agent.
+- **Multi-Agent @mention Dispatch**: Mentions of `@Sea Trial` require an explicit agent sub-command (e.g. `@Sea Trial requirements <message/files>` or `@Sea Trial delivery ...`). Mentions without a recognized sub-command return usage guidance.
+- **Interactive Refinement**: The agent responds in the active thread with clarifying questions or proposals rendered with Block Kit `Accept`, `Edit`, and `Reject` buttons. Accepting proposals writes new items directly to the Deliverables List.
+
 #### Triggers (automatic on deploy)
 
 The GitHub Actions deploy workflow provisions Slack triggers after `slack deploy` using `slack-app/triggers.config.yaml`. No manual `slack trigger create` is required for standard deploys.

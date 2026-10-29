@@ -42,10 +42,27 @@ export interface TesEventContext {
   channelType?: string;
   /** Version of the composition manifest used at channel create. */
   compositionVersion?: string;
+  /** Pinned Materials & Requirements Drop message timestamp where document uploads trigger the Requirements Agent. */
+  materialsDropMessageTs?: string;
+}
+
+export interface DeliverableRow {
+  taskId: string;
+  requirement_ref?: string;
+  assigneeId?: string;
+  assigneeDisplay?: string;
+  status: DeliverableStatus | string;
+  situation: string;
+  category: string;
+  requirements: string;
+  dueDate?: string;
+  deliverableUrl?: string;
+  openQuestions?: string;
 }
 
 export interface DeliverableProposal {
   taskId: string;
+  requirement_ref?: string;
   category: string;
   requirements: string;
   sourceDocRef: string;
@@ -95,21 +112,39 @@ export interface ProcessRequirementsResponse {
 
 export interface DeliveryConsolidationRequest {
   context: TesEventContext;
-  row: {
-    taskId: string;
-    assigneeId?: string;
-    assigneeDisplay?: string;
-    status: DeliverableStatus | string;
-    situation: string;
-    category: string;
-    requirements: string;
-    openQuestions?: string;
-  };
+  row: DeliverableRow;
   canvasMarkdown?: string;
 }
 
 export interface DeliveryConsolidationResponse {
   canvasMarkdown: string;
   draftVersion: number;
+}
+
+export interface DeliveryProofBlock {
+  customerSummary: string;
+  visualProofUrl?: string;
+  components?: string[];
+  artefactsAndConfig?: string;
+}
+
+export interface VerificationRequest {
+  context: TesEventContext;
+  deliverable: DeliverableRow;
+  requirementRef?: string;
+  proofInputs: {
+    visualProofUrl?: string;
+    notes?: string;
+    configuration?: string;
+    components?: string[];
+  };
+  requirementsCanvasMarkdown?: string;
+}
+
+export interface VerificationResponse {
+  proofBlockMarkdown: string;
+  proof: DeliveryProofBlock;
+  updatedRequirementsCanvasMarkdown?: string;
+  status?: string;
 }
 

@@ -1,6 +1,11 @@
 import type { TesEventContext } from "@sea-trial/shared/types/index.ts";
 import type { SlackCanvasClient } from "../canvas.ts";
-import { createCanvas, replaceCanvasContent } from "../canvas.ts";
+import {
+  createCanvas,
+  replaceCanvasContent,
+  setCanvasChannelAccess,
+} from "../canvas.ts";
+import { buildChannelName } from "../channel.ts";
 import type { SlackListClient } from "../lists.ts";
 import {
   attachListToChannel,
@@ -55,6 +60,7 @@ function resolveProvisionTeamId(
 export interface ProvisionInputs {
   channel_id: string;
   project_name: string;
+  channel_name?: string;
   account_name?: string;
   salesforce_opportunity_url?: string;
   member_user_ids?: string[];
@@ -89,6 +95,7 @@ async function provisionCanvasStep(
   step: CanvasStep,
   channelId: string,
   context: TesEventContext,
+  channelName: string,
 ): Promise<string> {
   const content = await renderCanvasContent(
     client,
@@ -97,11 +104,22 @@ async function provisionCanvasStep(
     context,
   );
 
-  return await createCanvas(client, {
+  const baseTitle = step.title ?? step.ref;
+  const canvasTitle = `${baseTitle} [${channelName}]`;
+
+  const canvasId = await createCanvas(client, {
     ...(step.tab === true ? { channelId } : {}),
-    title: step.title ?? step.ref,
+    title: canvasTitle,
     content,
   });
+
+  await setCanvasChannelAccess(client, {
+    canvasId,
+    channelId,
+    accessLevel: "write",
+  });
+
+  return canvasId;
 }
 
 async function renderCanvasContent(
@@ -129,23 +147,25 @@ async function provisionListStep(
   step: ListStep,
   channelId: string,
   context: TesEventContext,
+  channelName: string,
   env?: Record<string, string | undefined>,
 ): Promise<string> {
   const listOptions = {
     accountName: context.accountName,
+    channelName,
     attachToChannel: false,
   };
 
   let listId: string;
-  let displayName: string;
+  let _displayName: string;
   if (step.ref === "deliverables") {
-    ({ listId, displayName } = await createDeliverablesList(
+    ({ listId, displayName: _displayName } = await createDeliverablesList(
       client,
       channelId,
       listOptions,
     ));
   } else if (step.ref === "incidents") {
-    ({ listId, displayName } = await createIncidentsList(
+    ({ listId, displayName: _displayName } = await createIncidentsList(
       client,
       channelId,
       listOptions,
@@ -155,8 +175,9 @@ async function provisionListStep(
   }
 
   if (step.bookmark === true) {
+    const bookmarkTitle = step.title ?? step.ref;
     await attachListToChannel(client, channelId, listId, {
-      listTitle: displayName,
+      listTitle: bookmarkTitle,
       teamId: resolveProvisionTeamId(env),
     });
   }
@@ -182,6 +203,29 @@ async function postPinnedIndex(
   if (indexMessage.ok === false || !timestamp) {
     const detail = indexMessage.error ? `: ${indexMessage.error}` : "";
     throw new Error(`Failed to post pinned index${detail}`);
+  }
+
+  await client.pins.add({ channel: channelId, timestamp });
+  return timestamp;
+}
+
+export const MATERIALS_DROP_TITLE = "📁 Materials & Requirements Drop";
+export const MATERIALS_DROP_BODY =
+  "Attach customer requirement files (PDF, DOCX, XLSX, TXT) to this thread. The Requirements Agent will parse them and propose deliverables.";
+
+async function postPinnedMaterialsDrop(
+  client: ChannelProvisionClient,
+  channelId: string,
+): Promise<string> {
+  const message = await client.chat.postMessage({
+    channel: channelId,
+    text: `*${MATERIALS_DROP_TITLE}*\n${MATERIALS_DROP_BODY}`,
+  });
+
+  const timestamp = message.ts?.trim();
+  if (message.ok === false || !timestamp) {
+    const detail = message.error ? `: ${message.error}` : "";
+    throw new Error(`Failed to post materials drop message${detail}`);
   }
 
   await client.pins.add({ channel: channelId, timestamp });
@@ -237,6 +281,9 @@ export async function provisionChannel(
 
   const stepIds: Record<string, string> = {};
 
+  const channelName = inputs.channel_name?.trim() ||
+    buildChannelName(inputs.project_name);
+
   for (const step of composition.steps) {
     if (!shouldProvisionStep(step)) continue;
 
@@ -247,6 +294,7 @@ export async function provisionChannel(
           step,
           inputs.channel_id,
           context,
+          channelName,
         );
         stepIds[step.id] = slackId;
         context = applyStepIds(context, stepIds);
@@ -258,6 +306,7 @@ export async function provisionChannel(
           step,
           inputs.channel_id,
           context,
+          channelName,
           inputs.env,
         );
         stepIds[step.id] = listId;
@@ -268,6 +317,12 @@ export async function provisionChannel(
         throw new Error(`Unsupported step kind "${(step as CompositionStep).kind}"`);
     }
   }
+
+  const materialsDropTs = await postPinnedMaterialsDrop(
+    client,
+    inputs.channel_id,
+  );
+  context = { ...context, materialsDropMessageTs: materialsDropTs };
 
   await postPinnedIndex(
     client,

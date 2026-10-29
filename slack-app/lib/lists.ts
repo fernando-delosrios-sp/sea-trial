@@ -55,6 +55,7 @@ export interface CreateListInChannelOptions {
   attachToChannel?: boolean;
   teamId?: string;
   accountName?: string;
+  channelName?: string;
 }
 
 export interface CreateListResult {
@@ -292,12 +293,12 @@ export async function attachListInChannel(
   channelId: string,
   listRef: string,
   listId: string,
-  options: Pick<CreateListInChannelOptions, "accountName" | "teamId"> & {
+  options: Pick<CreateListInChannelOptions, "accountName" | "teamId" | "channelName"> & {
     displayName?: string;
   },
 ): Promise<void> {
   const listName = options.displayName ??
-    formatScopedListName(listRef, options.accountName);
+    formatScopedListName(listRef, options.accountName, options.channelName);
   const tabAttached = await attachListChannelTab(
     client,
     channelId,
@@ -378,7 +379,11 @@ async function createListInChannel(
   listRef: string,
   options: CreateListInChannelOptions = {},
 ): Promise<CreateListResult> {
-  const baseName = formatScopedListName(listRef, options.accountName);
+  const baseName = formatScopedListName(
+    listRef,
+    options.accountName,
+    options.channelName,
+  );
   const schema = getSlackListSchema(listRef);
 
   const { name: displayName, result: listId } = await allocateUniqueName(

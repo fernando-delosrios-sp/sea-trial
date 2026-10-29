@@ -156,3 +156,18 @@ Deno.test("extractDeliveryExcerpt appends hero proof link", () => {
   const excerpt = extractDeliveryExcerpt(markdown);
   assertEquals(excerpt.includes("[Proof](https://example.com/proof.png)"), true);
 });
+
+Deno.test("extractDeliveryExcerpt extracts from Delivery Proof & Outcome block", () => {
+  const markdown = [
+    "## REQ-01: SSO Integration",
+    "- **Status:** Complete",
+    "",
+    "### Delivery Proof & Outcome",
+    "- **Customer Summary:** Verified Entra ID integration.",
+    "- **Visual Proof:** [Demo Loom](https://loom.com/share/test456)",
+  ].join("\n");
+  const excerpt = extractDeliveryExcerpt(markdown);
+  assertEquals(excerpt.includes("Verified Entra ID integration."), true);
+  assertEquals(excerpt.includes("[Proof](https://loom.com/share/test456)"), true);
+});
+

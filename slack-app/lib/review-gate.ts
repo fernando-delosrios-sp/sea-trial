@@ -34,6 +34,7 @@ export function shouldWriteToList(action: ReviewAction): boolean {
 
 export interface ListRowFields {
   taskId: string;
+  requirement_ref: string;
   assignee: string;
   status: string;
   situation: string;
@@ -52,6 +53,7 @@ export function buildListRowFields(
 ): ListRowFields {
   return {
     taskId: row.taskId,
+    requirement_ref: row.requirement_ref ?? "",
     assignee: row.assigneeId ?? userId,
     status: row.status,
     situation: row.situation,

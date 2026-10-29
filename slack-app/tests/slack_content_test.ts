@@ -88,9 +88,10 @@ Deno.test("deliverables list columns load with domain status options", () => {
 
 Deno.test("deliverables Slack schema matches JSON column names", () => {
   const schema = getSlackListSchema("deliverables");
-  assertEquals(schema.length, 9);
+  assertEquals(schema.length, 10);
   assertEquals(schema[0].name, "Task ID");
-  assertEquals(schema[2].name, "Status");
+  assertEquals(schema[1].name, "Requirement Ref");
+  assertEquals(schema[3].name, "Status");
 });
 
 Deno.test("invalid list JSON missing columns throws", () => {

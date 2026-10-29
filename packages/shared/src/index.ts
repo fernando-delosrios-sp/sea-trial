@@ -1,8 +1,10 @@
 export type {
   DeliverableProposal,
+  DeliverableRow,
   DeliverableStatus,
   DeliveryConsolidationRequest,
   DeliveryConsolidationResponse,
+  DeliveryProofBlock,
   DocumentInput,
   FilePayload,
   OnboardingForm,
@@ -10,4 +12,6 @@ export type {
   ProcessRequirementsRequest,
   ProcessRequirementsResponse,
   TesEventContext,
+  VerificationRequest,
+  VerificationResponse,
 } from "./types/index.js";

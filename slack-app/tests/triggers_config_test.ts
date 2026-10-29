@@ -97,7 +97,8 @@ Deno.test("Config lists default MVP triggers", async () => {
   const onboarding = config.triggers.find((entry) =>
     entry.id === "complete-onboarding"
   );
-  assertEquals(create?.scope, "global");
+  assertEquals(create?.scope, "channel");
+  assertEquals(create?.channels, []);
   assertEquals(create?.enabled, true);
   assertEquals(onboarding?.scope, "global");
   assertEquals(onboarding?.enabled, true);
@@ -108,16 +109,19 @@ Deno.test("Config lists default MVP triggers", async () => {
   );
 });
 
-Deno.test("expandProvisionTargets from repo config lists Create TES Event and Complete onboarding", async () => {
+Deno.test("expandProvisionTargets from repo config lists Create TES Event when channel env provided", async () => {
   const raw = await Deno.readTextFile(
     new URL("../triggers.config.yaml", import.meta.url),
   );
   const config = parseTriggersConfig(raw);
-  const targets = await expandProvisionTargets(config, {}, Deno.cwd());
+  const targets = await expandProvisionTargets(
+    config,
+    { SLACK_TRIGGER_CHANNEL_IDS: "C01234567" },
+    Deno.cwd(),
+  );
   const titles = targets.map((target) => target.title);
-  assertEquals(titles.includes("Create TES Event"), true);
+  assertEquals(titles.includes("Create TES Event (C01234567)"), true);
   assertEquals(titles.includes("Complete onboarding"), true);
-  assertEquals(targets.every((target) => target.scope === "global"), true);
 });
 
 Deno.test("expandProvisionTargets global scope has no channel suffix", async () => {
@@ -278,6 +282,122 @@ Deno.test("provisionTriggersFromConfig exits path on CLI failure", async () => {
         },
       }),
     Error,
-    "[create-tes-event] slack trigger create failed: boom",
+    "[complete-onboarding] slack trigger create failed: boom",
   );
 });
+
+Deno.test("provisionTarget restricts complete-onboarding to app-collaborators on create", async () => {
+  const calls: string[][] = [];
+  const runner: SlackCommandRunner = {
+    async run(args) {
+      calls.push(args);
+      return {
+        code: 0,
+        stdout: "Trigger successfully created!\n   Complete onboarding FtONBOARD123 (shortcut)\n",
+        stderr: "",
+      };
+    },
+  };
+
+  await provisionTarget(
+    runner,
+    {
+      configId: "complete-onboarding",
+      triggerDef: "triggers/complete_onboarding.ts",
+      scope: "global",
+      title: "Complete onboarding",
+      description: buildProvisionDescription("complete-onboarding", "global"),
+    },
+    undefined,
+    "A0TEST",
+    "xoxp-test",
+    Deno.cwd(),
+  );
+
+  assertEquals(calls.length, 2);
+  assertEquals(calls[0].includes("create"), true);
+  assertEquals(calls[1].includes("access"), true);
+  assertEquals(calls[1].includes("--app-collaborators"), true);
+  assertEquals(calls[1].includes("FtONBOARD123"), true);
+});
+
+Deno.test("provisionTarget restricts complete-onboarding when existing permission is everyone", async () => {
+  const calls: string[][] = [];
+  const runner: SlackCommandRunner = {
+    async run(args) {
+      calls.push(args);
+      if (args.includes("--info")) {
+        return {
+          code: 0,
+          stdout: JSON.stringify({ ok: true, permission_type: "everyone" }),
+          stderr: "",
+        };
+      }
+      return { code: 0, stdout: "", stderr: "" };
+    },
+  };
+
+  await provisionTarget(
+    runner,
+    {
+      configId: "complete-onboarding",
+      triggerDef: "triggers/complete_onboarding.ts",
+      scope: "global",
+      title: "Complete onboarding",
+      description: buildProvisionDescription("complete-onboarding", "global"),
+    },
+    "FtEXISTINGONBOARD",
+    "A0TEST",
+    "xoxp-test",
+    Deno.cwd(),
+  );
+
+  assertEquals(calls.length, 3);
+  assertEquals(calls[0].includes("update"), true);
+  assertEquals(calls[1].includes("--info"), true);
+  assertEquals(calls[2].includes("access"), true);
+  assertEquals(calls[2].includes("--app-collaborators"), true);
+  assertEquals(calls[2].includes("FtEXISTINGONBOARD"), true);
+});
+
+Deno.test("provisionTarget preserves complete-onboarding when existing permission is named_entities", async () => {
+  const calls: string[][] = [];
+  const runner: SlackCommandRunner = {
+    async run(args) {
+      calls.push(args);
+      if (args.includes("--info")) {
+        return {
+          code: 0,
+          stdout: JSON.stringify({
+            ok: true,
+            permission_type: "named_entities",
+            channel_ids: ["C123"],
+          }),
+          stderr: "",
+        };
+      }
+      return { code: 0, stdout: "", stderr: "" };
+    },
+  };
+
+  await provisionTarget(
+    runner,
+    {
+      configId: "complete-onboarding",
+      triggerDef: "triggers/complete_onboarding.ts",
+      scope: "global",
+      title: "Complete onboarding",
+      description: buildProvisionDescription("complete-onboarding", "global"),
+    },
+    "FtEXISTINGONBOARD",
+    "A0TEST",
+    "xoxp-test",
+    Deno.cwd(),
+  );
+
+  assertEquals(calls.length, 2);
+  assertEquals(calls[0].includes("update"), true);
+  assertEquals(calls[1].includes("--info"), true);
+  // No 3rd call to grant --app-collaborators because it already has named_entities
+});
+

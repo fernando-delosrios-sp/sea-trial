@@ -12,6 +12,7 @@ export const InvokeAgentFunction = DefineFunction({
       user_id: { type: Schema.slack.types.user_id },
       message_ts: { type: Schema.types.string },
       thread_ts: { type: Schema.types.string },
+      text: { type: Schema.types.string },
       dashboard_canvas_content: { type: Schema.types.string },
       requirements_canvas_content: { type: Schema.types.string },
       file_ids: {
@@ -23,8 +24,6 @@ export const InvokeAgentFunction = DefineFunction({
       "channel_id",
       "user_id",
       "message_ts",
-      "dashboard_canvas_content",
-      "requirements_canvas_content",
     ],
   },
   output_parameters: {

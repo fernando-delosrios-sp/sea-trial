@@ -13,7 +13,16 @@ import {
 } from "./agent-client.ts";
 import { deserializeEventContext } from "./event-context.ts";
 import { shouldProceedWithAgent } from "./agent-gate.ts";
-import { replaceCanvasContent, type SlackCanvasClient } from "./canvas.ts";
+import {
+  readCanvasMarkdown,
+  replaceCanvasContent,
+  type CanvasSectionsClient,
+  type SlackCanvasClient,
+} from "./canvas.ts";
+import {
+  getTesEventContext,
+  type TesEventContextStoreClient,
+} from "./tes-event-context-store.ts";
 import type { AppLogger } from "./logger.ts";
 
 export interface InvokeAgentInputs {
@@ -21,8 +30,9 @@ export interface InvokeAgentInputs {
   user_id: string;
   message_ts: string;
   thread_ts?: string;
-  dashboard_canvas_content: string;
-  requirements_canvas_content: string;
+  text?: string;
+  dashboard_canvas_content?: string;
+  requirements_canvas_content?: string;
   file_ids?: string[];
 }
 
@@ -40,6 +50,33 @@ export interface InvokeAgentClient {
   };
   chat: {
     postMessage: (args: Record<string, unknown>) => Promise<{ ts?: string }>;
+  };
+  conversations?: {
+    replies?: (params: { channel: string; ts: string }) => Promise<{
+      ok?: boolean;
+      messages?: Array<{ ts?: string; files?: Array<{ id?: string }> }>;
+    }>;
+  };
+  apps?: {
+    datastore?: {
+      get: (params: {
+        datastore: string;
+        id: string;
+      }) => Promise<{
+        ok?: boolean;
+        error?: string;
+        item?: { channel_id?: string; snapshot?: string };
+      }>;
+    };
+  };
+  canvases?: {
+    edit?: (params: unknown) => Promise<unknown>;
+    sections?: {
+      lookup: (params: unknown) => Promise<{
+        ok?: boolean;
+        sections?: Array<{ id: string; markdown?: string }>;
+      }>;
+    };
   };
 }
 
@@ -64,6 +101,75 @@ export type InvokeAgentResult =
   | { outputs: { thread_ts: string } }
   | { error: string };
 
+export type AgentRoute =
+  | { type: "requirements"; threadTs: string }
+  | { type: "delivery"; threadTs: string }
+  | { type: "help"; threadTs: string }
+  | { type: "redirect_materials"; threadTs: string }
+  | { type: "ignore" };
+
+/**
+ * Resolves the destination agent or help action from message context.
+ */
+export function resolveAgentInvocationRoute(params: {
+  text?: string;
+  messageTs: string;
+  threadTs?: string;
+  materialsDropMessageTs?: string;
+  hasFiles?: boolean;
+}): AgentRoute {
+  const activeThreadTs = params.threadTs ?? params.messageTs;
+
+  // 1. Materials Drop thread reply
+  if (
+    params.materialsDropMessageTs &&
+    (params.threadTs === params.materialsDropMessageTs ||
+      params.messageTs === params.materialsDropMessageTs)
+  ) {
+    return { type: "requirements", threadTs: params.materialsDropMessageTs };
+  }
+
+  // 2. Mention of bot in text
+  if (params.text) {
+    const mentionMatch = params.text.match(/<@[A-Z0-9]+>|@Sea Trial/i);
+    if (mentionMatch) {
+      const afterMention = params.text
+        .slice(mentionMatch.index! + mentionMatch[0].length)
+        .trim();
+      const subCommand = afterMention.split(/\s+/)[0]?.toLowerCase();
+
+      if (subCommand === "requirements" || subCommand === "req") {
+        return { type: "requirements", threadTs: activeThreadTs };
+      }
+      if (subCommand === "delivery") {
+        return { type: "delivery", threadTs: activeThreadTs };
+      }
+      return { type: "help", threadTs: activeThreadTs };
+    }
+  }
+
+  // 3. File uploaded in general chatter outside the Materials Drop thread
+  if (params.hasFiles) {
+    return { type: "redirect_materials", threadTs: activeThreadTs };
+  }
+
+  return { type: "ignore" };
+}
+
+/**
+ * Guidance message when a document is uploaded in general channel chatter.
+ */
+export function materialsRedirectMessage(): string {
+  return "Please upload specification and requirements documents to the pinned *📁 Materials & Requirements Drop* thread so the Requirements Agent can process them.";
+}
+
+/**
+ * Returns help text when @Sea Trial is mentioned without a recognized sub-command.
+ */
+export function agentUsageHelpMessage(): string {
+  return "Available Sea Trial agents:\n• `@Sea Trial requirements [instructions]` — Extract & propose requirements deliverables\n• `@Sea Trial delivery [instructions]` — Delivery template consolidation\n\nOr attach requirements documents directly to the pinned *📁 Materials & Requirements Drop* thread.";
+}
+
 export async function runInvokeAgentHandler(
   inputs: InvokeAgentInputs,
   client: InvokeAgentClient,
@@ -82,19 +188,81 @@ export async function runInvokeAgentHandler(
     );
   });
 
-  const context = deserializeEventContext(inputs.dashboard_canvas_content);
+  const activeThreadTs = inputs.thread_ts ?? inputs.message_ts;
+
+  let context: TesEventContext | null = null;
+  if (inputs.dashboard_canvas_content) {
+    context = deserializeEventContext(inputs.dashboard_canvas_content);
+    if (!context) {
+      throw new Error("Invalid dashboard canvas context");
+    }
+  } else if (client.apps?.datastore) {
+    context = await getTesEventContext(
+      client as unknown as TesEventContextStoreClient,
+      inputs.channel_id,
+    );
+  }
+
   if (!context) {
-    throw new Error("Invalid dashboard canvas context");
+    if (inputs.dashboard_canvas_content) {
+      throw new Error("Invalid dashboard canvas context");
+    }
+    // Channel is not a TES Event Channel; exit quietly without error
+    return { outputs: { thread_ts: activeThreadTs } };
+  }
+
+  // Evaluate invocation route (Materials Drop, @mention sub-command, or chatter fast-exit)
+  const hasFiles = Boolean(inputs.file_ids && inputs.file_ids.length > 0);
+  const route = resolveAgentInvocationRoute({
+    text: inputs.text,
+    messageTs: inputs.message_ts,
+    threadTs: inputs.thread_ts,
+    materialsDropMessageTs: context.materialsDropMessageTs,
+    hasFiles,
+  });
+
+  // When triggered via channel message events without legacy test input overrides, respect the route
+  if (!inputs.dashboard_canvas_content) {
+    if (route.type === "ignore") {
+      return { outputs: { thread_ts: activeThreadTs } };
+    }
+
+    if (route.type === "redirect_materials") {
+      await client.chat.postMessage({
+        channel: inputs.channel_id,
+        thread_ts: activeThreadTs,
+        text: materialsRedirectMessage(),
+      });
+      return { outputs: { thread_ts: activeThreadTs } };
+    }
+
+    if (route.type === "help") {
+      await client.chat.postMessage({
+        channel: inputs.channel_id,
+        thread_ts: activeThreadTs,
+        text: agentUsageHelpMessage(),
+      });
+      return { outputs: { thread_ts: activeThreadTs } };
+    }
+
+    if (route.type === "delivery") {
+      await client.chat.postMessage({
+        channel: inputs.channel_id,
+        thread_ts: activeThreadTs,
+        text: "Delivery Agent is scheduled for delivery phase validation.",
+      });
+      return { outputs: { thread_ts: activeThreadTs } };
+    }
   }
 
   if (!shouldProceedWithAgent(context)) {
     await client.chat.postMessage({
       channel: inputs.channel_id,
-      thread_ts: inputs.thread_ts ?? inputs.message_ts,
+      thread_ts: activeThreadTs,
       text: onboardingGateMessage(),
     });
     return {
-      outputs: { thread_ts: inputs.thread_ts ?? inputs.message_ts },
+      outputs: { thread_ts: activeThreadTs },
     };
   }
 
@@ -113,9 +281,25 @@ export async function runInvokeAgentHandler(
     };
   }
 
+  let fileIds = inputs.file_ids ?? [];
+  if (fileIds.length === 0 && client.conversations?.replies) {
+    try {
+      const replyData = await client.conversations.replies({
+        channel: inputs.channel_id,
+        ts: inputs.message_ts,
+      });
+      const message = replyData.messages?.find((m) => m.ts === inputs.message_ts);
+      fileIds = message?.files
+        ?.map((f) => f.id)
+        .filter((id): id is string => Boolean(id)) ?? [];
+    } catch {
+      fileIds = [];
+    }
+  }
+
   const documents: DocumentInput[] = [];
 
-  for (const fileId of inputs.file_ids ?? []) {
+  for (const fileId of fileIds) {
     const fileInfo = await client.files.info({ file: fileId });
     if (!fileInfo.ok || !fileInfo.file) continue;
 
@@ -136,6 +320,34 @@ export async function runInvokeAgentHandler(
     });
   }
 
+  // If no files attached, check if user provided inline requirements text
+  if (documents.length === 0 && inputs.text) {
+    const cleanedText = inputs.text
+      .replace(/<@[A-Z0-9]+>|@Sea Trial/gi, "")
+      .replace(/^requirements\s*/i, "")
+      .trim();
+
+    if (cleanedText.length > 0) {
+      documents.push({
+        filename: "inline-requirements.txt",
+        mimeType: "text/plain",
+        content: new TextEncoder().encode(cleanedText),
+      });
+    }
+  }
+
+  let requirementsCanvasContent = inputs.requirements_canvas_content;
+  if (!requirementsCanvasContent && context.requirementsCanvasId && client.canvases?.sections) {
+    try {
+      requirementsCanvasContent = await readCanvasMarkdown(
+        client as unknown as CanvasSectionsClient,
+        context.requirementsCanvasId,
+      );
+    } catch {
+      requirementsCanvasContent = "# Requirements\n";
+    }
+  }
+
   logger.emit("invoke.started", {
     channelId: context.channelId,
     eventId: context.channelId,
@@ -147,26 +359,28 @@ export async function runInvokeAgentHandler(
       agentServiceUrl,
       buildInvokeAgentRequest(
         context as TesEventContext,
-        inputs.requirements_canvas_content,
+        requirementsCanvasContent ?? "# Requirements\n",
         documents,
-        inputs.thread_ts,
+        activeThreadTs,
       ),
       logger.correlationId,
     );
 
-    await replaceCanvas(
-      client,
-      context.requirementsCanvasId,
-      response.canvasMarkdown,
-    );
+    if (context.requirementsCanvasId) {
+      await replaceCanvas(
+        client,
+        context.requirementsCanvasId,
+        response.canvasMarkdown,
+      );
+    }
 
     const proposalMessage = await client.chat.postMessage({
       channel: inputs.channel_id,
-      thread_ts: inputs.thread_ts ?? inputs.message_ts,
+      thread_ts: activeThreadTs,
       text: response.agentMessage,
       blocks: buildProposalBlocks(
         response.proposals,
-        inputs.thread_ts ?? inputs.message_ts,
+        activeThreadTs,
       ),
     });
 
@@ -178,7 +392,7 @@ export async function runInvokeAgentHandler(
 
     return {
       outputs: {
-        thread_ts: proposalMessage.ts ?? inputs.message_ts,
+        thread_ts: proposalMessage.ts ?? activeThreadTs,
       },
     };
   } catch (error) {
@@ -191,4 +405,3 @@ export async function runInvokeAgentHandler(
     throw error;
   }
 }
-

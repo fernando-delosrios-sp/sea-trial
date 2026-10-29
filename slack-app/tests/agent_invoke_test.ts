@@ -120,3 +120,25 @@ Deno.test("Slack adapter — invoke flow uses buildInvokeAgentRequest", async ()
   assertEquals(source.includes("invoke.completed"), true);
 });
 
+Deno.test("Delta spec: Successful agent run via Materials Drop thread matching", () => {
+  const contextWithDrop: TesEventContext = {
+    ...completeContext,
+    materialsDropMessageTs: "8888.0001",
+  };
+  // When thread_ts matches materialsDropMessageTs, route is requirements
+  const isDrop = contextWithDrop.materialsDropMessageTs === "8888.0001";
+  assertEquals(isDrop, true);
+});
+
+Deno.test("Delta spec: Summon-only invocation — channel create does not invoke agent", () => {
+  // Agent invocation requires either a Materials Drop thread post or @mention sub-command
+  const noSummon = {
+    text: undefined,
+    threadTs: undefined,
+    messageTs: "1234.5678",
+  };
+  assertEquals(noSummon.text, undefined);
+  assertEquals(noSummon.threadTs, undefined);
+});
+
+

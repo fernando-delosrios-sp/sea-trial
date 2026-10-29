@@ -16,6 +16,8 @@ import MarkDeliveryReviewedFunction from "./functions/mark_delivery_reviewed/mod
 import HandleThreadReplyFunction from "./functions/handle_thread_reply/mod.ts";
 import CreateTesEventWorkflow from "./workflows/create_tes_event.ts";
 import OpenOnboardingWorkflow from "./workflows/open_onboarding.ts";
+import InvokeAgentWorkflow from "./workflows/invoke_agent.ts";
+import PlanDeliverablesWorkflow from "./workflows/plan_deliverables.ts";
 import { buildOutgoingDomains } from "./lib/outgoing-domains.ts";
 
 loadSync({ export: true, allowEmptyValues: true });
@@ -42,7 +44,12 @@ export default Manifest({
     MarkDeliveryReviewedFunction,
     HandleThreadReplyFunction,
   ],
-  workflows: [CreateTesEventWorkflow, OpenOnboardingWorkflow],
+  workflows: [
+    CreateTesEventWorkflow,
+    OpenOnboardingWorkflow,
+    InvokeAgentWorkflow,
+    PlanDeliverablesWorkflow,
+  ],
   datastores: [TesEventContextDatastore],
   outgoingDomains: buildOutgoingDomains(
     Deno.env.get("AGENT_SERVICE_URL"),

@@ -1,7 +1,25 @@
 # Requirements Canvas
 
+[🚀 Plan Deliverables]({{planDeliverablesUrl}})
+
 ## Extracted Requirements
-_No requirements extracted yet. @mention the bot with documents to summon the Requirements Agent._
+_No requirements extracted yet. Drop specification documents into the pinned Materials & Requirements Drop thread to summon the Requirements Agent._
+
+## REQ-01: Sample Requirement Title
+- **Status:** Open
+- **Linked Deliverables:** `TASK-01`
+- **Customer Need:** Customer business requirement description
+
+### Acceptance Criteria
+- [ ] Acceptance criterion 1
+- [ ] Acceptance criterion 2
+
+### Delivery Proof & Outcome
+<!-- populated by Verification Agent on delivery completion -->
+- **Customer Summary:** 
+- **Visual Proof:** 
+- **Components:** 
+- **Artefacts & Config:** 
 
 ## Deliverable Candidates
 _Candidates will appear here after agent processing._

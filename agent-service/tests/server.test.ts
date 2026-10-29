@@ -360,6 +360,61 @@ describe("POST /agents/delivery/consolidate", () => {
   });
 });
 
+describe("POST /agents/verification/format", () => {
+  it("formats delivery proof block and returns 200", async () => {
+    const server = createAppServer();
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("No port");
+
+    const response = await fetch(
+      `http://127.0.0.1:${address.port}/agents/verification/format`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          context: {
+            channelId: "C1",
+            projectName: "Test",
+            onboardingComplete: true,
+            derivedComponents: ["IdentityNow"],
+            dashboardCanvasId: "d1",
+            requirementsCanvasId: "r1",
+            deliverablesListId: "l1",
+            incidentsListId: "l2",
+            infrastructureCanvasId: "i1",
+          },
+          deliverable: {
+            taskId: "TASK-01",
+            requirement_ref: "REQ-01",
+            status: "Validation required",
+            situation: "Testing",
+            category: "SSO",
+            requirements: "Configure SSO connector",
+          },
+          proofInputs: {
+            visualProofUrl: "https://loom.com/share/test1234",
+            notes: "SSO connector active. Verified login with 10 accounts.",
+            configuration: "Configuration details",
+          },
+        }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.status).toBe("Complete");
+    expect(body.proofBlockMarkdown).toContain("### Delivery Proof & Outcome");
+    expect(body.proofBlockMarkdown).toContain("https://loom.com/share/test1234");
+    expect(body.proof.customerSummary).toContain("SSO connector active.");
+
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
+    });
+  });
+});
+
+
 describe("createAppServer", () => {
   it("responds to GET /health", async () => {
     const server = createAppServer();

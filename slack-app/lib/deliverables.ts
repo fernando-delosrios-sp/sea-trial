@@ -2,6 +2,7 @@ import type { DeliverableProposal, DeliverableStatus } from "@sea-trial/shared/t
 
 export interface DeliverableRowInput {
   taskId: string;
+  requirement_ref?: string;
   assigneeId?: string;
   status: DeliverableStatus;
   situation: string;
@@ -19,6 +20,7 @@ export function formatOpenQuestions(questions?: string[]): string {
 
 export interface ListColumnMap {
   taskId: string;
+  requirement_ref?: string;
   assignee: string;
   status: string;
   situation: string;
@@ -37,6 +39,7 @@ export function proposalToRowInput(
 ): DeliverableRowInput {
   return {
     taskId: proposal.taskId,
+    requirement_ref: proposal.requirement_ref,
     assigneeId,
     status: proposal.suggestedStatus,
     situation: "New",

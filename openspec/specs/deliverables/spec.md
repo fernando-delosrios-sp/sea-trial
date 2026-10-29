@@ -3,7 +3,9 @@
 ## Purpose
 
 Review gate, Deliverables List writes, on-demand Delivery Template Canvas creation, and customer-facing Situation Report publishing.
+
 ## Requirements
+
 ### Requirement: Review gate
 
 The system SHALL require explicit user acceptance before writing to the Deliverables List.
@@ -29,13 +31,15 @@ The system SHALL require explicit user acceptance before writing to the Delivera
 
 ### Requirement: Deliverable list schema
 
-Deliverables List rows SHALL use the mandatory core fields. The list column schema SHALL be defined in `slack-app/content/lists/deliverables.json` with stable column `key` values. Status select options SHALL reference `@domain/deliverable-statuses`. The schema SHALL include an **Open questions** column used as a source field for Situation Report publishing.
+Deliverables List rows SHALL use the mandatory core fields. The list column schema SHALL be defined in `slack-app/content/lists/deliverables.json` with stable column `key` values. Status select options SHALL reference `@domain/deliverable-statuses`. The schema SHALL include a **Requirement Ref** column (`requirement_ref`) linking to the parent `REQ-XX` identifier in the Requirements Canvas, and an **Open questions** column used as a source field for Situation Report publishing.
 
 #### Scenario: Core fields populated
 
 - **GIVEN** a user accepts a deliverable proposal
 - **WHEN** the list row is created
-- **THEN** Task ID, Assignee, Status, Situation, Category, Requirements, Due date, Deliverable, and Open questions fields SHALL be populated per schema
+- **THEN** Task ID, Requirement Ref, Assignee, Status, Situation, Category, Requirements, Due date, Deliverable, and Open questions fields SHALL be populated per schema
+
+---
 
 ### Requirement: Situation Report manual publish
 
@@ -106,55 +110,6 @@ On acceptance, the Requirements canvas SHALL mark promoted candidates.
 - **WHEN** a user accepts corresponding proposals
 - **THEN** those candidates SHALL be marked as promoted in the Requirements canvas
 
-### Requirement: On-demand delivery template canvas
-
-Delivery Template Canvases SHALL be created when a Deliverables List row status first reaches **Validation required**, not on Accept. Canvases SHALL follow the canonical section structure defined in the Delivery canvas template. The Deliverable list field SHALL remain empty until canvas creation. Canvases SHALL NOT be pre-created for rows without an accepted deliverable.
-
-#### Scenario: Canvas created on accept
-
-- **GIVEN** a user accepts a deliverable proposal
-- **WHEN** the list row is created
-- **THEN** no Delivery Template Canvas SHALL be created
-- **AND** the Deliverable field SHALL remain empty until status reaches Validation required
-
-#### Scenario: Canvas not created on accept
-
-- **GIVEN** a user accepts a deliverable proposal
-- **WHEN** the list row is created
-- **THEN** the Deliverable field SHALL be empty
-- **AND** no Delivery Template Canvas SHALL be created
-
-#### Scenario: Canvas linked after Validation required
-
-- **GIVEN** a user accepts a deliverable proposal
-- **WHEN** the row status later reaches **Validation required**
-- **THEN** a Delivery Template Canvas SHALL be created and linked
-- **AND** the canvas SHALL be pre-filled by the delivery agent per the delivery agent spec
-
-#### Scenario: No canvas for empty rows
-
-- **GIVEN** a Deliverables List row without an accepted deliverable
-- **WHEN** no explicit creation action occurs
-- **THEN** no Delivery Template Canvas SHALL exist for that row
-
-### Requirement: Delivery canvas title disambiguation
-
-When creating a delivery canvas for an accepted deliverable, the system SHALL apply the same numeric suffix disambiguation policy as channel seeding when the requested canvas title collides with an existing workspace canvas title.
-
-#### Scenario: Delivery canvas title collision
-
-- **GIVEN** a deliverable row with task ID `TASK-42`
-- **AND** a canvas titled `Delivery: TASK-42` already exists in the workspace
-- **WHEN** the delivery canvas orchestrator creates a new canvas for that row
-- **THEN** the system SHALL create the canvas with title `Delivery: TASK-421` (or the next available suffix)
-- **AND** the deliverable list item SHALL reference the newly created canvas ID
-
-#### Scenario: Delivery canvas uses base title when available
-
-- **GIVEN** no canvas exists with title `Delivery: TASK-42`
-- **WHEN** the delivery canvas orchestrator creates a canvas for task `TASK-42`
-- **THEN** the canvas title SHALL be `Delivery: TASK-42` without a suffix
-
 ### Requirement: Validation required canvas creation
 
 The system SHALL create a Delivery Template Canvas when a Deliverables List row status first transitions to **Validation required**. Creation SHALL link the canvas URL in the list **Deliverable** field and invoke the delivery agent to produce draft version 1. Canvas display titles SHALL be disambiguated on workspace name collision per the Delivery canvas title disambiguation requirement.
@@ -173,31 +128,6 @@ The system SHALL create a Delivery Template Canvas when a Deliverables List row 
 - **WHEN** no transition to **Validation required** has occurred
 - **THEN** no Delivery Template Canvas SHALL exist for that row
 - **AND** the Deliverable field SHALL be empty
-
-### Requirement: Delivery canvas review flag
-
-After each delivery agent consolidation, the Delivery Template Canvas SHALL display a canvas-level review banner and per-section agent-generated markers on all agent-touched standard sections. The review flag SHALL be cleared only by an explicit **Mark reviewed** action.
-
-#### Scenario: Review flag set after agent run
-
-- **GIVEN** a Delivery Template Canvas exists for a deliverable
-- **WHEN** the delivery agent completes a consolidation run
-- **THEN** the canvas metadata SHALL include an agent-draft pending review banner
-- **AND** each agent-touched standard section SHALL include an agent-generated marker
-
-#### Scenario: Review flag cleared manually
-
-- **GIVEN** a Delivery Template Canvas with review flag set
-- **WHEN** a user triggers **Mark reviewed**
-- **THEN** the review banner SHALL be removed
-- **AND** all section agent-generated markers SHALL be removed
-
-#### Scenario: Review flag reappears on re-consolidation
-
-- **GIVEN** a reviewed Delivery Template Canvas
-- **WHEN** a user triggers **Consolidate draft**
-- **THEN** the review flag SHALL be set again
-- **AND** the Draft version integer SHALL increment
 
 ### Requirement: Manual delivery consolidation
 
@@ -227,3 +157,32 @@ Deliverable status select choices SHALL be sourced from `slack-app/content/domai
 - **WHEN** a user accepts the proposal
 - **THEN** the list row status SHALL be a value defined in domain JSON
 
+### Requirement: Verification agent trigger on validation or acceptance
+
+The system SHALL trigger the Verification Agent workflow when a Deliverables List row status first transitions to **Validation required** or **Accepted**. The workflow SHALL prompt the assigned Tech Specialist in the deliverable thread to provide visual proof links, configuration notes, and an outcome summary. The system SHALL NOT create an independent Slack canvas for the deliverable.
+
+#### Scenario: Prompt triggered on validation required
+
+- **GIVEN** a Deliverables List row with status **In progress**
+- **WHEN** the row status changes to **Validation required**
+- **THEN** the Verification Agent SHALL initiate a thread conversation prompting for visual proof and outcome summary
+- **AND** no new Slack canvas SHALL be created in the workspace
+
+#### Scenario: No separate canvas created on accept
+
+- **GIVEN** a user accepts a deliverable proposal
+- **WHEN** the Deliverables List row is created or accepted
+- **THEN** no standalone Delivery Template Canvas SHALL exist or be provisioned for that row
+
+### Requirement: Delivery proof synchronization to requirements canvas
+
+Upon receiving verified proof from the Tech Specialist, the Verification Agent SHALL format and write a `### Delivery Proof & Outcome` block directly into the parent requirement section in the Requirements Canvas matching `requirement_ref`.
+
+#### Scenario: Proof written to parent requirement
+
+- **GIVEN** a deliverable with `requirement_ref: REQ-01`
+- **WHEN** the Verification Agent receives visual proof and config notes
+- **THEN** the Requirements Canvas SHALL be updated with a `### Delivery Proof & Outcome` subsection under `## REQ-01`
+- **AND** the requirement status in the canvas SHALL be updated to `Complete`
+
+---

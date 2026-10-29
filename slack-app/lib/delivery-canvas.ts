@@ -122,6 +122,26 @@ export function extractDeliveryExcerpt(
     return EXCERPT_REVIEW_PENDING;
   }
 
+  // Check if this markdown contains a Delivery Proof & Outcome block
+  const proofMatch = canvasMarkdown.match(/### Delivery Proof & Outcome[\s\S]*?(?=\n## |\n### |$)/);
+  if (proofMatch) {
+    const proofText = proofMatch[0];
+    const summaryMatch = proofText.match(/- \*\*Customer Summary:\*\*\s*(.+)/);
+    const summary = summaryMatch?.[1]?.trim();
+    if (summary) {
+      let excerpt = summary.length > EXCERPT_MAX_LENGTH
+        ? `${summary.slice(0, EXCERPT_MAX_LENGTH - 1)}…`
+        : summary;
+      const visualMatch = proofText.match(/- \*\*Visual Proof:\*\*\s*(.+)/);
+      const visualText = visualMatch?.[1]?.trim();
+      const urlMatch = visualText?.match(/https?:\/\/[^\s)>]+/);
+      if (urlMatch?.[0]) {
+        excerpt = `${excerpt} [Proof](${urlMatch[0]})`;
+      }
+      return excerpt;
+    }
+  }
+
   const summary = extractSection(canvasMarkdown, CUSTOMER_SUMMARY_HEADING)
     .replace(SECTION_AGENT_MARKER, "")
     .trim();

@@ -109,6 +109,10 @@ const client = {
       lookup: (params: Record<string, unknown>) =>
         call("canvases.sections.lookup", params),
     },
+    access: {
+      set: (params: Record<string, unknown>) =>
+        call("canvases.access.set", params),
+    },
   },
   slackLists: {
     create: (params: Record<string, unknown>) =>

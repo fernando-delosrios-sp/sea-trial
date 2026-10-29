@@ -5,6 +5,8 @@ import { buildSituationReportSeedMarkdown } from "../situation-report.ts";
 
 const NOT_SET = "_Not set_";
 
+import { safeGetEnv } from "../env.ts";
+
 export interface DashboardRenderOptions {
   /** Slack-hosted image URLs keyed by the local path used in canvas markdown. */
   assetUrls?: Record<string, string>;
@@ -98,7 +100,7 @@ export function renderRequirementsCanvas(
   const template = loadTemplate("canvases/requirements.hbs.md");
   const data = context ? buildCanvasViewModel(context, form) : {};
   const planUrl = options?.planDeliverablesUrl ??
-    Deno.env.get("SLACK_PLAN_DELIVERABLES_TRIGGER_URL") ??
+    safeGetEnv("SLACK_PLAN_DELIVERABLES_TRIGGER_URL") ??
     "https://slack.com/shortcuts/Ft0CDD23R1RS/06a1b50a92c70a5bdcb17faadaa7f787";
   if (planUrl) {
     data.planDeliverablesUrl = planUrl;

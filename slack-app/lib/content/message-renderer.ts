@@ -11,6 +11,8 @@ import {
 } from "./capability-validator.ts";
 import { TEMPLATES_BY_PATH } from "./embedded-templates.generated.ts";
 
+import { safeGetEnv } from "../env.ts";
+
 const PINNED_INDEX_TITLE = "TES Event Channel Index";
 export const PINNED_ONBOARDING_BUTTON_MAX_CHARS = 2000;
 
@@ -57,7 +59,7 @@ export interface RenderPinnedIndexOptions {
 
 function resolveNavigationTeamId(options?: RenderPinnedIndexOptions): string {
   const teamId = options?.teamId?.trim() ||
-    Deno.env.get("SLACK_TEAM_ID")?.trim();
+    safeGetEnv("SLACK_TEAM_ID")?.trim();
   if (!teamId) {
     throw new Error(
       "Navigation links require a Slack team ID — set SLACK_TEAM_ID or pass teamId in render options",

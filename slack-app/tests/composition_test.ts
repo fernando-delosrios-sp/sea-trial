@@ -512,7 +512,9 @@ Deno.test("channel provisioner creates steps in manifest order", async () => {
       },
     },
     apiCall: async (method: string) => {
-      listTabApiCalls.push(method);
+      if (method.startsWith("conversations.tabs") || method.startsWith("conversations.lists")) {
+        listTabApiCalls.push(method);
+      }
       return { error: "unknown_method" };
     },
     bookmarks: {

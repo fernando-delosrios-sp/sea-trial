@@ -34,3 +34,4 @@ const appMentionedTrigger = {
 };
 
 export default appMentionedTrigger;
+

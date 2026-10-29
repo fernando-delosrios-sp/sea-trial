@@ -44,6 +44,7 @@ import {
   putTesEventContext,
   type TesEventContextStoreClient,
 } from "../tes-event-context-store.ts";
+import { safeGetEnv } from "../env.ts";
 
 function resolveProvisionTeamId(
   env?: Record<string, string | undefined>,
@@ -90,6 +91,35 @@ function shouldProvisionStep(step: CompositionStep): boolean {
   return false;
 }
 
+export async function createChannelPlanDeliverablesTrigger(
+  client: ChannelProvisionClient,
+  channelId: string,
+  channelName: string,
+  env?: Record<string, string | undefined>,
+): Promise<string | undefined> {
+  if (!client.apiCall) return undefined;
+  const appId = env?.SLACK_APP_ID?.trim() || safeGetEnv("SLACK_APP_ID")?.trim() || "A0BNHB84NCT";
+
+  try {
+    const res = await client.apiCall("workflows.triggers.create", {
+      type: "shortcut",
+      name: `Plan deliverables [${channelName}]`,
+      workflow: "#/workflows/plan_deliverables_workflow",
+      workflow_app_id: appId,
+      inputs: {
+        channel_id: { value: channelId },
+        user_id: { value: "{{data.user_id}}" },
+      },
+    }) as { ok?: boolean; trigger?: { shortcut_url?: string } };
+    if (res?.ok && res.trigger?.shortcut_url) {
+      return res.trigger.shortcut_url;
+    }
+  } catch {
+    // best-effort trigger creation; fall back to pre-configured or default URL
+  }
+  return undefined;
+}
+
 async function provisionCanvasStep(
   client: ChannelProvisionClient,
   step: CanvasStep,
@@ -103,6 +133,7 @@ async function provisionCanvasStep(
     step.ref,
     channelId,
     context,
+    channelName,
     env,
   );
 
@@ -141,13 +172,21 @@ async function renderCanvasContent(
   ref: string,
   channelId: string,
   context: TesEventContext,
+  channelName: string,
   env?: Record<string, string | undefined>,
 ): Promise<string> {
   switch (ref) {
-    case "requirements":
+    case "requirements": {
+      const channelTriggerUrl = await createChannelPlanDeliverablesTrigger(
+        client,
+        channelId,
+        channelName,
+        env,
+      );
       return renderRequirementsCanvas(context, undefined, {
-        planDeliverablesUrl: env?.SLACK_PLAN_DELIVERABLES_TRIGGER_URL,
+        planDeliverablesUrl: channelTriggerUrl ?? env?.SLACK_PLAN_DELIVERABLES_TRIGGER_URL,
       });
+    }
     case "infrastructure":
       return renderInfrastructureCanvas();
     case "situation-report":

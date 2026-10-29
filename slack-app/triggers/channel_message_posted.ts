@@ -21,7 +21,7 @@ const channelMessagePostedTrigger = {
     filter: {
       version: 1,
       root: {
-        statement: "1 == 1",
+        statement: "{{data.thread_ts}} != ''",
       },
     },
   },

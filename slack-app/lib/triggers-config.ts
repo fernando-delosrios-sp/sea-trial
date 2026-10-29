@@ -205,17 +205,28 @@ export interface ListedTrigger {
   id: string;
   title: string;
   description?: string;
+  shortcutUrl?: string;
 }
 
 /** Parse `slack trigger list` text output into trigger records. */
 export function parseTriggerListOutput(output: string): ListedTrigger[] {
   const triggers: ListedTrigger[] = [];
-  const linePattern = /^\s{3}(.+?)\s+(Ft[A-Z0-9]+)\s+\(shortcut\)/;
+  const linePattern = /^\s{3}(.+?)\s+(Ft[A-Z0-9]+)\s+\((shortcut|event)\)/;
+  let current: ListedTrigger | null = null;
 
   for (const line of output.split("\n")) {
     const match = line.match(linePattern);
-    if (!match) continue;
-    triggers.push({ title: match[1].trim(), id: match[2] });
+    if (match) {
+      current = { title: match[1].trim(), id: match[2] };
+      triggers.push(current);
+      continue;
+    }
+    if (current && !current.shortcutUrl) {
+      const urlMatch = line.match(/https:\/\/slack\.com\/shortcuts\/[^\s]+/);
+      if (urlMatch) {
+        current.shortcutUrl = urlMatch[0];
+      }
+    }
   }
 
   return triggers;

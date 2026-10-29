@@ -96,12 +96,14 @@ async function provisionCanvasStep(
   channelId: string,
   context: TesEventContext,
   channelName: string,
+  env?: Record<string, string | undefined>,
 ): Promise<string> {
   const content = await renderCanvasContent(
     client,
     step.ref,
     channelId,
     context,
+    env,
   );
 
   const baseTitle = step.title ?? step.ref;
@@ -139,10 +141,13 @@ async function renderCanvasContent(
   ref: string,
   channelId: string,
   context: TesEventContext,
+  env?: Record<string, string | undefined>,
 ): Promise<string> {
   switch (ref) {
     case "requirements":
-      return renderRequirementsCanvas(context);
+      return renderRequirementsCanvas(context, undefined, {
+        planDeliverablesUrl: env?.SLACK_PLAN_DELIVERABLES_TRIGGER_URL,
+      });
     case "infrastructure":
       return renderInfrastructureCanvas();
     case "situation-report":
@@ -307,6 +312,7 @@ export async function provisionChannel(
           inputs.channel_id,
           context,
           channelName,
+          inputs.env,
         );
         stepIds[step.id] = slackId;
         context = applyStepIds(context, stepIds);

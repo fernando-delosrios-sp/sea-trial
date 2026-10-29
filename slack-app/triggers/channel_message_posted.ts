@@ -17,7 +17,13 @@ const channelMessagePostedTrigger = {
   workflow: `#/workflows/${InvokeAgentWorkflow.definition.callback_id}`,
   event: {
     event_type: TriggerEventTypes.MessagePosted,
-    channel_ids: [],
+    all_resources: true,
+    filter: {
+      version: 1,
+      root: {
+        statement: "1 == 1",
+      },
+    },
   },
   inputs: {
     channel_id: {

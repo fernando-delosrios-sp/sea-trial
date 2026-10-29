@@ -85,13 +85,24 @@ export function renderDashboardCanvas(
   return body;
 }
 
+export interface RequirementsRenderOptions {
+  planDeliverablesUrl?: string;
+}
+
 /** Renders the Requirements canvas from declarative template. */
 export function renderRequirementsCanvas(
   context?: TesEventContext,
   form?: OnboardingForm,
+  options?: RequirementsRenderOptions,
 ): string {
   const template = loadTemplate("canvases/requirements.hbs.md");
   const data = context ? buildCanvasViewModel(context, form) : {};
+  const planUrl = options?.planDeliverablesUrl ??
+    Deno.env.get("SLACK_PLAN_DELIVERABLES_TRIGGER_URL") ??
+    "https://slack.com/shortcuts/Ft0CDD23R1RS/06a1b50a92c70a5bdcb17faadaa7f787";
+  if (planUrl) {
+    data.planDeliverablesUrl = planUrl;
+  }
   return template(data).trim();
 }
 

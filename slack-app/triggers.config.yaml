@@ -23,15 +23,21 @@ triggers:
     channels: []
     enabled: true
 
+  - id: app-mentioned
+    trigger_def: triggers/app_mentioned.ts
+    scope: global
+    channels: []
+    enabled: true
+
   - id: channel-message-posted
     trigger_def: triggers/channel_message_posted.ts
-    scope: channel
+    scope: global
     channels: []
     enabled: true
 
   - id: plan-deliverables
     trigger_def: triggers/plan_deliverables.ts
-    scope: channel
+    scope: global
     channels: []
     enabled: true
 

@@ -190,6 +190,13 @@ export async function syncWorkflowTriggerEnvVars(
 ): Promise<void> {
   const envVars = buildCompleteOnboardingTriggerEnvVars(listed);
 
+  const planDeliverables = listed.find((t) =>
+    t.title.toLowerCase() === "plan deliverables"
+  );
+  if (planDeliverables?.shortcutUrl) {
+    envVars["SLACK_PLAN_DELIVERABLES_TRIGGER_URL"] = planDeliverables.shortcutUrl;
+  }
+
   for (const [key, value] of Object.entries(envVars)) {
     const result = await runner.run([
       "env",

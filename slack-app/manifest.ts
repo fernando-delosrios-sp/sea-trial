@@ -58,6 +58,7 @@ export default Manifest({
   botScopes: [
     "commands",
     "chat:write",
+    "channels:history",
     "channels:manage",
     "channels:read",
     "files:read",
